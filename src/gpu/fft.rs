@@ -1,3 +1,4 @@
+use crate::bls::Engine;
 use crate::gpu::{
     error::{GPUError, GPUResult},
     locks, sources, structs, GPU_NVIDIA_DEVICES,
@@ -5,7 +6,6 @@ use crate::gpu::{
 use ff::Field;
 use log::info;
 use ocl::{Buffer, MemFlags, ProQue};
-use paired::Engine;
 use std::cmp;
 
 // NOTE: Please read `structs.rs` for an explanation for unsafe transmutes of this code!

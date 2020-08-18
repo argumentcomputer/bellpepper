@@ -21,8 +21,8 @@
 //!         sha256::sha256,
 //!     },
 //!     groth16, Circuit, ConstraintSystem, SynthesisError,
+//!     bls::{Bls12, Engine}
 //! };
-//! use paired::{bls12_381::Bls12, Engine};
 //! use rand::rngs::OsRng;
 //! use sha2::{Digest, Sha256};
 //!
@@ -132,13 +132,11 @@
 //! using the [`ff`] and [`group`] crates, while specific proving systems will
 //! be separate crates that pull in the dependencies they require.
 
-// Catch documentation errors caused by code changes.
-#![deny(intra_doc_link_resolution_failure)]
-
 #[cfg(test)]
 #[macro_use]
 extern crate hex_literal;
 
+pub mod bls;
 pub mod domain;
 pub mod gadgets;
 pub mod gpu;
@@ -575,12 +573,13 @@ impl<'cs, E: ScalarEngine, CS: ConstraintSystem<E>> ConstraintSystem<E> for &'cs
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "groth16"))]
 mod tests {
     use super::*;
+
     #[test]
     fn test_add_simplify() {
-        use paired::bls12_381::Bls12;
+        use crate::bls::Bls12;
 
         let n = 5;
 

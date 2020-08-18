@@ -1,7 +1,6 @@
-use bellperson::{Index, LinearCombination, Variable};
+use bellperson::{bls::Bls12, Index, LinearCombination, Variable};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ff::{Field, ScalarEngine};
-use paired::bls12_381::Bls12;
 
 fn lc_benchmark(c: &mut Criterion) {
     c.bench_function("LinearCombination::add((Fr, Variable))", |b| {

@@ -51,7 +51,7 @@ where
     }
 }
 
-use paired::Engine;
+use crate::bls::Engine;
 
 macro_rules! locked_kernel {
     ($class:ident) => {

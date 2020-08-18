@@ -2,11 +2,11 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 
+use crate::bls::Engine;
 use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
 use blake2s_simd::State as Blake2s;
 use byteorder::{BigEndian, ByteOrder};
 use ff::{Field, PrimeField, PrimeFieldRepr};
-use paired::Engine;
 
 #[derive(Debug)]
 enum NamedObject {
@@ -419,8 +419,8 @@ mod tests {
 
     #[test]
     fn test_cs() {
+        use crate::bls::{Bls12, Fr};
         use ff::PrimeField;
-        use paired::bls12_381::{Bls12, Fr};
 
         let mut cs = TestConstraintSystem::<Bls12>::new();
         assert!(cs.is_satisfied());

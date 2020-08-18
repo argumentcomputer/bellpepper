@@ -1,5 +1,5 @@
+use crate::bls::Engine;
 use ff::{Field, PrimeField};
-use paired::Engine;
 
 mod dummy_engine;
 use self::dummy_engine::*;

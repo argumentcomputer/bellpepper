@@ -1,6 +1,6 @@
+use crate::bls::{Engine, PairingCurveAffine};
 use ff::{Field, PrimeField};
 use groupy::{CurveAffine, CurveProjective};
-use paired::{Engine, PairingCurveAffine};
 use rayon::prelude::*;
 use std::sync::Arc;
 

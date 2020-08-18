@@ -9,7 +9,6 @@
 mod implementation {
     use crossbeam_channel::{bounded, Receiver};
     use lazy_static::lazy_static;
-    use num_cpus;
     use std::env;
 
     lazy_static! {
