@@ -4,7 +4,7 @@ use groupy::{CurveAffine, CurveProjective};
 use rayon::prelude::*;
 use std::sync::Arc;
 
-use super::{PreparedVerifyingKey, Proof, VerifyingKey};
+use super::{utils, PreparedVerifyingKey, Proof, VerifyingKey};
 use crate::gpu::LockedMultiexpKernel;
 use crate::multicore::Worker;
 use crate::multiexp::{multiexp, FullDensity};
@@ -16,6 +16,8 @@ pub fn prepare_verifying_key<E: Engine>(vk: &VerifyingKey<E>) -> PreparedVerifyi
     let mut neg_delta = vk.delta_g2;
     neg_delta.negate();
 
+    let multiscalar = utils::precompute_fixed_window(&vk.ic, utils::WINDOW_SIZE);
+
     PreparedVerifyingKey {
         alpha_g1_beta_g2: E::pairing(vk.alpha_g1, vk.beta_g2),
         neg_gamma_g2: neg_gamma.prepare(),
@@ -23,6 +25,7 @@ pub fn prepare_verifying_key<E: Engine>(vk: &VerifyingKey<E>) -> PreparedVerifyi
         gamma_g2: vk.gamma_g2.prepare(),
         delta_g2: vk.delta_g2.prepare(),
         ic: vk.ic.clone(),
+        multiscalar,
     }
 }
 
@@ -31,34 +34,62 @@ pub fn verify_proof<'a, E: Engine>(
     proof: &Proof<E>,
     public_inputs: &[E::Fr],
 ) -> Result<bool, SynthesisError> {
+    use utils::MultiscalarPrecomp;
+
     if (public_inputs.len() + 1) != pvk.ic.len() {
         return Err(SynthesisError::MalformedVerifyingKey);
     }
+    let num_inputs = public_inputs.len();
 
-    let mut acc = pvk.ic[0].into_projective();
+    utils::POOL.install(|| {
+        let mut ml_a_b = E::Fqk::zero();
+        let mut ml_all = E::Fqk::zero();
+        let mut ml_acc = E::Fqk::zero();
 
-    for (i, b) in public_inputs.iter().zip(pvk.ic.iter().skip(1)) {
-        acc.add_assign(&b.mul(i.into_repr()));
-    }
+        // Start the two independent miller loops
+        rayon::scope(|s| {
+            let ml_a_b = &mut ml_a_b;
+            s.spawn(move |_| {
+                *ml_a_b = E::miller_loop(&[(&proof.a.prepare(), &proof.b.prepare())]);
+            });
 
-    // The original verification equation is:
-    // A * B = alpha * beta + inputs * gamma + C * delta
-    // ... however, we rearrange it so that it is:
-    // A * B - inputs * gamma - C * delta = alpha * beta
-    // or equivalently:
-    // A * B + inputs * (-gamma) + C * (-delta) = alpha * beta
-    // which allows us to do a single final exponentiation.
+            let ml_all = &mut ml_all;
+            s.spawn(move |_| *ml_all = E::miller_loop(&[(&proof.c.prepare(), &pvk.neg_delta_g2)]));
 
-    Ok(E::final_exponentiation(&E::miller_loop(
-        [
-            (&proof.a.prepare(), &proof.b.prepare()),
-            (&acc.into_affine().prepare(), &pvk.neg_gamma_g2),
-            (&proof.c.prepare(), &pvk.neg_delta_g2),
-        ]
-        .iter(),
-    ))
-    .unwrap()
-        == pvk.alpha_g1_beta_g2)
+            // Multiscalar
+
+            let subset = pvk.multiscalar.at_point(1);
+
+            let public_inputs_repr: Vec<_> =
+                public_inputs.iter().map(PrimeField::into_repr).collect();
+
+            let mut acc = utils::par_multiscalar::<&utils::Getter<E>, E>(
+                utils::POOL.current_num_threads(),
+                &utils::PublicInputs::Slice(&public_inputs_repr),
+                &subset,
+                num_inputs,
+                std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
+            );
+
+            acc.add_assign_mixed(&pvk.ic[0]);
+
+            // acc miller loop
+            let acc_aff = acc.into_affine();
+            ml_acc = E::miller_loop(&[(&acc_aff.prepare(), &pvk.neg_gamma_g2)]);
+        }); // Gather the threaded miller loop
+
+        ml_all.mul_assign(&ml_a_b);
+        ml_all.mul_assign(&ml_acc);
+
+        // The original verification equation is:
+        // A * B = alpha * beta + inputs * gamma + C * delta
+        // ... however, we rearrange it so that it is:
+        // A * B - inputs * gamma - C * delta = alpha * beta
+        // or equivalently:
+        // A * B + inputs * (-gamma) + C * (-delta) = alpha * beta
+        // which allows us to do a single final exponentiation.
+        Ok(E::final_exponentiation(&ml_all).unwrap() == pvk.alpha_g1_beta_g2)
+    })
 }
 
 /// Randomized batch verification - see Appendix B.2 in Zcash spec

@@ -6,6 +6,8 @@ use memmap::Mmap;
 use std::io::{self, Read, Write};
 use std::mem;
 
+use super::utils;
+
 #[derive(Clone)]
 pub struct VerifyingKey<E: Engine> {
     // alpha in g1 for verifying and for creating A/C elements of
@@ -223,4 +225,6 @@ pub struct PreparedVerifyingKey<E: Engine> {
     pub(crate) delta_g2: <E::G2Affine as PairingCurveAffine>::Prepared,
     /// Copy of IC from `VerifiyingKey`.
     pub(crate) ic: Vec<E::G1Affine>,
+
+    pub(crate) multiscalar: utils::MultiscalarPrecompOwned<E>,
 }

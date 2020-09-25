@@ -19,6 +19,8 @@ mod prover;
 mod verifier;
 mod verifying_key;
 
+mod utils;
+
 pub use self::ext::*;
 pub use self::generator::*;
 pub use self::mapped_params::*;

@@ -281,7 +281,7 @@ impl Engine for DummyEngine {
         for &(a, b) in i {
             let mut tmp = *a;
             <Fr as Field>::mul_assign(&mut tmp, b);
-            <Fr as Field>::add_assign(&mut acc, &tmp);
+            <Fr as Field>::mul_assign(&mut acc, &tmp);
         }
 
         acc
