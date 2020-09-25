@@ -4,31 +4,22 @@ use groupy::{CurveAffine, CurveProjective};
 use rayon::prelude::*;
 use std::sync::Arc;
 
-use super::{BatchPreparedVerifyingKey, PreparedVerifyingKey, Proof, VerifyingKey};
+use super::{PreparedVerifyingKey, Proof, VerifyingKey};
 use crate::gpu::LockedMultiexpKernel;
 use crate::multicore::Worker;
 use crate::multiexp::{multiexp, FullDensity};
 use crate::SynthesisError;
 
 pub fn prepare_verifying_key<E: Engine>(vk: &VerifyingKey<E>) -> PreparedVerifyingKey<E> {
-    let mut gamma = vk.gamma_g2;
-    gamma.negate();
-    let mut delta = vk.delta_g2;
-    delta.negate();
+    let mut neg_gamma = vk.gamma_g2;
+    neg_gamma.negate();
+    let mut neg_delta = vk.delta_g2;
+    neg_delta.negate();
 
     PreparedVerifyingKey {
         alpha_g1_beta_g2: E::pairing(vk.alpha_g1, vk.beta_g2),
-        neg_gamma_g2: gamma.prepare(),
-        neg_delta_g2: delta.prepare(),
-        ic: vk.ic.clone(),
-    }
-}
-
-pub fn prepare_batch_verifying_key<E: Engine>(
-    vk: &VerifyingKey<E>,
-) -> BatchPreparedVerifyingKey<E> {
-    BatchPreparedVerifyingKey {
-        alpha_g1_beta_g2: E::pairing(vk.alpha_g1, vk.beta_g2),
+        neg_gamma_g2: neg_gamma.prepare(),
+        neg_delta_g2: neg_delta.prepare(),
         gamma_g2: vk.gamma_g2.prepare(),
         delta_g2: vk.delta_g2.prepare(),
         ic: vk.ic.clone(),
@@ -72,7 +63,7 @@ pub fn verify_proof<'a, E: Engine>(
 
 /// Randomized batch verification - see Appendix B.2 in Zcash spec
 pub fn verify_proofs_batch<'a, E: Engine, R: rand::RngCore>(
-    pvk: &'a BatchPreparedVerifyingKey<E>,
+    pvk: &'a PreparedVerifyingKey<E>,
     rng: &mut R,
     proofs: &[&Proof<E>],
     public_inputs: &[Vec<E::Fr>],

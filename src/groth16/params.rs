@@ -139,11 +139,14 @@ impl<E: Engine> Parameters<E> {
         get_offsets(&params, &mut offset, &mut b_g1, g1_len)?;
         get_offsets(&params, &mut offset, &mut b_g2, g2_len)?;
 
+        let pvk = super::prepare_verifying_key(&vk);
+
         Ok(MappedParameters {
             param_file_path,
             param_file,
             params,
             vk,
+            pvk,
             h,
             l,
             a,

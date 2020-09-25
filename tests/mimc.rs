@@ -17,7 +17,7 @@ use bellperson::{Circuit, ConstraintSystem, SynthesisError};
 // We're going to use the Groth16 proving system.
 use bellperson::groth16::{
     create_random_proof, create_random_proof_batch, generate_random_parameters,
-    prepare_batch_verifying_key, prepare_verifying_key, verify_proof, verify_proofs_batch, Proof,
+    prepare_verifying_key, verify_proof, verify_proofs_batch, Proof,
 };
 
 const MIMC_ROUNDS: usize = 322;
@@ -263,7 +263,7 @@ fn test_mimc() {
 
     // batch verification
     {
-        let pvk = prepare_batch_verifying_key(&params.vk);
+        let pvk = prepare_verifying_key(&params.vk);
 
         let start = Instant::now();
         let proofs: Vec<_> = proofs.iter().collect();

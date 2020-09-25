@@ -11,7 +11,7 @@ use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use super::{ParameterSource, VerifyingKey};
+use super::{ParameterSource, PreparedVerifyingKey, VerifyingKey};
 
 pub struct MappedParameters<E: Engine> {
     /// The parameter file we're reading from.  
@@ -23,6 +23,7 @@ pub struct MappedParameters<E: Engine> {
 
     /// This is always loaded (i.e. not lazily loaded).
     pub vk: VerifyingKey<E>,
+    pub pvk: PreparedVerifyingKey<E>,
 
     /// Elements of the form ((tau^i * t(tau)) / delta) for i between 0 and
     /// m-2 inclusive. Never contains points at infinity.
