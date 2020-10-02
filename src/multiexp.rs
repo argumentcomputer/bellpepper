@@ -1,13 +1,13 @@
 use bit_vec::{self, BitVec};
 use ff::{Field, PrimeField, PrimeFieldRepr, ScalarEngine};
-use futures::Future;
 use groupy::{CurveAffine, CurveProjective};
 use log::{info, warn};
+use rayon::prelude::*;
 use std::io;
 use std::iter;
 use std::sync::Arc;
 
-use super::multicore::Worker;
+use super::multicore::{Waiter, Worker};
 use super::SynthesisError;
 use crate::gpu;
 
@@ -193,14 +193,11 @@ impl DensityTracker {
 }
 
 fn multiexp_inner<Q, D, G, S>(
-    pool: &Worker,
     bases: S,
     density_map: D,
     exponents: Arc<Vec<<<G::Engine as ScalarEngine>::Fr as PrimeField>::Repr>>,
-    mut skip: u32,
     c: u32,
-    handle_trivial: bool,
-) -> Box<dyn Future<Item = <G as CurveAffine>::Projective, Error = SynthesisError>>
+) -> Result<<G as CurveAffine>::Projective, SynthesisError>
 where
     for<'a> &'a Q: QueryDensity,
     D: Send + Sync + 'static + Clone + AsRef<Q>,
@@ -208,92 +205,81 @@ where
     S: SourceBuilder<G>,
 {
     // Perform this region of the multiexp
-    let this = {
-        let bases = bases.clone();
-        let exponents = exponents.clone();
-        let density_map = density_map.clone();
+    let this = move |bases: S,
+                     density_map: D,
+                     exponents: Arc<Vec<<<G::Engine as ScalarEngine>::Fr as PrimeField>::Repr>>,
+                     skip: u32|
+          -> Result<_, SynthesisError> {
+        // Accumulate the result
+        let mut acc = G::Projective::zero();
 
-        pool.compute(move || {
-            // Accumulate the result
-            let mut acc = G::Projective::zero();
+        // Build a source for the bases
+        let mut bases = bases.new();
 
-            // Build a source for the bases
-            let mut bases = bases.new();
+        // Create space for the buckets
+        let mut buckets = vec![<G as CurveAffine>::Projective::zero(); (1 << c) - 1];
 
-            // Create space for the buckets
-            let mut buckets = vec![<G as CurveAffine>::Projective::zero(); (1 << c) - 1];
+        let zero = <G::Engine as ScalarEngine>::Fr::zero().into_repr();
+        let one = <G::Engine as ScalarEngine>::Fr::one().into_repr();
 
-            let zero = <G::Engine as ScalarEngine>::Fr::zero().into_repr();
-            let one = <G::Engine as ScalarEngine>::Fr::one().into_repr();
+        // only the first round uses this
+        let handle_trivial = skip == 0;
 
-            // Sort the bases into buckets
-            for (&exp, density) in exponents.iter().zip(density_map.as_ref().iter()) {
-                if density {
-                    if exp == zero {
-                        bases.skip(1)?;
-                    } else if exp == one {
-                        if handle_trivial {
-                            bases.add_assign_mixed(&mut acc)?;
-                        } else {
-                            bases.skip(1)?;
-                        }
+        // Sort the bases into buckets
+        for (&exp, density) in exponents.iter().zip(density_map.as_ref().iter()) {
+            if density {
+                if exp == zero {
+                    bases.skip(1)?;
+                } else if exp == one {
+                    if handle_trivial {
+                        bases.add_assign_mixed(&mut acc)?;
                     } else {
-                        let mut exp = exp;
-                        exp.shr(skip);
-                        let exp = exp.as_ref()[0] % (1 << c);
+                        bases.skip(1)?;
+                    }
+                } else {
+                    let mut exp = exp;
+                    exp.shr(skip);
+                    let exp = exp.as_ref()[0] % (1 << c);
 
-                        if exp != 0 {
-                            bases.add_assign_mixed(&mut buckets[(exp - 1) as usize])?;
-                        } else {
-                            bases.skip(1)?;
-                        }
+                    if exp != 0 {
+                        bases.add_assign_mixed(&mut buckets[(exp - 1) as usize])?;
+                    } else {
+                        bases.skip(1)?;
                     }
                 }
             }
+        }
 
-            // Summation by parts
-            // e.g. 3a + 2b + 1c = a +
-            //                    (a) + b +
-            //                    ((a) + b) + c
-            let mut running_sum = G::Projective::zero();
-            for exp in buckets.into_iter().rev() {
-                running_sum.add_assign(&exp);
-                acc.add_assign(&running_sum);
-            }
+        // Summation by parts
+        // e.g. 3a + 2b + 1c = a +
+        //                    (a) + b +
+        //                    ((a) + b) + c
+        let mut running_sum = G::Projective::zero();
+        for exp in buckets.into_iter().rev() {
+            running_sum.add_assign(&exp);
+            acc.add_assign(&running_sum);
+        }
 
-            Ok(acc)
-        })
+        Ok(acc)
     };
 
-    skip += c;
+    let parts = (0..<G::Engine as ScalarEngine>::Fr::NUM_BITS)
+        .into_par_iter()
+        .step_by(c as usize)
+        .map(|skip| this(bases.clone(), density_map.clone(), exponents.clone(), skip))
+        .collect::<Vec<Result<_, _>>>();
 
-    if skip >= <G::Engine as ScalarEngine>::Fr::NUM_BITS {
-        // There isn't another region.
-        Box::new(this)
-    } else {
-        // There's another region more significant. Calculate and join it with
-        // this region recursively.
-        Box::new(
-            this.join(multiexp_inner(
-                pool,
-                bases,
-                density_map,
-                exponents,
-                skip,
-                c,
-                false,
-            ))
-            .map(move |(this, mut higher)| {
-                for _ in 0..c {
-                    higher.double();
-                }
+    parts
+        .into_iter()
+        .rev()
+        .try_fold(<G as CurveAffine>::Projective::zero(), |mut acc, part| {
+            for _ in 0..c {
+                acc.double();
+            }
 
-                higher.add_assign(&this);
-
-                higher
-            }),
-        )
-    }
+            acc.add_assign(&part?);
+            Ok(acc)
+        })
 }
 
 /// Perform multi-exponentiation. The caller is responsible for ensuring the
@@ -304,7 +290,7 @@ pub fn multiexp<Q, D, G, S>(
     density_map: D,
     exponents: Arc<Vec<<<G::Engine as ScalarEngine>::Fr as PrimeField>::Repr>>,
     kern: &mut Option<gpu::LockedMultiexpKernel<G::Engine>>,
-) -> Box<dyn Future<Item = <G as CurveAffine>::Projective, Error = SynthesisError>>
+) -> Waiter<Result<<G as CurveAffine>::Projective, SynthesisError>>
 where
     for<'a> &'a Q: QueryDensity,
     D: Send + Sync + 'static + Clone + AsRef<Q>,
@@ -326,7 +312,7 @@ where
             let (bss, skip) = bases.clone().get();
             k.multiexp(pool, bss, Arc::new(exps.clone()), skip, n)
         }) {
-            return Box::new(pool.compute(move || Ok(p)));
+            return Waiter::done(Ok(p));
         }
     }
 
@@ -342,20 +328,21 @@ where
         assert!(query_size == exponents.len());
     }
 
-    let future = multiexp_inner(pool, bases, density_map, exponents, 0, c, true);
+    let result = pool.compute(move || multiexp_inner(bases, density_map, exponents, c));
+
     #[cfg(feature = "gpu")]
     {
         // Do not give the control back to the caller till the
         // multiexp is done. We may want to reacquire the GPU again
         // between the multiexps.
-        let result = future.wait();
-        Box::new(pool.compute(move || result))
+        let result = result.wait();
+        Waiter::done(result)
     }
     #[cfg(not(feature = "gpu"))]
-    future
+    result
 }
 
-#[cfg(feature = "pairing")]
+#[cfg(feature = "paired")]
 #[test]
 fn test_with_bls12() {
     fn naive_multiexp<G: CurveAffine>(
@@ -390,11 +377,17 @@ fn test_with_bls12() {
             .collect::<Vec<_>>(),
     );
 
+    let now = std::time::Instant::now();
     let naive = naive_multiexp(g.clone(), v.clone());
+    println!("Naive: {}", now.elapsed().as_millis());
 
+    let now = std::time::Instant::now();
     let pool = Worker::new();
 
-    let fast = multiexp(&pool, (g, 0), FullDensity, v).wait().unwrap();
+    let fast = multiexp(&pool, (g, 0), FullDensity, v, &mut None)
+        .wait()
+        .unwrap();
+    println!("Fast: {}", now.elapsed().as_millis());
 
     assert_eq!(naive, fast);
 }

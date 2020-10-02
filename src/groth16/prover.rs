@@ -2,7 +2,6 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use ff::{Field, PrimeField};
-use futures::Future;
 use groupy::{CurveAffine, CurveProjective};
 use paired::Engine;
 use rand_core::RngCore;
