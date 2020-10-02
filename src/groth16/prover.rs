@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use ff::{Field, PrimeField};
-use futures::Future;
 use groupy::{CurveAffine, CurveProjective};
 use paired::Engine;
 use rand_core::RngCore;
