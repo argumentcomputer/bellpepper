@@ -7,6 +7,7 @@ use super::{multiscalar, PreparedVerifyingKey, Proof, VerifyingKey};
 use crate::multicore::VERIFIER_POOL as POOL;
 use crate::SynthesisError;
 
+/// Generate a prepared verifying key, required to verify a proofs.
 pub fn prepare_verifying_key<E: Engine>(vk: &VerifyingKey<E>) -> PreparedVerifyingKey<E> {
     let mut neg_gamma = vk.gamma_g2;
     neg_gamma.negate();
@@ -26,6 +27,7 @@ pub fn prepare_verifying_key<E: Engine>(vk: &VerifyingKey<E>) -> PreparedVerifyi
     }
 }
 
+/// Verify a single Proof.
 pub fn verify_proof<'a, E: Engine>(
     pvk: &'a PreparedVerifyingKey<E>,
     proof: &Proof<E>,
@@ -38,25 +40,36 @@ pub fn verify_proof<'a, E: Engine>(
     }
     let num_inputs = public_inputs.len();
 
+    // The original verification equation is:
+    // A * B = alpha * beta + inputs * gamma + C * delta
+    // ... however, we rearrange it so that it is:
+    // A * B - inputs * gamma - C * delta = alpha * beta
+    // or equivalently:
+    // A * B + inputs * (-gamma) + C * (-delta) = alpha * beta
+    // which allows us to do a single final exponentiation.
+
+    // Miller Loop for alpha * beta
     let mut ml_a_b = E::Fqk::zero();
+    // Miller Loop for C * (-delta)
     let mut ml_all = E::Fqk::zero();
+    // Miller Loop for inputs * (-gamma)
     let mut ml_acc = E::Fqk::zero();
 
     POOL.install(|| {
         // Start the two independent miller loops
         rayon::scope(|s| {
+            // - Thread 1: Calculate ML alpha * beta
             let ml_a_b = &mut ml_a_b;
             s.spawn(move |_| {
                 *ml_a_b = E::miller_loop(&[(&proof.a.prepare(), &proof.b.prepare())]);
             });
 
+            // - Thread 2: Calculate ML C * (-delta)
             let ml_all = &mut ml_all;
             s.spawn(move |_| *ml_all = E::miller_loop(&[(&proof.c.prepare(), &pvk.neg_delta_g2)]));
 
-            // Multiscalar
-
+            // - Accumulate inputs (on the current thread)
             let subset = pvk.multiscalar.at_point(1);
-
             let public_inputs_repr: Vec<_> =
                 public_inputs.iter().map(PrimeField::into_repr).collect();
 
@@ -69,23 +82,21 @@ pub fn verify_proof<'a, E: Engine>(
 
             acc.add_assign_mixed(&pvk.ic[0]);
 
-            // acc miller loop
+            // Calculate ML inputs * (-gamma)
             let acc_aff = acc.into_affine();
             ml_acc = E::miller_loop(&[(&acc_aff.prepare(), &pvk.neg_gamma_g2)]);
-        }); // Gather the threaded miller loop
+        });
     });
+    // Wait for the threaded miller loops to finish
 
+    // Combine the results.
     ml_all.mul_assign(&ml_a_b);
     ml_all.mul_assign(&ml_acc);
 
-    // The original verification equation is:
-    // A * B = alpha * beta + inputs * gamma + C * delta
-    // ... however, we rearrange it so that it is:
-    // A * B - inputs * gamma - C * delta = alpha * beta
-    // or equivalently:
-    // A * B + inputs * (-gamma) + C * (-delta) = alpha * beta
-    // which allows us to do a single final exponentiation.
-    Ok(E::final_exponentiation(&ml_all).unwrap() == pvk.alpha_g1_beta_g2)
+    // Calculate the final exponentiation
+    let actual = E::final_exponentiation(&ml_all).unwrap();
+
+    Ok(actual == pvk.alpha_g1_beta_g2)
 }
 
 /// Randomized batch verification - see Appendix B.2 in Zcash spec
@@ -108,16 +119,18 @@ where
 
     let num_inputs = public_inputs[0].len();
     let num_proofs = proofs.len();
-    // TODO: best stize for this
-    if num_proofs == 1 {
+
+    if num_proofs < 2 {
         return verify_proof(pvk, proofs[0], &public_inputs[0]);
     }
 
     let proof_num = proofs.len();
 
-    // choose random coefficients for combining the proofs
+    // Choose random coefficients for combining the proofs.
     let mut rand_z_repr: Vec<_> = Vec::with_capacity(proof_num);
     let mut rand_z: Vec<_> = Vec::with_capacity(proof_num);
+    let mut accum_y = E::Fr::zero();
+
     for _ in 0..proof_num {
         use rand::Rng;
 
@@ -125,27 +138,27 @@ where
         let mut el = E::Fr::zero().into_repr();
         let el_ref: &mut [u64] = el.as_mut();
         assert!(el_ref.len() > 1);
+
         el_ref[0] = (t & (-1i64 as u128) >> 64) as u64;
         el_ref[1] = (t >> 64) as u64;
 
+        let fr = E::Fr::from_repr(el).unwrap();
+
+        // calculate sum
+        accum_y.add_assign(&fr);
+        // store FrRepr
         rand_z_repr.push(el);
-        rand_z.push(E::Fr::from_repr(el).unwrap());
+        // store Fr
+        rand_z.push(fr);
     }
 
-    // This is very fast and needed by two threads so can live here
-    // accum_y = sum(zj)
-    let mut accum_y = E::Fr::zero();
-    for i in rand_z.iter() {
-        accum_y.add_assign(i);
-    }
-
-    // calculated by thread 3
+    // MillerLoop(\sum Accum_Gamma)
     let mut ml_g = E::Fqk::zero();
-    // calculated by thread 1
+    // MillerLoop(Accum_Delta)
     let mut ml_d = E::Fqk::zero();
-    // calculated by thread 2
+    // MillerLoop(Accum_AB)
     let mut acc_ab = E::Fqk::zero();
-    // calculated by thread 0
+    // Y^-Accum_Y
     let mut y = E::Fqk::zero();
 
     POOL.install(|| {
@@ -153,7 +166,7 @@ where
         let rand_z_repr = &rand_z_repr;
 
         rayon::scope(|s| {
-            // THREAD 3
+            // - Thread 1: Calculate MillerLoop(\sum Accum_Gamma)
             let ml_g = &mut ml_g;
             s.spawn(move |_| {
                 let scalar_getter = |idx: usize| -> <E::Fr as ff::PrimeField>::Repr {
@@ -162,13 +175,14 @@ where
                     }
                     let idx = idx - 1;
 
-                    // sum(zj * aj,i)
+                    // \sum(z_j * aj,i)
                     let mut cur_sum = rand_z[0];
                     cur_sum.mul_assign(&public_inputs[0][idx]);
 
                     for (pi_mont, mut rand_mont) in
                         public_inputs.iter().zip(rand_z.iter().copied()).skip(1)
                     {
+                        // z_j * a_j,i
                         let pi_mont = &pi_mont[idx];
                         rand_mont.mul_assign(pi_mont);
                         cur_sum.add_assign(&rand_mont);
@@ -177,7 +191,7 @@ where
                     cur_sum.into_repr()
                 };
 
-                // sum_i(accum_g * psi)
+                // \sum Accum_Gamma
                 let acc_g_psi = multiscalar::par_multiscalar::<_, E>(
                     &multiscalar::PublicInputs::Getter(scalar_getter),
                     &pvk.multiscalar,
@@ -185,14 +199,16 @@ where
                     256,
                 );
 
-                // ml(acc_g_psi, vk.gamma)
+                // MillerLoop(acc_g_psi, vk.gamma)
                 *ml_g = E::miller_loop(&[(&acc_g_psi.into_affine().prepare(), &pvk.gamma_g2)]);
             });
 
-            // THREAD 1
+            // - Thread 2: Calculate MillerLoop(Accum_Delta)
             let ml_d = &mut ml_d;
             s.spawn(move |_| {
                 let points: Vec<_> = proofs.iter().map(|p| p.c).collect();
+
+                // Accum_Delta
                 let acc_d: E::G1 = {
                     let pre = multiscalar::precompute_fixed_window::<E>(&points, 1);
                     multiscalar::multiscalar::<E>(
@@ -205,15 +221,17 @@ where
                 *ml_d = E::miller_loop(&[(&acc_d.into_affine().prepare(), &pvk.delta_g2)]);
             });
 
-            // THREAD 2
+            // - Thread 3: Calculate MillerLoop(Accum_AB)
             let acc_ab = &mut acc_ab;
             s.spawn(move |_| {
                 let accum_ab_mls: Vec<_> = proofs
                     .par_iter()
                     .zip(rand_z_repr.par_iter())
                     .map(|(proof, rand)| {
+                        // [z_j] pi_j,A
                         let mul_a = proof.a.mul(*rand);
 
+                        // -pi_j,B
                         let mut cur_neg_b = proof.b.into_projective();
                         cur_neg_b.negate();
 
@@ -224,22 +242,21 @@ where
                     })
                     .collect();
 
-                // accum_ab = mul_j(ml((zj*proof_aj), -proof_bj))
+                // Accum_AB = mul_j(ml((zj*proof_aj), -proof_bj))
                 *acc_ab = accum_ab_mls[0];
-
                 for accum in accum_ab_mls.iter().skip(1).take(num_proofs) {
                     acc_ab.mul_assign(accum);
                 }
             });
 
-            // THREAD 0
+            // Thread 4: Calculate Y^-Accum_Y
             let y = &mut y;
             s.spawn(move |_| {
-                // -accum_y
+                // -Accum_Y
                 let mut accum_y_neg = *accum_y;
                 accum_y_neg.negate();
 
-                // Y^-accum_y
+                // Y^-Accum_Y
                 *y = pvk.alpha_g1_beta_g2.pow(&accum_y_neg.into_repr());
             });
         });
