@@ -6,7 +6,7 @@ use memmap::Mmap;
 use std::io::{self, Read, Write};
 use std::mem;
 
-use super::utils;
+use super::multiscalar;
 
 #[derive(Clone)]
 pub struct VerifyingKey<E: Engine> {
@@ -226,5 +226,5 @@ pub struct PreparedVerifyingKey<E: Engine> {
     /// Copy of IC from `VerifiyingKey`.
     pub(crate) ic: Vec<E::G1Affine>,
 
-    pub(crate) multiscalar: utils::MultiscalarPrecompOwned<E>,
+    pub(crate) multiscalar: multiscalar::MultiscalarPrecompOwned<E>,
 }

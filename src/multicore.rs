@@ -23,6 +23,10 @@ lazy_static! {
         .num_threads(*NUM_CPUS)
         .build()
         .unwrap();
+    pub static ref VERIFIER_POOL: rayon::ThreadPool = rayon::ThreadPoolBuilder::new()
+        .num_threads(NUM_CPUS.max(6))
+        .build()
+        .unwrap();
 }
 
 #[derive(Clone)]

@@ -1,24 +1,10 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
-
 use ff::PrimeField;
 use groupy::{CurveAffine, CurveProjective};
-use lazy_static::lazy_static;
 use rayon::prelude::*;
 
 use crate::bls::Engine;
 
 pub const WINDOW_SIZE: usize = 8;
-
-lazy_static! {
-    pub static ref POOL: rayon::ThreadPool = {
-        let num_threads = num_cpus::get().max(6);
-
-        rayon::ThreadPoolBuilder::new()
-            .num_threads(num_threads)
-            .build()
-            .unwrap()
-    };
-}
 
 #[cfg(target_arch = "x86_64")]
 fn prefetch<T>(p: *const T) {
@@ -27,7 +13,15 @@ fn prefetch<T>(p: *const T) {
     }
 }
 
-#[cfg(not(target_arch = "x86_64"))]
+#[cfg(target_arch = "aarch64")]
+fn prefetch<T>(p: *const T) {
+    unsafe {
+        use std::arch::aarch64::*;
+        _prefetch(p, _PREFETCH_READ, _PREFETCH_LOCALITY3);
+    }
+}
+
+#[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
 fn prefetch<T>(p: *const T) {}
 
 pub enum PublicInputs<'a, E: Engine, F: Fn(usize) -> <E::Fr as PrimeField>::Repr + Sync + Send> {
@@ -37,17 +31,6 @@ pub enum PublicInputs<'a, E: Engine, F: Fn(usize) -> <E::Fr as PrimeField>::Repr
 
 pub type Getter<E> =
     dyn Fn(usize) -> <<E as ff::ScalarEngine>::Fr as PrimeField>::Repr + Sync + Send;
-
-impl<'a, E: Engine, F: Fn(usize) -> <E::Fr as PrimeField>::Repr + Sync + Send>
-    PublicInputs<'a, E, F>
-{
-    pub fn get(&self, i: usize) -> <E::Fr as PrimeField>::Repr {
-        match self {
-            PublicInputs::Slice(inputs) => inputs[i],
-            PublicInputs::Getter(f) => f(i),
-        }
-    }
-}
 
 pub trait MultiscalarPrecomp<E: Engine>: Send + Sync {
     fn window_size(&self) -> usize;
@@ -160,12 +143,11 @@ pub fn precompute_fixed_window<E: Engine>(
 pub fn multiscalar<E: Engine>(
     k: &[<E::Fr as ff::PrimeField>::Repr],
     precomp_table: &dyn MultiscalarPrecomp<E>,
-    num_points: usize,
     nbits: usize,
 ) -> E::G1 {
+    const BITS_PER_LIMB: usize = std::mem::size_of::<u64>() * 8;
     // TODO: support more bit sizes
-    if nbits % precomp_table.window_size() != 0
-        || std::mem::size_of::<u64>() * 8 % precomp_table.window_size() != 0
+    if nbits % precomp_table.window_size() != 0 || BITS_PER_LIMB % precomp_table.window_size() != 0
     {
         panic!("Unsupported multiscalar window size!");
     }
@@ -178,7 +160,6 @@ pub fn multiscalar<E: Engine>(
 
     // This version prefetches the next window and computes on the previous window.
     for i in (0..num_windows).rev() {
-        const BITS_PER_LIMB: usize = std::mem::size_of::<u64>() * 8;
         let limb = (i * precomp_table.window_size()) / BITS_PER_LIMB;
         let window_in_limb = i % (BITS_PER_LIMB / precomp_table.window_size());
 
@@ -188,9 +169,9 @@ pub fn multiscalar<E: Engine>(
         let mut prev_idx = 0;
         let mut prev_table: &Vec<E::G1Affine> = &precomp_table.tables()[0];
         let mut table: &Vec<E::G1Affine> = &precomp_table.tables()[0];
-        for m in 0..num_points {
-            idx = (AsRef::<[u64]>::as_ref(&k[m]))[limb]
-                >> (window_in_limb * precomp_table.window_size())
+
+        for (m, point) in k.iter().enumerate() {
+            idx = point.as_ref()[limb] >> (window_in_limb * precomp_table.window_size())
                 & precomp_table.window_mask();
             if idx > 0 {
                 table = &precomp_table.tables()[m];
@@ -202,6 +183,7 @@ pub fn multiscalar<E: Engine>(
             prev_idx = idx;
             prev_table = table;
         }
+
         // Perform the final addition
         if prev_idx > 0 {
             result.add_assign_mixed(&prev_table[prev_idx as usize - 1]);
@@ -213,7 +195,6 @@ pub fn multiscalar<E: Engine>(
 
 /// Perform a threaded multiscalar multiplication and accumulation.
 pub fn par_multiscalar<F, E: Engine>(
-    max_threads: usize,
     k: &PublicInputs<'_, E, F>,
     precomp_table: &dyn MultiscalarPrecomp<E>,
     num_points: usize,
@@ -236,59 +217,40 @@ where
         chunk_size = 1; // fallback for tests and tiny inputs
     }
 
-    let num_threads = max_threads.min((num_points + chunk_size - 1) / chunk_size);
+    let num_parts = (num_points + chunk_size - 1) / chunk_size;
 
-    // Work item counter - each thread will take work by incrementing
-    let work = AtomicUsize::new(0);
+    (0..num_parts)
+        .into_par_iter()
+        .map(|id| {
+            // Temporary storage for scalars
+            let mut scalar_storage = vec![<E::Fr as PrimeField>::Repr::default(); chunk_size];
 
-    let acc_intermediates = POOL.install(|| {
-        (0..num_threads)
-            .into_par_iter()
-            .map(|_tid| {
-                // Temporary storage for scalars
-                let mut scalar_storage = vec![<E::Fr as PrimeField>::Repr::default(); chunk_size];
+            let start_idx = id * chunk_size;
+            debug_assert!(start_idx < num_points);
 
-                // Thread result accumulation
-                let mut thr_result = E::G1::zero();
+            let mut end_idx = start_idx + chunk_size;
+            if end_idx > num_points {
+                end_idx = num_points;
+            }
 
-                loop {
-                    let i = work.fetch_add(1, Ordering::SeqCst);
-                    let start_idx = i * chunk_size;
-                    if start_idx >= num_points {
-                        break;
+            let subset = precomp_table.at_point(start_idx);
+            let scalars = match k {
+                PublicInputs::Slice(ref s) => &s[start_idx..end_idx],
+                PublicInputs::Getter(ref getter) => {
+                    for i in start_idx..end_idx {
+                        scalar_storage[i - start_idx] = getter(i);
                     }
-
-                    let mut end_idx = start_idx + chunk_size;
-                    if end_idx > num_points {
-                        end_idx = num_points;
-                    }
-                    let num_items = end_idx - start_idx;
-
-                    let scalars = match k {
-                        PublicInputs::Slice(ref s) => &s[start_idx..],
-                        PublicInputs::Getter(ref getter) => {
-                            for i in start_idx..end_idx {
-                                scalar_storage[i - start_idx] = getter(i);
-                            }
-                            &scalar_storage
-                        }
-                    };
-                    let subset = precomp_table.at_point(start_idx);
-                    let acc = multiscalar(scalars, &subset, num_items, nbits);
-                    drop(scalars);
-                    thr_result.add_assign(&acc);
+                    &scalar_storage
                 }
-                thr_result
-            })
-            .collect::<Vec<_>>()
-    });
+            };
 
-    let mut result = E::G1::zero();
-
-    // Accumulate thread results
-    for acc in acc_intermediates {
-        result.add_assign(&acc);
-    }
-
-    result
+            multiscalar(&scalars, &subset, nbits)
+        }) // Accumulate results
+        .reduce(
+            || E::G1::zero(),
+            |mut acc, part| {
+                acc.add_assign(&part);
+                acc
+            },
+        )
 }

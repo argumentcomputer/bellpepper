@@ -3,7 +3,8 @@ use ff::{Field, PrimeField};
 use groupy::{CurveAffine, CurveProjective};
 use rayon::prelude::*;
 
-use super::{utils, PreparedVerifyingKey, Proof, VerifyingKey};
+use super::{multiscalar, PreparedVerifyingKey, Proof, VerifyingKey};
+use crate::multicore::VERIFIER_POOL as POOL;
 use crate::SynthesisError;
 
 pub fn prepare_verifying_key<E: Engine>(vk: &VerifyingKey<E>) -> PreparedVerifyingKey<E> {
@@ -12,7 +13,7 @@ pub fn prepare_verifying_key<E: Engine>(vk: &VerifyingKey<E>) -> PreparedVerifyi
     let mut neg_delta = vk.delta_g2;
     neg_delta.negate();
 
-    let multiscalar = utils::precompute_fixed_window(&vk.ic, utils::WINDOW_SIZE);
+    let multiscalar = multiscalar::precompute_fixed_window(&vk.ic, multiscalar::WINDOW_SIZE);
 
     PreparedVerifyingKey {
         alpha_g1_beta_g2: E::pairing(vk.alpha_g1, vk.beta_g2),
@@ -30,18 +31,18 @@ pub fn verify_proof<'a, E: Engine>(
     proof: &Proof<E>,
     public_inputs: &[E::Fr],
 ) -> Result<bool, SynthesisError> {
-    use utils::MultiscalarPrecomp;
+    use multiscalar::MultiscalarPrecomp;
 
     if (public_inputs.len() + 1) != pvk.ic.len() {
         return Err(SynthesisError::MalformedVerifyingKey);
     }
     let num_inputs = public_inputs.len();
 
-    utils::POOL.install(|| {
-        let mut ml_a_b = E::Fqk::zero();
-        let mut ml_all = E::Fqk::zero();
-        let mut ml_acc = E::Fqk::zero();
+    let mut ml_a_b = E::Fqk::zero();
+    let mut ml_all = E::Fqk::zero();
+    let mut ml_acc = E::Fqk::zero();
 
+    POOL.install(|| {
         // Start the two independent miller loops
         rayon::scope(|s| {
             let ml_a_b = &mut ml_a_b;
@@ -59,9 +60,8 @@ pub fn verify_proof<'a, E: Engine>(
             let public_inputs_repr: Vec<_> =
                 public_inputs.iter().map(PrimeField::into_repr).collect();
 
-            let mut acc = utils::par_multiscalar::<&utils::Getter<E>, E>(
-                utils::POOL.current_num_threads(),
-                &utils::PublicInputs::Slice(&public_inputs_repr),
+            let mut acc = multiscalar::par_multiscalar::<&multiscalar::Getter<E>, E>(
+                &multiscalar::PublicInputs::Slice(&public_inputs_repr),
                 &subset,
                 num_inputs,
                 std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
@@ -73,19 +73,19 @@ pub fn verify_proof<'a, E: Engine>(
             let acc_aff = acc.into_affine();
             ml_acc = E::miller_loop(&[(&acc_aff.prepare(), &pvk.neg_gamma_g2)]);
         }); // Gather the threaded miller loop
+    });
 
-        ml_all.mul_assign(&ml_a_b);
-        ml_all.mul_assign(&ml_acc);
+    ml_all.mul_assign(&ml_a_b);
+    ml_all.mul_assign(&ml_acc);
 
-        // The original verification equation is:
-        // A * B = alpha * beta + inputs * gamma + C * delta
-        // ... however, we rearrange it so that it is:
-        // A * B - inputs * gamma - C * delta = alpha * beta
-        // or equivalently:
-        // A * B + inputs * (-gamma) + C * (-delta) = alpha * beta
-        // which allows us to do a single final exponentiation.
-        Ok(E::final_exponentiation(&ml_all).unwrap() == pvk.alpha_g1_beta_g2)
-    })
+    // The original verification equation is:
+    // A * B = alpha * beta + inputs * gamma + C * delta
+    // ... however, we rearrange it so that it is:
+    // A * B - inputs * gamma - C * delta = alpha * beta
+    // or equivalently:
+    // A * B + inputs * (-gamma) + C * (-delta) = alpha * beta
+    // which allows us to do a single final exponentiation.
+    Ok(E::final_exponentiation(&ml_all).unwrap() == pvk.alpha_g1_beta_g2)
 }
 
 /// Randomized batch verification - see Appendix B.2 in Zcash spec
@@ -148,7 +148,7 @@ where
     // calculated by thread 0
     let mut y = E::Fqk::zero();
 
-    utils::POOL.install(|| {
+    POOL.install(|| {
         let accum_y = &accum_y;
         let rand_z_repr = &rand_z_repr;
 
@@ -161,38 +161,32 @@ where
                         return accum_y.into_repr();
                     }
                     let idx = idx - 1;
+
                     // sum(zj * aj,i)
-                    let pi_mont = &public_inputs[0][idx];
-                    let rand_mont = rand_z[0];
+                    let mut cur_sum = rand_z[0];
+                    cur_sum.mul_assign(&public_inputs[0][idx]);
 
-                    let mut cur_sum = rand_mont;
-                    cur_sum.mul_assign(pi_mont);
-
-                    for j in 1..num_proofs {
-                        let mut rand_mont = rand_z[j];
-                        let pi_mont = &public_inputs[j][idx];
+                    for (pi_mont, mut rand_mont) in
+                        public_inputs.iter().zip(rand_z.iter().copied()).skip(1)
+                    {
+                        let pi_mont = &pi_mont[idx];
                         rand_mont.mul_assign(pi_mont);
-                        let cur_mul = rand_mont;
-                        rand_mont.mul_assign(pi_mont);
-                        cur_sum.add_assign(&cur_mul);
+                        cur_sum.add_assign(&rand_mont);
                     }
 
                     cur_sum.into_repr()
                 };
 
                 // sum_i(accum_g * psi)
-                let acc_g_psi = utils::par_multiscalar::<_, E>(
-                    utils::POOL.current_num_threads(),
-                    &utils::PublicInputs::Getter(scalar_getter),
+                let acc_g_psi = multiscalar::par_multiscalar::<_, E>(
+                    &multiscalar::PublicInputs::Getter(scalar_getter),
                     &pvk.multiscalar,
                     num_inputs + 1,
                     256,
                 );
 
-                let acc_g_psi_aff = acc_g_psi.into_affine();
-
                 // ml(acc_g_psi, vk.gamma)
-                *ml_g = E::miller_loop(&[(&acc_g_psi_aff.prepare(), &pvk.gamma_g2)]);
+                *ml_g = E::miller_loop(&[(&acc_g_psi.into_affine().prepare(), &pvk.gamma_g2)]);
             });
 
             // THREAD 1
@@ -200,35 +194,33 @@ where
             s.spawn(move |_| {
                 let points: Vec<_> = proofs.iter().map(|p| p.c).collect();
                 let acc_d: E::G1 = {
-                    let pre = utils::precompute_fixed_window::<E>(&points, 1);
-                    utils::multiscalar::<E>(
+                    let pre = multiscalar::precompute_fixed_window::<E>(&points, 1);
+                    multiscalar::multiscalar::<E>(
                         &rand_z_repr,
                         &pre,
-                        num_proofs,
                         std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
                     )
                 };
 
-                let acc_d_aff: E::G1Affine = acc_d.into_affine();
-                *ml_d = E::miller_loop(&[(&acc_d_aff.prepare(), &pvk.delta_g2)]);
+                *ml_d = E::miller_loop(&[(&acc_d.into_affine().prepare(), &pvk.delta_g2)]);
             });
 
             // THREAD 2
             let acc_ab = &mut acc_ab;
             s.spawn(move |_| {
-                // TODO: restrict to pool size - worker thread
                 let accum_ab_mls: Vec<_> = proofs
                     .par_iter()
                     .zip(rand_z_repr.par_iter())
                     .map(|(proof, rand)| {
                         let mul_a = proof.a.mul(*rand);
-                        let acc_a_aff = mul_a.into_affine();
 
                         let mut cur_neg_b = proof.b.into_projective();
                         cur_neg_b.negate();
-                        let cur_neg_b_aff = cur_neg_b.into_affine();
 
-                        E::miller_loop(&[(&acc_a_aff.prepare(), &cur_neg_b_aff.prepare())])
+                        E::miller_loop(&[(
+                            &mul_a.into_affine().prepare(),
+                            &cur_neg_b.into_affine().prepare(),
+                        )])
                     })
                     .collect();
 

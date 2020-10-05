@@ -11,9 +11,10 @@ mod mapped_params;
 mod params;
 mod proof;
 mod prover;
-mod utils;
 mod verifier;
 mod verifying_key;
+
+mod multiscalar;
 
 pub use self::ext::*;
 pub use self::generator::*;
