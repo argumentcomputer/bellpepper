@@ -102,10 +102,18 @@ pub fn verify_proofs_batch<'a, E: Engine, R: rand::RngCore>(
 where
     <<E as ff::ScalarEngine>::Fr as ff::PrimeField>::Repr: From<<E as ff::ScalarEngine>::Fr>,
 {
+    debug_assert_eq!(proofs.len(), public_inputs.len());
+
     for pub_input in public_inputs {
         if (pub_input.len() + 1) != pvk.ic.len() {
             return Err(SynthesisError::MalformedVerifyingKey);
         }
+    }
+
+    let num_proofs = proofs.len();
+    // TODO: best stize for this
+    if num_proofs == 1 {
+        return verify_proof(pvk, proofs[0], &public_inputs[0]);
     }
 
     let worker = Worker::new();
