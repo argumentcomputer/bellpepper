@@ -5,100 +5,101 @@
 //!
 //! [`CpuPool`]: futures_cpupool::CpuPool
 
-#[cfg(feature = "multicore")]
-mod implementation {
-    use crossbeam_channel::{bounded, Receiver};
-    use lazy_static::lazy_static;
-    use std::env;
+use crossbeam_channel::{bounded, Receiver};
+use lazy_static::lazy_static;
+use std::env;
 
-    lazy_static! {
-        static ref NUM_CPUS: usize = if let Ok(num) = env::var("BELLMAN_NUM_CPUS") {
-            if let Ok(num) = num.parse() {
-                num
-            } else {
-                num_cpus::get()
-            }
+lazy_static! {
+    static ref NUM_CPUS: usize = if let Ok(num) = env::var("BELLMAN_NUM_CPUS") {
+        if let Ok(num) = num.parse() {
+            num
         } else {
             num_cpus::get()
+        }
+    } else {
+        num_cpus::get()
+    };
+    pub static ref THREAD_POOL: rayon::ThreadPool = rayon::ThreadPoolBuilder::new()
+        .num_threads(*NUM_CPUS)
+        .build()
+        .unwrap();
+}
+
+#[derive(Clone)]
+pub struct Worker {}
+
+impl Worker {
+    pub fn new() -> Worker {
+        Worker {}
+    }
+
+    pub fn log_num_cpus(&self) -> u32 {
+        log2_floor(*NUM_CPUS)
+    }
+
+    pub fn compute<F, R>(&self, f: F) -> Waiter<R>
+    where
+        F: FnOnce() -> R + Send + 'static,
+        R: Send + 'static,
+    {
+        let (sender, receiver) = bounded(1);
+        THREAD_POOL.spawn(move || {
+            let res = f();
+            sender.send(res).unwrap();
+        });
+
+        Waiter { receiver }
+    }
+
+    pub fn scope<'a, F, R>(&self, elements: usize, f: F) -> R
+    where
+        F: FnOnce(&rayon::Scope<'a>, usize) -> R + Send,
+        R: Send,
+    {
+        let chunk_size = if elements < *NUM_CPUS {
+            1
+        } else {
+            elements / *NUM_CPUS
         };
-        pub static ref THREAD_POOL: rayon::ThreadPool = rayon::ThreadPoolBuilder::new()
-            .num_threads(*NUM_CPUS)
-            .build()
-            .unwrap();
+
+        THREAD_POOL.scope(|scope| f(scope, chunk_size))
+    }
+}
+
+pub struct Waiter<T> {
+    receiver: Receiver<T>,
+}
+
+impl<T> Waiter<T> {
+    /// Wait for the result.
+    pub fn wait(&self) -> T {
+        self.receiver.recv().unwrap()
     }
 
-    #[derive(Clone)]
-    pub struct Worker {}
+    /// One off sending.
+    pub fn done(val: T) -> Self {
+        let (sender, receiver) = bounded(1);
+        sender.send(val).unwrap();
 
-    impl Worker {
-        pub fn new() -> Worker {
-            Worker {}
-        }
+        Waiter { receiver }
+    }
+}
 
-        pub fn log_num_cpus(&self) -> u32 {
-            log2_floor(*NUM_CPUS)
-        }
+fn log2_floor(num: usize) -> u32 {
+    assert!(num > 0);
 
-        pub fn compute<F, R>(&self, f: F) -> Waiter<R>
-        where
-            F: FnOnce() -> R + Send + 'static,
-            R: Send + 'static,
-        {
-            let (sender, receiver) = bounded(1);
-            THREAD_POOL.spawn(move || {
-                let res = f();
-                sender.send(res).unwrap();
-            });
+    let mut pow = 0;
 
-            Waiter { receiver }
-        }
-
-        pub fn scope<'a, F, R>(&self, elements: usize, f: F) -> R
-        where
-            F: FnOnce(&rayon::Scope<'a>, usize) -> R + Send,
-            R: Send,
-        {
-            let chunk_size = if elements < *NUM_CPUS {
-                1
-            } else {
-                elements / *NUM_CPUS
-            };
-
-            THREAD_POOL.scope(|scope| f(scope, chunk_size))
-        }
+    while (1 << (pow + 1)) <= num {
+        pow += 1;
     }
 
-    pub struct Waiter<T> {
-        receiver: Receiver<T>,
-    }
+    pow
+}
 
-    impl<T> Waiter<T> {
-        /// Wait for the result.
-        pub fn wait(&self) -> T {
-            self.receiver.recv().unwrap()
-        }
-
-        /// One off sending.
-        pub fn done(val: T) -> Self {
-            let (sender, receiver) = bounded(1);
-            sender.send(val).unwrap();
-
-            Waiter { receiver }
-        }
-    }
-
-    fn log2_floor(num: usize) -> u32 {
-        assert!(num > 0);
-
-        let mut pow = 0;
-
-        while (1 << (pow + 1)) <= num {
-            pow += 1;
-        }
-
-        pow
-    }
-
+#[cfg(test)]
+mod tests {
+    use super::*;
     #[test]
     fn test_log2_floor() {
         assert_eq!(log2_floor(1), 0);
@@ -111,59 +112,3 @@ mod implementation {
         assert_eq!(log2_floor(8), 3);
     }
 }
-
-#[cfg(not(feature = "multicore"))]
-mod implementation {
-    #[derive(Clone)]
-    pub struct Worker;
-
-    impl Worker {
-        pub fn new() -> Worker {
-            Worker
-        }
-
-        pub fn log_num_cpus(&self) -> u32 {
-            0
-        }
-
-        pub fn compute<F, R>(&self, f: F) -> Waiter<R>
-        where
-            R: Send + 'static,
-        {
-            Waiter::done(f())
-        }
-
-        pub fn scope<F, R>(&self, elements: usize, f: F) -> R
-        where
-            F: FnOnce(&DummyScope, usize) -> R,
-        {
-            f(&DummyScope, elements)
-        }
-    }
-
-    pub struct Waiter<T> {
-        val: Option<T>,
-    }
-
-    impl<T> Waiter<T> {
-        /// Wait for the result.
-        pub fn wait(&self) -> T {
-            self.val.take().unwrap()
-        }
-
-        /// One off sending.
-        pub fn done(val: T) -> Self {
-            Waiter { val: Some(val) }
-        }
-    }
-
-    pub struct DummyScope;
-
-    impl DummyScope {
-        pub fn spawn<F: FnOnce(&DummyScope)>(&self, f: F) {
-            f(self);
-        }
-    }
-}
-
-pub use self::implementation::*;

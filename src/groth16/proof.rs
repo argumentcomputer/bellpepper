@@ -26,60 +26,6 @@ impl<E: Engine> Proof<E> {
         Ok(())
     }
 
-    #[cfg(not(feature = "multicore"))]
-    pub fn read<R: Read>(mut reader: R) -> io::Result<Self> {
-        let mut g1_repr = <E::G1Affine as CurveAffine>::Compressed::empty();
-        let mut g2_repr = <E::G2Affine as CurveAffine>::Compressed::empty();
-
-        reader.read_exact(g1_repr.as_mut())?;
-        let a = g1_repr
-            .into_affine()
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
-            .and_then(|e| {
-                if e.is_zero() {
-                    Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "point at infinity",
-                    ))
-                } else {
-                    Ok(e)
-                }
-            })?;
-
-        reader.read_exact(g2_repr.as_mut())?;
-        let b = g2_repr
-            .into_affine()
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
-            .and_then(|e| {
-                if e.is_zero() {
-                    Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "point at infinity",
-                    ))
-                } else {
-                    Ok(e)
-                }
-            })?;
-
-        reader.read_exact(g1_repr.as_mut())?;
-        let c = g1_repr
-            .into_affine()
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
-            .and_then(|e| {
-                if e.is_zero() {
-                    Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "point at infinity",
-                    ))
-                } else {
-                    Ok(e)
-                }
-            })?;
-
-        Ok(Proof { a, b, c })
-    }
-
-    #[cfg(feature = "multicore")]
     pub fn read<R: Read>(mut reader: R) -> io::Result<Self> {
         let mut bytes = vec![0u8; Self::size()];
         reader.read_exact(&mut bytes)?;
@@ -94,7 +40,6 @@ impl<E: Engine> Proof<E> {
             )
     }
 
-    #[cfg(feature = "multicore")]
     pub fn read_many(proof_bytes: &[u8], num_proofs: usize) -> io::Result<Vec<Self>> {
         use crate::multicore::THREAD_POOL;
         use rayon::prelude::*;
