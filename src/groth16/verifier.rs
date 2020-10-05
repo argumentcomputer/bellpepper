@@ -2,12 +2,8 @@ use crate::bls::{Engine, PairingCurveAffine};
 use ff::{Field, PrimeField};
 use groupy::{CurveAffine, CurveProjective};
 use rayon::prelude::*;
-use std::sync::Arc;
 
 use super::{utils, PreparedVerifyingKey, Proof, VerifyingKey};
-use crate::gpu::LockedMultiexpKernel;
-use crate::multicore::Worker;
-use crate::multiexp::{multiexp, FullDensity};
 use crate::SynthesisError;
 
 pub fn prepare_verifying_key<E: Engine>(vk: &VerifyingKey<E>) -> PreparedVerifyingKey<E> {
@@ -110,18 +106,18 @@ where
         }
     }
 
+    let num_inputs = public_inputs[0].len();
     let num_proofs = proofs.len();
     // TODO: best stize for this
     if num_proofs == 1 {
         return verify_proof(pvk, proofs[0], &public_inputs[0]);
     }
 
-    let worker = Worker::new();
-    let pi_num = pvk.ic.len() - 1;
     let proof_num = proofs.len();
 
     // choose random coefficients for combining the proofs
-    let mut r: Vec<E::Fr> = Vec::with_capacity(proof_num);
+    let mut rand_z_repr: Vec<_> = Vec::with_capacity(proof_num);
+    let mut rand_z: Vec<_> = Vec::with_capacity(proof_num);
     for _ in 0..proof_num {
         use rand::Rng;
 
@@ -132,103 +128,134 @@ where
         el_ref[0] = (t & (-1i64 as u128) >> 64) as u64;
         el_ref[1] = (t >> 64) as u64;
 
-        r.push(E::Fr::from_repr(el).unwrap());
+        rand_z_repr.push(el);
+        rand_z.push(E::Fr::from_repr(el).unwrap());
     }
 
-    let mut sum_r = E::Fr::zero();
-    for i in r.iter() {
-        sum_r.add_assign(i);
+    // This is very fast and needed by two threads so can live here
+    // accum_y = sum(zj)
+    let mut accum_y = E::Fr::zero();
+    for i in rand_z.iter() {
+        accum_y.add_assign(i);
     }
 
-    // create corresponding scalars for public input vk elements
-    let pi_scalars: Vec<_> = (0..pi_num)
-        .into_par_iter()
-        .map(|i| {
-            let mut pi = E::Fr::zero();
-            for j in 0..proof_num {
-                // z_j * a_j,i
-                let mut tmp = r[j];
-                tmp.mul_assign(&public_inputs[j][i]);
-                pi.add_assign(&tmp);
-            }
-            pi.into_repr()
-        })
-        .collect();
+    // calculated by thread 3
+    let mut ml_g = E::Fqk::zero();
+    // calculated by thread 1
+    let mut ml_d = E::Fqk::zero();
+    // calculated by thread 2
+    let mut acc_ab = E::Fqk::zero();
+    // calculated by thread 0
+    let mut y = E::Fqk::zero();
 
-    let mut multiexp_kern = get_verifier_kernel(pi_num);
+    utils::POOL.install(|| {
+        let accum_y = &accum_y;
+        let rand_z_repr = &rand_z_repr;
 
-    // create group element corresponding to public input combination
-    // This roughly corresponds to Accum_Gamma in spec
-    let mut acc_pi = pvk.ic[0].mul(sum_r.into_repr());
-    acc_pi.add_assign(
-        &multiexp(
-            &worker,
-            (Arc::new(pvk.ic[1..].to_vec()), 0),
-            FullDensity,
-            Arc::new(pi_scalars),
-            &mut multiexp_kern,
-        )
-        .wait()
-        .unwrap(),
-    );
+        rayon::scope(|s| {
+            // THREAD 3
+            let ml_g = &mut ml_g;
+            s.spawn(move |_| {
+                let scalar_getter = |idx: usize| -> <E::Fr as ff::PrimeField>::Repr {
+                    if idx == 0 {
+                        return accum_y.into_repr();
+                    }
+                    let idx = idx - 1;
+                    // sum(zj * aj,i)
+                    let pi_mont = &public_inputs[0][idx];
+                    let rand_mont = rand_z[0];
 
-    // This corresponds to Accum_Y
-    // -Accum_Y
-    sum_r.negate();
-    // This corresponds to Y^-Accum_Y
-    let acc_y = pvk.alpha_g1_beta_g2.pow(&sum_r.into_repr());
+                    let mut cur_sum = rand_mont;
+                    cur_sum.mul_assign(pi_mont);
 
-    // This corresponds to Accum_Delta
-    let mut acc_c = E::G1::zero();
-    for (rand_coeff, proof) in r.iter().zip(proofs.iter()) {
-        let mut tmp: E::G1 = proof.c.into();
-        tmp.mul_assign(*rand_coeff);
-        acc_c.add_assign(&tmp);
-    }
+                    for j in 1..num_proofs {
+                        let mut rand_mont = rand_z[j];
+                        let pi_mont = &public_inputs[j][idx];
+                        rand_mont.mul_assign(pi_mont);
+                        let cur_mul = rand_mont;
+                        rand_mont.mul_assign(pi_mont);
+                        cur_sum.add_assign(&cur_mul);
+                    }
 
-    // This corresponds to Accum_AB
-    let ml = r
-        .par_iter()
-        .zip(proofs.par_iter())
-        .map(|(rand_coeff, proof)| {
-            // [z_j] pi_j,A
-            let mut tmp: E::G1 = proof.a.into();
-            tmp.mul_assign(*rand_coeff);
-            let g1 = tmp.into_affine().prepare();
+                    cur_sum.into_repr()
+                };
 
-            // -pi_j,B
-            let mut tmp: E::G2 = proof.b.into();
-            tmp.negate();
-            let g2 = tmp.into_affine().prepare();
+                // sum_i(accum_g * psi)
+                let acc_g_psi = utils::par_multiscalar::<_, E>(
+                    utils::POOL.current_num_threads(),
+                    &utils::PublicInputs::Getter(scalar_getter),
+                    &pvk.multiscalar,
+                    num_inputs + 1,
+                    256,
+                );
 
-            (g1, g2)
-        })
-        .collect::<Vec<_>>();
-    let mut parts = ml.iter().map(|(a, b)| (a, b)).collect::<Vec<_>>();
+                let acc_g_psi_aff = acc_g_psi.into_affine();
 
-    // MillerLoop(Accum_Delta)
-    let acc_c_prepared = acc_c.into_affine().prepare();
-    parts.push((&acc_c_prepared, &pvk.delta_g2));
+                // ml(acc_g_psi, vk.gamma)
+                *ml_g = E::miller_loop(&[(&acc_g_psi_aff.prepare(), &pvk.gamma_g2)]);
+            });
 
-    // MillerLoop(\sum Accum_Gamma)
-    let acc_pi_prepared = acc_pi.into_affine().prepare();
-    parts.push((&acc_pi_prepared, &pvk.gamma_g2));
+            // THREAD 1
+            let ml_d = &mut ml_d;
+            s.spawn(move |_| {
+                let points: Vec<_> = proofs.iter().map(|p| p.c).collect();
+                let acc_d: E::G1 = {
+                    let pre = utils::precompute_fixed_window::<E>(&points, 1);
+                    utils::multiscalar::<E>(
+                        &rand_z_repr,
+                        &pre,
+                        num_proofs,
+                        std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
+                    )
+                };
 
-    let res = E::miller_loop(&parts);
-    Ok(E::final_exponentiation(&res).unwrap() == acc_y)
-}
+                let acc_d_aff: E::G1Affine = acc_d.into_affine();
+                *ml_d = E::miller_loop(&[(&acc_d_aff.prepare(), &pvk.delta_g2)]);
+            });
 
-fn get_verifier_kernel<E: Engine>(pi_num: usize) -> Option<LockedMultiexpKernel<E>> {
-    match &std::env::var("BELLMAN_VERIFIER")
-        .unwrap_or("auto".to_string())
-        .to_lowercase()[..]
-    {
-        "gpu" => {
-            let log_d = (pi_num as f32).log2().ceil() as usize;
-            Some(LockedMultiexpKernel::<E>::new(log_d, false))
-        }
-        "cpu" => None,
-        "auto" => None,
-        s => panic!("Invalid verifier device selected: {}", s),
-    }
+            // THREAD 2
+            let acc_ab = &mut acc_ab;
+            s.spawn(move |_| {
+                // TODO: restrict to pool size - worker thread
+                let accum_ab_mls: Vec<_> = proofs
+                    .par_iter()
+                    .zip(rand_z_repr.par_iter())
+                    .map(|(proof, rand)| {
+                        let mul_a = proof.a.mul(*rand);
+                        let acc_a_aff = mul_a.into_affine();
+
+                        let mut cur_neg_b = proof.b.into_projective();
+                        cur_neg_b.negate();
+                        let cur_neg_b_aff = cur_neg_b.into_affine();
+
+                        E::miller_loop(&[(&acc_a_aff.prepare(), &cur_neg_b_aff.prepare())])
+                    })
+                    .collect();
+
+                // accum_ab = mul_j(ml((zj*proof_aj), -proof_bj))
+                *acc_ab = accum_ab_mls[0];
+
+                for accum in accum_ab_mls.iter().skip(1).take(num_proofs) {
+                    acc_ab.mul_assign(accum);
+                }
+            });
+
+            // THREAD 0
+            let y = &mut y;
+            s.spawn(move |_| {
+                // -accum_y
+                let mut accum_y_neg = *accum_y;
+                accum_y_neg.negate();
+
+                // Y^-accum_y
+                *y = pvk.alpha_g1_beta_g2.pow(&accum_y_neg.into_repr());
+            });
+        });
+    });
+
+    let mut ml_all = acc_ab;
+    ml_all.mul_assign(&ml_d);
+    ml_all.mul_assign(&ml_g);
+
+    Ok(E::final_exponentiation(&ml_all).unwrap() == y)
 }

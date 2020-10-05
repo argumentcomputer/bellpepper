@@ -157,7 +157,7 @@ pub fn precompute_fixed_window<E: Engine>(
 
 /// Multipoint scalar multiplication
 /// Only supports window sizes that evenly divide a limb and nbits!!
-fn multiscalar<E: Engine>(
+pub fn multiscalar<E: Engine>(
     k: &[<E::Fr as ff::PrimeField>::Repr],
     precomp_table: &dyn MultiscalarPrecomp<E>,
     num_points: usize,
