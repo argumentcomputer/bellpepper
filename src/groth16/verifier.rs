@@ -38,7 +38,6 @@ pub fn verify_proof<'a, E: Engine>(
     if (public_inputs.len() + 1) != pvk.ic.len() {
         return Err(SynthesisError::MalformedVerifyingKey);
     }
-    let num_inputs = public_inputs.len();
 
     // The original verification equation is:
     // A * B = alpha * beta + inputs * gamma + C * delta
@@ -74,9 +73,8 @@ pub fn verify_proof<'a, E: Engine>(
                 public_inputs.iter().map(PrimeField::into_repr).collect();
 
             let mut acc = multiscalar::par_multiscalar::<&multiscalar::Getter<E>, E>(
-                &multiscalar::PublicInputs::Slice(&public_inputs_repr),
+                &multiscalar::ScalarList::Slice(&public_inputs_repr),
                 &subset,
-                num_inputs,
                 std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
             );
 
@@ -193,9 +191,8 @@ where
 
                 // \sum Accum_Gamma
                 let acc_g_psi = multiscalar::par_multiscalar::<_, E>(
-                    &multiscalar::PublicInputs::Getter(scalar_getter),
+                    &multiscalar::ScalarList::Getter(scalar_getter, num_inputs + 1),
                     &pvk.multiscalar,
-                    num_inputs + 1,
                     256,
                 );
 
