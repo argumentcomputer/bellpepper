@@ -47,7 +47,7 @@ impl<E: Engine> Proof<E> {
 
         // Decompress and group check in parallel
         THREAD_POOL.install(|| {
-            #[derive(Debug, Clone, Copy)]
+            #[derive(Clone, Copy)]
             enum ProofPart<E: Engine> {
                 A(E::G1Affine),
                 B(E::G2Affine),
@@ -135,32 +135,44 @@ impl<E: Engine> Proof<E> {
                 })
                 .collect::<io::Result<Vec<_>>>()?;
 
-            let proofs = parts
-                .chunks_exact(3)
-                .map(|chunk| {
-                    let b = &chunk[0];
-                    let a = &chunk[1];
-                    let c = &chunk[2];
+            let mut proofs = vec![
+                Proof::<E> {
+                    a: <E::G1Affine as CurveAffine>::zero(),
+                    b: <E::G2Affine as CurveAffine>::zero(),
+                    c: <E::G1Affine as CurveAffine>::zero(),
+                };
+                num_proofs
+            ];
 
-                    let a = if let ProofPart::A(a) = a {
-                        *a
-                    } else {
-                        unreachable!("invalid construction");
-                    };
-                    let b = if let ProofPart::B(b) = b {
-                        *b
-                    } else {
-                        unreachable!("invalid construction");
-                    };
-                    let c = if let ProofPart::C(c) = c {
-                        *c
-                    } else {
-                        unreachable!("invalid construction");
-                    };
-
-                    Proof { a, b, c }
-                })
-                .collect::<Vec<Self>>();
+            for (i, part) in parts.into_iter().enumerate() {
+                let c = i / num_proofs;
+                let p = i % num_proofs;
+                let proof = &mut proofs[p];
+                match c {
+                    0 => {
+                        if let ProofPart::B(b) = part {
+                            proof.b = b;
+                        } else {
+                            unreachable!("invalid construction");
+                        };
+                    }
+                    1 => {
+                        if let ProofPart::A(a) = part {
+                            proof.a = a;
+                        } else {
+                            unreachable!("invalid construction");
+                        };
+                    }
+                    2 => {
+                        if let ProofPart::C(c) = part {
+                            proof.c = c;
+                        } else {
+                            unreachable!("invalid construction");
+                        };
+                    }
+                    _ => unreachable!("invalid math {}", c),
+                }
+            }
 
             Ok(proofs)
         })
@@ -260,6 +272,13 @@ mod test_with_bls12_381 {
 
             let de_proof = Proof::read(&v[..]).unwrap();
             assert!(proof == de_proof);
+
+            // read two proofs
+            proof.write(&mut v).unwrap();
+            let de_proofs = Proof::read_many(&v[..], 2).unwrap();
+            assert_eq!(de_proofs.len(), 2);
+            assert_eq!(de_proofs[0], proof);
+            assert_eq!(de_proofs[1], proof);
 
             assert!(verify_proof(&pvk, &proof, &[c]).unwrap());
             assert!(!verify_proof(&pvk, &proof, &[a]).unwrap());
