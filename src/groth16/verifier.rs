@@ -94,7 +94,7 @@ pub fn verify_proof<'a, E: Engine>(
     // Calculate the final exponentiation
     let actual = E::final_exponentiation(&ml_all).unwrap();
 
-    Ok(actual == pvk.alpha_g1_beta_g2)
+    Ok(dbg!(actual) == dbg!(pvk.alpha_g1_beta_g2))
 }
 
 /// Randomized batch verification - see Appendix B.2 in Zcash spec
