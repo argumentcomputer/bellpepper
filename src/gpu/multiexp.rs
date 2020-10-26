@@ -5,7 +5,6 @@ use super::utils;
 use crate::multicore::Worker;
 use crate::multiexp::{multiexp as cpu_multiexp, FullDensity};
 use ff::{PrimeField, ScalarEngine};
-use futures::Future;
 use groupy::{CurveAffine, CurveProjective};
 use log::{error, info};
 use paired::Engine;

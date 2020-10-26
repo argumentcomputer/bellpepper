@@ -7,8 +7,7 @@
 
 #[cfg(feature = "multicore")]
 mod implementation {
-    use futures::{Future, IntoFuture, Poll};
-    use futures_cpupool::{CpuFuture, CpuPool};
+    use crossbeam_channel::{bounded, Receiver};
     use lazy_static::lazy_static;
     use num_cpus;
     use std::env;
@@ -27,7 +26,6 @@ mod implementation {
             .num_threads(*NUM_CPUS)
             .build()
             .unwrap();
-        static ref CPU_POOL: CpuPool = CpuPool::new(*NUM_CPUS);
     }
 
     #[derive(Clone)]
@@ -42,17 +40,18 @@ mod implementation {
             log2_floor(*NUM_CPUS)
         }
 
-        pub fn compute<F, R>(&self, f: F) -> WorkerFuture<R::Item, R::Error>
+        pub fn compute<F, R>(&self, f: F) -> Waiter<R>
         where
             F: FnOnce() -> R + Send + 'static,
-            R: IntoFuture + 'static,
-            R::Future: Send + 'static,
-            R::Item: Send + 'static,
-            R::Error: Send + 'static,
+            R: Send + 'static,
         {
-            WorkerFuture {
-                future: CPU_POOL.spawn_fn(f),
-            }
+            let (sender, receiver) = bounded(1);
+            THREAD_POOL.spawn(move || {
+                let res = f();
+                sender.send(res).unwrap();
+            });
+
+            Waiter { receiver }
         }
 
         pub fn scope<'a, F, R>(&self, elements: usize, f: F) -> R
@@ -70,16 +69,22 @@ mod implementation {
         }
     }
 
-    pub struct WorkerFuture<T, E> {
-        future: CpuFuture<T, E>,
+    pub struct Waiter<T> {
+        receiver: Receiver<T>,
     }
 
-    impl<T: Send + 'static, E: Send + 'static> Future for WorkerFuture<T, E> {
-        type Item = T;
-        type Error = E;
+    impl<T> Waiter<T> {
+        /// Wait for the result.
+        pub fn wait(&self) -> T {
+            self.receiver.recv().unwrap()
+        }
 
-        fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-            self.future.poll()
+        /// One off sending.
+        pub fn done(val: T) -> Self {
+            let (sender, receiver) = bounded(1);
+            sender.send(val).unwrap();
+
+            Waiter { receiver }
         }
     }
 
@@ -110,8 +115,6 @@ mod implementation {
 
 #[cfg(not(feature = "multicore"))]
 mod implementation {
-    use futures::{future, Future, IntoFuture, Poll};
-
     #[derive(Clone)]
     pub struct Worker;
 
@@ -124,15 +127,11 @@ mod implementation {
             0
         }
 
-        pub fn compute<F, R>(&self, f: F) -> R::Future
+        pub fn compute<F, R>(&self, f: F) -> Waiter<R>
         where
-            F: FnOnce() -> R + Send + 'static,
-            R: IntoFuture + 'static,
-            R::Future: Send + 'static,
-            R::Item: Send + 'static,
-            R::Error: Send + 'static,
+            R: Send + 'static,
         {
-            f().into_future()
+            Waiter::done(f())
         }
 
         pub fn scope<F, R>(&self, elements: usize, f: F) -> R
@@ -143,16 +142,19 @@ mod implementation {
         }
     }
 
-    pub struct WorkerFuture<T, E> {
-        future: future::FutureResult<T, E>,
+    pub struct Waiter<T> {
+        val: Option<T>,
     }
 
-    impl<T: Send + 'static, E: Send + 'static> Future for WorkerFuture<T, E> {
-        type Item = T;
-        type Error = E;
+    impl<T> Waiter<T> {
+        /// Wait for the result.
+        pub fn wait(&self) -> T {
+            self.val.take().unwrap()
+        }
 
-        fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-            self.future.poll()
+        /// One off sending.
+        pub fn done(val: T) -> Self {
+            Waiter { val: Some(val) }
         }
     }
 

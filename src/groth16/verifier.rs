@@ -1,5 +1,4 @@
 use ff::{Field, PrimeField};
-use futures::Future;
 use groupy::{CurveAffine, CurveProjective};
 use paired::{Engine, PairingCurveAffine};
 use rayon::prelude::*;
