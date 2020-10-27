@@ -588,7 +588,6 @@ mod tests {
     #[test]
     pub fn gpu_fft_consistency() {
         let _ = env_logger::try_init();
-        gpu::dump_device_list();
 
         let rng = &mut rand::thread_rng();
 
