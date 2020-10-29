@@ -735,10 +735,10 @@ impl From<AllocatedBit> for Boolean {
 #[cfg(test)]
 mod test {
     use super::{field_into_allocated_bits_le, u64_into_boolean_vec_le, AllocatedBit, Boolean};
+    use crate::bls::{Bls12, Fr};
     use crate::gadgets::test::*;
     use crate::ConstraintSystem;
     use ff::{Field, PrimeField};
-    use paired::bls12_381::{Bls12, Fr};
 
     #[test]
     fn test_allocated_bit() {

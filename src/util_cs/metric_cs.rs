@@ -1,6 +1,6 @@
+use crate::bls::Engine;
 use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
 use ff::{Field, PrimeField, ScalarEngine};
-use paired::Engine;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
 

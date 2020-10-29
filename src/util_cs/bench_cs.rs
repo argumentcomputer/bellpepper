@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
+use crate::bls::Engine;
 use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
-use paired::Engine;
 
 #[derive(Debug)]
 pub struct BenchCS<E: Engine> {

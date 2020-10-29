@@ -1,10 +1,10 @@
+use crate::bls::Engine;
 use crate::gpu::{
     error::{GPUError, GPUResult},
     locks, sources,
 };
 use ff::Field;
 use log::info;
-use paired::Engine;
 use rust_gpu_tools::*;
 use std::cmp;
 

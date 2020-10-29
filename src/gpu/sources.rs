@@ -1,5 +1,5 @@
+use crate::bls::Engine;
 use ff_cl_gen as ffgen;
-use paired::Engine;
 
 // Instead of having a very large OpenCL program written for a specific curve, with a lot of
 // rudandant codes (As OpenCL doesn't have generic types or templates), this module will dynamically
@@ -20,10 +20,16 @@ fn fft(field: &str) -> String {
     String::from(FFT_SRC).replace("FIELD", field)
 }
 
+#[cfg(not(feature = "blstrs"))]
+const BLSTRS_DEF: &str = "";
+#[cfg(feature = "blstrs")]
+const BLSTRS_DEF: &str = "#define BLSTRS";
+
 fn ec(field: &str, point: &str) -> String {
     String::from(EC_SRC)
         .replace("FIELD", field)
         .replace("POINT", point)
+        .replace("__BLSTRS__", BLSTRS_DEF)
 }
 
 fn multiexp(point: &str, exp: &str) -> String {

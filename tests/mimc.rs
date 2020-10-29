@@ -5,11 +5,11 @@ use rand::thread_rng;
 use std::time::{Duration, Instant};
 
 // Bring in some tools for using pairing-friendly curves
+use bellperson::bls::Engine;
 use ff::{Field, ScalarEngine};
-use paired::Engine;
 
 // We're going to use the BLS12-381 pairing-friendly elliptic curve.
-use paired::bls12_381::Bls12;
+use bellperson::bls::Bls12;
 
 // We'll use these interfaces to construct our circuit.
 use bellperson::{Circuit, ConstraintSystem, SynthesisError};
@@ -17,7 +17,7 @@ use bellperson::{Circuit, ConstraintSystem, SynthesisError};
 // We're going to use the Groth16 proving system.
 use bellperson::groth16::{
     create_random_proof, create_random_proof_batch, generate_random_parameters,
-    prepare_batch_verifying_key, prepare_verifying_key, verify_proof, verify_proofs_batch, Proof,
+    prepare_verifying_key, verify_proof, verify_proofs_batch, Proof,
 };
 
 const MIMC_ROUNDS: usize = 322;
@@ -263,7 +263,7 @@ fn test_mimc() {
 
     // batch verification
     {
-        let pvk = prepare_batch_verifying_key(&params.vk);
+        let pvk = prepare_verifying_key(&params.vk);
 
         let start = Instant::now();
         let proofs: Vec<_> = proofs.iter().collect();
