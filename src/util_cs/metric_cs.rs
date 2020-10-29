@@ -1,5 +1,5 @@
+use crate::bls::Engine;
 use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
-use paired::Engine;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 

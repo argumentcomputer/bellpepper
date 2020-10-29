@@ -439,9 +439,9 @@ impl<E: ScalarEngine> Num<E> {
 
 #[cfg(test)]
 mod test {
+    use crate::bls::{Bls12, Fr};
     use crate::ConstraintSystem;
     use ff::{BitIterator, Field, PrimeField};
-    use paired::bls12_381::{Bls12, Fr};
     use rand_core::SeedableRng;
     use rand_xorshift::XorShiftRng;
 

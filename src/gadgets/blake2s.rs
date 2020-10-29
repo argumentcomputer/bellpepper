@@ -407,8 +407,8 @@ pub fn blake2s<E: ScalarEngine, CS: ConstraintSystem<E>>(
 
 #[cfg(test)]
 mod test {
+    use crate::bls::Bls12;
     use blake2s_simd::Params as Blake2sParams;
-    use paired::bls12_381::Bls12;
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;
 

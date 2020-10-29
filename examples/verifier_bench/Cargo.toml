@@ -1,0 +1,22 @@
+
+[package]
+name = "bellpersn-verifier-bench"
+version = "0.0.1"
+edition = "2018"
+
+[dependencies]
+bellperson = { path = "../..",  default-features = false }
+fff = "0.2"
+groupy = "0.3.1"
+structopt = { version = "0.3", default-features = false }
+pretty_env_logger = "0.4.0"
+rand = "0.7.3"
+
+
+[features]
+default = ["groth16", "pairing"]
+gpu = ["bellperson/gpu"]
+groth16 = ["bellperson/groth16"]
+blst = ["bellperson/blst"]
+pairing = ["bellperson/pairing"]
+

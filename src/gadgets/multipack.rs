@@ -73,8 +73,8 @@ pub fn compute_multipacking<E: ScalarEngine>(bits: &[bool]) -> Vec<E::Fr> {
 
 #[test]
 fn test_multipacking() {
+    use crate::bls::Bls12;
     use crate::ConstraintSystem;
-    use paired::bls12_381::Bls12;
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;
 

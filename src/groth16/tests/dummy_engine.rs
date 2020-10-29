@@ -1,9 +1,9 @@
+use crate::bls::{Engine, PairingCurveAffine};
 use ff::{
     Field, LegendreSymbol, PrimeField, PrimeFieldDecodingError, PrimeFieldRepr, ScalarEngine,
     SqrtField,
 };
 use groupy::{CurveAffine, CurveProjective, EncodedPoint, GroupDecodingError};
-use paired::{Engine, PairingCurveAffine};
 
 use rand_core::RngCore;
 use std::cmp::Ordering;

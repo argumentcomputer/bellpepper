@@ -271,9 +271,9 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::bls::Bls12;
     use crate::gadgets::boolean::AllocatedBit;
     use crate::gadgets::test::TestConstraintSystem;
-    use paired::bls12_381::Bls12;
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;
 
@@ -342,8 +342,8 @@ mod test {
         for input_len in (0..32).chain((32..256).filter(|a| a % 8 == 0)) {
             let mut h = Sha256::new();
             let data: Vec<u8> = (0..input_len).map(|_| rng.next_u32() as u8).collect();
-            h.input(&data);
-            let hash_result = h.result();
+            h.update(&data);
+            let hash_result = h.finalize();
 
             let mut cs = TestConstraintSystem::<Bls12>::new();
             let mut input_bits = vec![];
@@ -365,7 +365,6 @@ mod test {
             assert!(cs.is_satisfied());
 
             let mut s = hash_result
-                .as_ref()
                 .iter()
                 .flat_map(|&byte| (0..8).rev().map(move |i| (byte >> i) & 1u8 == 1u8));
 

@@ -1,5 +1,8 @@
+use crate::bls::Engine;
+
 use ff::{Field, PrimeField};
-use paired::Engine;
+use rand_core::SeedableRng;
+use rand_xorshift::XorShiftRng;
 
 mod dummy_engine;
 use self::dummy_engine::*;
@@ -279,7 +282,7 @@ fn test_xordemo() {
     assert_eq!(delta, params.vk.delta_g1);
     assert_eq!(delta, params.vk.delta_g2);
 
-    let pvk = prepare_verifying_key(&params.vk);
+    let _pvk = prepare_verifying_key(&params.vk);
 
     let r = Fr::from_str("27134").unwrap();
     let s = Fr::from_str("17146").unwrap();
@@ -379,7 +382,10 @@ fn test_xordemo() {
         assert_eq!(expected_c, proof.c);
     }
 
-    assert!(verify_proof(&pvk, &proof, &[Fr::one()]).unwrap());
+    // FIXME(dignifiedquire): The dummy engine does not correctly implement accumulation of the
+    // miller loops through mutliplication, which breaks this test.
+    // Need to figure out how to correctly update this test.
+    // assert!(verify_proof(&pvk, &proof, &[Fr::one()]).unwrap());
 }
 
 #[test]
@@ -403,7 +409,7 @@ fn test_create_batch_single() {
         generate_parameters(c, g1, g2, alpha, beta, gamma, delta, tau).unwrap()
     };
 
-    let pvk = prepare_verifying_key(&params.vk);
+    let _pvk = prepare_verifying_key(&params.vk);
 
     let r1 = Fr::from_str("27134").unwrap();
     let s1 = Fr::from_str("17146").unwrap();
@@ -430,9 +436,227 @@ fn test_create_batch_single() {
     assert_eq!(proof_batch[0], proof_single_1);
     assert_eq!(proof_batch[1], proof_single_2);
 
-    assert!(verify_proof(&pvk, &proof_single_1, &[Fr::one()]).unwrap());
-    assert!(verify_proof(&pvk, &proof_single_2, &[Fr::one()]).unwrap());
-    for proof in &proof_batch {
+    // FIXME(dignifiedquire): The dummy engine does not correctly implement accumulation of the
+    // miller loops through mutliplication, which breaks this test.
+    // Need to figure out how to correctly update this test.
+    // assert!(verify_proof(&pvk, &proof_single_1, &[Fr::one()]).unwrap());
+    // assert!(verify_proof(&pvk, &proof_single_2, &[Fr::one()]).unwrap());
+    // for proof in &proof_batch {
+    //     assert!(verify_proof(&pvk, &proof, &[Fr::one()]).unwrap());
+    // }
+}
+
+#[test]
+fn test_verify_random_single() {
+    use crate::bls::{Bls12, Fr, G1Projective, G2Projective};
+    use crate::groth16::{create_random_proof, generate_random_parameters, Proof};
+    use groupy::{CurveAffine, CurveProjective};
+
+    let mut rng = XorShiftRng::from_seed([
+        0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06, 0xbc,
+        0xe5,
+    ]);
+
+    let params = {
+        let c = XORDemo::<Bls12> {
+            a: None,
+            b: None,
+            _marker: PhantomData,
+        };
+
+        generate_random_parameters::<Bls12, _, _>(c, &mut rng).unwrap()
+    };
+
+    let pvk = prepare_verifying_key(&params.vk);
+
+    for _ in 0..50 {
+        let c = XORDemo {
+            a: Some(true),
+            b: Some(false),
+            _marker: PhantomData,
+        };
+
+        let proof = create_random_proof(c.clone(), &params, &mut rng).unwrap();
+
+        // real proofs
         assert!(verify_proof(&pvk, &proof, &[Fr::one()]).unwrap());
+
+        // mess up the inputs
+        {
+            assert!(!verify_proof(&pvk, &proof, &[Fr::random(&mut rng)]).unwrap());
+        }
+
+        // mess up the proof a little bit
+        {
+            let mut fake_proof = proof.clone();
+            fake_proof.a = fake_proof.a.mul(Fr::random(&mut rng)).into_affine();
+            assert!(!verify_proof(&pvk, &fake_proof, &[Fr::one()]).unwrap());
+        }
+
+        {
+            let mut fake_proof = proof.clone();
+            fake_proof.b = fake_proof.b.mul(Fr::random(&mut rng)).into_affine();
+            assert!(!verify_proof(&pvk, &fake_proof, &[Fr::one()]).unwrap());
+        }
+
+        {
+            let mut fake_proof = proof.clone();
+            fake_proof.c = fake_proof.c.mul(Fr::random(&mut rng)).into_affine();
+            assert!(!verify_proof(&pvk, &fake_proof, &[Fr::one()]).unwrap());
+        }
+
+        {
+            let mut fake_proof = proof.clone();
+            let c = fake_proof.c;
+            fake_proof.c = fake_proof.a;
+            fake_proof.a = c;
+            assert!(!verify_proof(&pvk, &fake_proof, &[Fr::one()]).unwrap());
+        }
+
+        // entirely random proofs
+        {
+            let random_proof = Proof {
+                a: G1Projective::random(&mut rng).into_affine(),
+                b: G2Projective::random(&mut rng).into_affine(),
+                c: G1Projective::random(&mut rng).into_affine(),
+            };
+            assert!(!verify_proof(&pvk, &random_proof, &[Fr::one()]).unwrap());
+        }
+    }
+}
+
+#[test]
+fn test_verify_random_batch() {
+    use crate::bls::{Bls12, Fr, G1Projective, G2Projective};
+    use crate::groth16::{
+        create_random_proof_batch, generate_random_parameters, verify_proofs_batch, Proof,
+    };
+    use groupy::{CurveAffine, CurveProjective};
+
+    let mut rng = XorShiftRng::from_seed([
+        0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06, 0xbc,
+        0xe5,
+    ]);
+
+    let params = {
+        let c = XORDemo::<Bls12> {
+            a: None,
+            b: None,
+            _marker: PhantomData,
+        };
+
+        generate_random_parameters::<Bls12, _, _>(c, &mut rng).unwrap()
+    };
+
+    let pvk = prepare_verifying_key(&params.vk);
+
+    let inputs = vec![vec![Fr::one()], vec![Fr::one()], vec![Fr::one()]];
+    for _ in 0..50 {
+        let c = XORDemo {
+            a: Some(true),
+            b: Some(false),
+            _marker: PhantomData,
+        };
+
+        let proof =
+            create_random_proof_batch(vec![c.clone(), c.clone(), c.clone()], &params, &mut rng)
+                .unwrap();
+
+        // real proofs
+        assert!(
+            verify_proofs_batch(&pvk, &mut rng, &[&proof[0], &proof[1], &proof[2]], &inputs)
+                .unwrap()
+        );
+
+        // mess up the inputs
+        {
+            let r = Fr::random(&mut rng);
+            assert!(!verify_proofs_batch(
+                &pvk,
+                &mut rng,
+                &[&proof[0], &proof[1], &proof[2]],
+                &[vec![r], vec![Fr::one()], vec![Fr::one()]],
+            )
+            .unwrap());
+        }
+
+        // mess up the proof a little bit
+        {
+            let mut fake_proof = proof.clone();
+            fake_proof[0].a = fake_proof[0].a.mul(Fr::random(&mut rng)).into_affine();
+            assert!(!verify_proofs_batch(
+                &pvk,
+                &mut rng,
+                &[&fake_proof[0], &fake_proof[1], &fake_proof[2]],
+                &inputs
+            )
+            .unwrap());
+        }
+
+        {
+            let mut fake_proof = proof.clone();
+            fake_proof[1].b = fake_proof[1].b.mul(Fr::random(&mut rng)).into_affine();
+            assert!(!verify_proofs_batch(
+                &pvk,
+                &mut rng,
+                &[&fake_proof[0], &fake_proof[1], &fake_proof[2]],
+                &inputs
+            )
+            .unwrap());
+        }
+
+        {
+            let mut fake_proof = proof.clone();
+            fake_proof[2].c = fake_proof[2].c.mul(Fr::random(&mut rng)).into_affine();
+            assert!(!verify_proofs_batch(
+                &pvk,
+                &mut rng,
+                &[&fake_proof[0], &fake_proof[1], &fake_proof[2]],
+                &inputs
+            )
+            .unwrap());
+        }
+
+        {
+            let mut fake_proof = proof.clone();
+            let c = fake_proof[0].c;
+            fake_proof[0].c = fake_proof[0].a;
+            fake_proof[0].a = c;
+            assert!(!verify_proofs_batch(
+                &pvk,
+                &mut rng,
+                &[&fake_proof[0], &fake_proof[1], &fake_proof[2]],
+                &inputs
+            )
+            .unwrap());
+        }
+
+        // entirely random proofs
+        {
+            let random_proof = [
+                Proof {
+                    a: G1Projective::random(&mut rng).into_affine(),
+                    b: G2Projective::random(&mut rng).into_affine(),
+                    c: G1Projective::random(&mut rng).into_affine(),
+                },
+                Proof {
+                    a: G1Projective::random(&mut rng).into_affine(),
+                    b: G2Projective::random(&mut rng).into_affine(),
+                    c: G1Projective::random(&mut rng).into_affine(),
+                },
+                Proof {
+                    a: G1Projective::random(&mut rng).into_affine(),
+                    b: G2Projective::random(&mut rng).into_affine(),
+                    c: G1Projective::random(&mut rng).into_affine(),
+                },
+            ];
+            assert!(!verify_proofs_batch(
+                &pvk,
+                &mut rng,
+                &[&random_proof[0], &random_proof[1], &random_proof[2],],
+                &inputs
+            )
+            .unwrap());
+        }
     }
 }

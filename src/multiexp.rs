@@ -295,7 +295,7 @@ where
     for<'a> &'a Q: QueryDensity,
     D: Send + Sync + 'static + Clone + AsRef<Q>,
     G: CurveAffine,
-    G::Engine: paired::Engine,
+    G::Engine: crate::bls::Engine,
     S: SourceBuilder<G>,
 {
     if let Some(ref mut kern) = kern {
@@ -342,7 +342,7 @@ where
     result
 }
 
-#[cfg(feature = "paired")]
+#[cfg(any(feature = "pairing", feature = "blst"))]
 #[test]
 fn test_with_bls12() {
     fn naive_multiexp<G: CurveAffine>(
@@ -360,7 +360,7 @@ fn test_with_bls12() {
         acc
     }
 
-    use paired::{bls12_381::Bls12, Engine};
+    use crate::bls::{Bls12, Engine};
     use rand;
 
     const SAMPLES: usize = 1 << 14;
@@ -387,6 +387,7 @@ fn test_with_bls12() {
     let fast = multiexp(&pool, (g, 0), FullDensity, v, &mut None)
         .wait()
         .unwrap();
+
     println!("Fast: {}", now.elapsed().as_millis());
 
     assert_eq!(naive, fast);
@@ -394,7 +395,7 @@ fn test_with_bls12() {
 
 pub fn create_multiexp_kernel<E>(_log_d: usize, priority: bool) -> Option<gpu::MultiexpKernel<E>>
 where
-    E: paired::Engine,
+    E: crate::bls::Engine,
 {
     match gpu::MultiexpKernel::<E>::create(priority) {
         Ok(k) => {
@@ -411,7 +412,7 @@ where
 #[cfg(feature = "gpu")]
 #[test]
 pub fn gpu_multiexp_consistency() {
-    use paired::bls12_381::Bls12;
+    use crate::bls::Bls12;
     use std::time::Instant;
 
     const MAX_LOG_D: usize = 20;
@@ -422,7 +423,7 @@ pub fn gpu_multiexp_consistency() {
     let rng = &mut rand::thread_rng();
 
     let mut bases = (0..(1 << 10))
-        .map(|_| <Bls12 as paired::Engine>::G1::random(rng).into_affine())
+        .map(|_| <Bls12 as crate::bls::Engine>::G1::random(rng).into_affine())
         .collect::<Vec<_>>();
     for _ in 10..START_LOG_D {
         bases = [bases.clone(), bases.clone()].concat();
