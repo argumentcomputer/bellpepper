@@ -590,8 +590,6 @@ mod tests {
         let _ = env_logger::try_init();
         gpu::dump_device_list();
 
-        use paired::bls12_381::{Bls12, Fr};
-        use std::time::Instant;
         let rng = &mut rand::thread_rng();
 
         let worker = Worker::new();
