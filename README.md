@@ -6,6 +6,15 @@
 and primitive structures, as well as basic gadget implementations such as
 booleans and number abstractions.
 
+## Backend
+
+There are currently two backends available for the implementation of Bls12 381, 
+- [`paired`](https://github.com/filecoin-project/paired) - pure Rust implementation
+- [`blstrs`](https://github.com/filecoin-project/blstrs) - optimized with hand tuned assembly, using [blst](https://github.com/supranational/blst)
+
+they can be selected using `pairing` or `blst` features.
+The default for now is `pairing`, as the secure and audited choice.
+
 ## GPU
 
 This fork contains GPU parallel acceleration to the FFT and Multiexponentation algorithms in the groth16 prover codebase under a conditional compilation feature `#[cfg(feature = "gpu")]` and `gpu-test` for testing.

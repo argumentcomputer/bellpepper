@@ -68,9 +68,9 @@ impl Drop for PriorityLock {
 use super::error::{GPUError, GPUResult};
 use super::fft::FFTKernel;
 use super::multiexp::MultiexpKernel;
+use crate::bls::Engine;
 use crate::domain::create_fft_kernel;
 use crate::multiexp::create_multiexp_kernel;
-use paired::Engine;
 
 macro_rules! locked_kernel {
     ($class:ident, $kern:ident, $func:ident, $name:expr) => {

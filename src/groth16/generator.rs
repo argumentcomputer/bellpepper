@@ -2,9 +2,9 @@ use rand_core::RngCore;
 
 use std::sync::Arc;
 
+use crate::bls::Engine;
 use ff::{Field, PrimeField};
 use groupy::{CurveAffine, CurveProjective, Wnaf};
-use paired::Engine;
 
 use super::{Parameters, VerifyingKey};
 

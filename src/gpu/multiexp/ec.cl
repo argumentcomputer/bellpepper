@@ -2,10 +2,14 @@
 
 #define POINT_ZERO ((POINT_projective){FIELD_ZERO, FIELD_ONE, FIELD_ZERO})
 
+__BLSTRS__ // Affine points in `blstrs` library do not have `inf` field.
+
 typedef struct {
   FIELD x;
   FIELD y;
-  bool inf;
+  #ifndef BLSTRS
+    bool inf;
+  #endif
   #if FIELD_LIMB_BITS == 32
     uint _padding;
   #endif
@@ -47,9 +51,11 @@ POINT_projective POINT_double(POINT_projective inp) {
 
 // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-madd-2007-bl
 POINT_projective POINT_add_mixed(POINT_projective a, POINT_affine b) {
-  if(b.inf) {
-      return a;
-  }
+  #ifndef BLSTRS
+    if(b.inf) {
+        return a;
+    }
+  #endif
 
   const FIELD local_zero = FIELD_ZERO;
   if(FIELD_eq(a.z, local_zero)) {

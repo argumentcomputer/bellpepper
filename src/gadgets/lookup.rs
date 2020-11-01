@@ -189,9 +189,9 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::bls::{Bls12, Fr};
     use crate::gadgets::boolean::{AllocatedBit, Boolean};
     use crate::gadgets::test::*;
-    use paired::bls12_381::{Bls12, Fr};
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;
 

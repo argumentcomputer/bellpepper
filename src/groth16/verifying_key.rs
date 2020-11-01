@@ -1,10 +1,12 @@
+use crate::bls::{Engine, PairingCurveAffine};
 use groupy::{CurveAffine, EncodedPoint};
-use paired::{Engine, PairingCurveAffine};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use memmap::Mmap;
 use std::io::{self, Read, Write};
 use std::mem;
+
+use super::multiscalar;
 
 #[derive(Clone)]
 pub struct VerifyingKey<E: Engine> {
@@ -137,7 +139,7 @@ impl<E: Engine> VerifyingKey<E> {
 
         let read_g1 = |mmap: &Mmap,
                        offset: &mut usize|
-         -> Result<<E as paired::Engine>::G1Affine, std::io::Error> {
+         -> Result<<E as crate::bls::Engine>::G1Affine, std::io::Error> {
             let ptr = &mmap[*offset..*offset + g1_len];
             // Safety: this operation is safe, because it's simply
             // casting to a known struct at the correct offset, given
@@ -154,7 +156,7 @@ impl<E: Engine> VerifyingKey<E> {
 
         let read_g2 = |mmap: &Mmap,
                        offset: &mut usize|
-         -> Result<<E as paired::Engine>::G2Affine, std::io::Error> {
+         -> Result<<E as crate::bls::Engine>::G2Affine, std::io::Error> {
             let ptr = &mmap[*offset..*offset + g2_len];
             // Safety: this operation is safe, because it's simply
             // casting to a known struct at the correct offset, given
@@ -213,21 +215,16 @@ impl<E: Engine> VerifyingKey<E> {
 pub struct PreparedVerifyingKey<E: Engine> {
     /// Pairing result of alpha*beta
     pub(crate) alpha_g1_beta_g2: E::Fqk,
-    /// -gamma in G2
+    /// -gamma in G2 (used for single)
     pub(crate) neg_gamma_g2: <E::G2Affine as PairingCurveAffine>::Prepared,
-    /// -delta in G2
+    /// -delta in G2 (used for single)
     pub(crate) neg_delta_g2: <E::G2Affine as PairingCurveAffine>::Prepared,
-    /// Copy of IC from `VerifiyingKey`.
-    pub(crate) ic: Vec<E::G1Affine>,
-}
-
-pub struct BatchPreparedVerifyingKey<E: Engine> {
-    /// Pairing result of alpha*beta
-    pub(crate) alpha_g1_beta_g2: E::Fqk,
-    /// gamma in G2
+    /// gamma in G2 (used for batch)
     pub(crate) gamma_g2: <E::G2Affine as PairingCurveAffine>::Prepared,
-    /// delta in G2
+    /// delta in G2 (used for batch)
     pub(crate) delta_g2: <E::G2Affine as PairingCurveAffine>::Prepared,
     /// Copy of IC from `VerifiyingKey`.
     pub(crate) ic: Vec<E::G1Affine>,
+
+    pub(crate) multiscalar: multiscalar::MultiscalarPrecompOwned<E>,
 }

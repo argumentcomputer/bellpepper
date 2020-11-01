@@ -18,7 +18,7 @@ restore-cache: &restore-cache
       - repo-source-{{ .Branch }}-{{ .Revision }}
 
 commands:
-  test_target:
+  test_target_pairing:
     parameters:
       target:
         type: string
@@ -26,12 +26,44 @@ commands:
       - *restore-workspace
       - *restore-cache
       - run:
-          name: Test (<< parameters.target >>)
-          command: TARGET=<< parameters.target >> cargo test
+          name: Test pairing (<< parameters.target >>)
+          command: TARGET=<< parameters.target >> cargo test --no-default-features --features pairing
           no_output_timeout: 15m
+
+  test_target_pairing_gpu:
+    parameters:
+      target:
+        type: string
+    steps:
+      - *restore-workspace
+      - *restore-cache
       - run:
-          name: Test (GPU) (<< parameters.target >>)
-          command: TARGET=<< parameters.target >> cargo test --release --features gpu
+          name: Test pairing (GPU) (<< parameters.target >>)
+          command: TARGET=<< parameters.target >> cargo test --release --no-default-features --features gpu,pairing
+          no_output_timeout: 30m
+
+  test_target_blst:
+    parameters:
+      target:
+        type: string
+    steps:
+      - *restore-workspace
+      - *restore-cache
+      - run:
+          name: Test blst (<< parameters.target >>)
+          command: TARGET=<< parameters.target >> cargo test --no-default-features --features blst
+          no_output_timeout: 15m
+
+  test_target_blst_gpu:
+    parameters:
+      target:
+        type: string
+    steps:
+      - *restore-workspace
+      - *restore-cache
+      - run:
+          name: Test blst (GPU) (<< parameters.target >>)
+          command: TARGET=<< parameters.target >> cargo test --release --no-default-features --features gpu,blst
           no_output_timeout: 30m
 
 jobs:
@@ -74,7 +106,7 @@ jobs:
             - "~/.cargo"
             - "~/.rustup"
 
-  test_x86_64-unknown-linux-gnu:
+  test_pairing_x86_64-unknown-linux-gnu:
     executor: default
     steps:
       - run: echo 'export PATH="$HOME:~/.cargo/bin:$PATH"' >> $BASH_ENV
@@ -82,7 +114,41 @@ jobs:
       - run: sudo apt-get update -y
       - run: apt-cache search opencl
       - run: sudo apt install -y ocl-icd-opencl-dev
-      - test_target:
+      - test_target_pairing:
+          target: "x86_64-unknown-linux-gnu"
+
+  test_pairing_gpu_x86_64-unknown-linux-gnu:
+    executor: default
+    steps:
+      - run: echo 'export PATH="$HOME:~/.cargo/bin:$PATH"' >> $BASH_ENV
+      - run: source $BASH_ENV
+      - run: sudo apt-get update -y
+      - run: apt-cache search opencl
+      - run: sudo apt install -y ocl-icd-opencl-dev
+      - test_target_pairing_gpu:
+          target: "x86_64-unknown-linux-gnu"
+
+
+  test_blst_x86_64-unknown-linux-gnu:
+    executor: default
+    steps:
+      - run: echo 'export PATH="$HOME:~/.cargo/bin:$PATH"' >> $BASH_ENV
+      - run: source $BASH_ENV
+      - run: sudo apt-get update -y
+      - run: apt-cache search opencl
+      - run: sudo apt install -y ocl-icd-opencl-dev
+      - test_target_blst:
+          target: "x86_64-unknown-linux-gnu"
+
+  test_blst_gpu_x86_64-unknown-linux-gnu:
+    executor: default
+    steps:
+      - run: echo 'export PATH="$HOME:~/.cargo/bin:$PATH"' >> $BASH_ENV
+      - run: source $BASH_ENV
+      - run: sudo apt-get update -y
+      - run: apt-cache search opencl
+      - run: sudo apt install -y ocl-icd-opencl-dev
+      - test_target_blst_gpu:
           target: "x86_64-unknown-linux-gnu"
 
   rustfmt:
@@ -104,10 +170,16 @@ jobs:
       - run: echo 'export PATH="$HOME:~/.cargo/bin:$PATH"' >> $BASH_ENV
       - run: source $BASH_ENV
       - run:
-          name: Run cargo clippy
-          command: cargo clippy --all-features
+          name: Run cargo clippy (blst)
+          command: cargo clippy --no-default-features --features blst
+      - run:
+          name: Run cargo clippy (pairing)
+          command: cargo clippy --no-default-features --features pairing
+      - run:
+          name: Run cargo clippy (gpu)
+          command: cargo clippy --features gpu
 
-  build:
+  build_blst:
     executor: default
     steps:
       - *restore-workspace
@@ -116,8 +188,18 @@ jobs:
       - run: source $BASH_ENV
       - run:
           name: Run cargo release build
-          command: cargo build --release
+          command: cargo build --release --no-default-features --features blst
 
+  build_pairing:
+    executor: default
+    steps:
+      - *restore-workspace
+      - *restore-cache
+      - run: echo 'export PATH="$HOME:~/.cargo/bin:$PATH"' >> $BASH_ENV
+      - run: source $BASH_ENV
+      - run:
+          name: Run cargo release build
+          command: cargo build --release --no-default-features --features pairing
 
 workflows:
   version: 2.1
@@ -131,10 +213,25 @@ workflows:
       - clippy:
           requires:
             - cargo_fetch
-      - test_x86_64-unknown-linux-gnu:
+            
+      - test_pairing_x86_64-unknown-linux-gnu:
           requires:
             - cargo_fetch
-      - build:
+      - test_pairing_gpu_x86_64-unknown-linux-gnu:
+          requires:
+            - cargo_fetch
+
+      - test_blst_x86_64-unknown-linux-gnu:
+          requires:
+            - cargo_fetch
+      - test_blst_gpu_x86_64-unknown-linux-gnu:
+          requires:
+            - cargo_fetch
+            
+      - build_blst:
+          requires:
+            - cargo_fetch
+      - build_pairing:
           requires:
             - cargo_fetch
             
