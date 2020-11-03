@@ -21,6 +21,10 @@ lazy_static::lazy_static! {
             ("Tesla T4".to_string(), 2560),
             ("Quadro M5000".to_string(), 2048),
 
+            ("GeForce RTX 3090".to_string(), 10496),
+            ("GeForce RTX 3080".to_string(), 8704),
+            ("GeForce RTX 3070".to_string(), 5888),
+
             ("GeForce RTX 2080 Ti".to_string(), 4352),
             ("GeForce RTX 2080 SUPER".to_string(), 3072),
             ("GeForce RTX 2080".to_string(), 2944),
