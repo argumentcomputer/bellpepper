@@ -596,7 +596,7 @@ mod tests {
         let log_cpus = worker.log_num_cpus();
         let mut kern = gpu::FFTKernel::create(false).expect("Cannot initialize kernel!");
 
-        for log_d in 1..25 {
+        for log_d in 1..=20 {
             let d = 1 << log_d;
 
             let elems = (0..d)

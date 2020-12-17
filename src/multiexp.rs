@@ -418,7 +418,7 @@ pub fn gpu_multiexp_consistency() {
     let _ = env_logger::try_init();
     gpu::dump_device_list();
 
-    const MAX_LOG_D: usize = 20;
+    const MAX_LOG_D: usize = 16;
     const START_LOG_D: usize = 10;
     let mut kern = Some(gpu::LockedMultiexpKernel::<Bls12>::new(MAX_LOG_D, false));
     let pool = Worker::new();
@@ -432,7 +432,7 @@ pub fn gpu_multiexp_consistency() {
         bases = [bases.clone(), bases.clone()].concat();
     }
 
-    for log_d in START_LOG_D..(MAX_LOG_D + 1) {
+    for log_d in START_LOG_D..=MAX_LOG_D {
         let g = Arc::new(bases.clone());
 
         let samples = 1 << log_d;
