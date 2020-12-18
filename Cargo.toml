@@ -58,6 +58,10 @@ blst-serde = ["blstrs/serde"]
 pairing = ["paired", "groth16"]
 pairing-serde = ["paired/serde"]
 
+# This feature disables/modifies long running tests to make the suitable for code coverage
+# reporting
+_coverage = []
+
 [[test]]
 name = "mimc"
 path = "tests/mimc.rs"

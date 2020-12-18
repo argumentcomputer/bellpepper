@@ -243,7 +243,7 @@ jobs:
       - run:
           name: Generate coverage report
           command: |
-            RUST_LOG=info cargo +<< pipeline.parameters.nightly-version >> test << parameters.cargo-args >> -- --nocapture << parameters.test-args >>
+            RUST_LOG=info cargo +<< pipeline.parameters.nightly-version >> test --features _coverage << parameters.cargo-args >> -- --nocapture << parameters.test-args >>
 
             # Do *not* use sparse output. It leads to more lines that are not
             # taken into account at all
