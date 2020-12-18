@@ -13,7 +13,7 @@
 //! - Compute `hash = SHA-256d(preimage)` inside the circuit.
 //! - Expose `hash` as a public input using multiscalar packing.
 //!
-//! ```
+//! ```no_run
 //! use bellperson::{
 //!     gadgets::{
 //!         boolean::{AllocatedBit, Boolean},
