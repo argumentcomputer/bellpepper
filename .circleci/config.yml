@@ -27,6 +27,15 @@ commands:
             echo 'export PATH="$HOME:~/.cargo/bin:$PATH"' | tee --append $BASH_ENV
             source $BASH_ENV
 
+  install-gpu-deps:
+    steps:
+      - run:
+          name: Install libraries for GPU tests
+          command: |
+            sudo apt-get update -y
+            sudo apt install -y ocl-icd-opencl-dev
+
+
   test_target_pairing:
     parameters:
       target:
@@ -117,9 +126,7 @@ jobs:
     executor: default
     steps:
       - set-env-path
-      - run: sudo apt-get update -y
-      - run: apt-cache search opencl
-      - run: sudo apt install -y ocl-icd-opencl-dev
+      - install-gpu-deps
       - test_target_pairing:
           target: "x86_64-unknown-linux-gnu"
 
@@ -127,9 +134,7 @@ jobs:
     executor: default
     steps:
       - set-env-path
-      - run: sudo apt-get update -y
-      - run: apt-cache search opencl
-      - run: sudo apt install -y ocl-icd-opencl-dev
+      - install-gpu-deps
       - test_target_pairing_gpu:
           target: "x86_64-unknown-linux-gnu"
 
@@ -138,9 +143,7 @@ jobs:
     executor: default
     steps:
       - set-env-path
-      - run: sudo apt-get update -y
-      - run: apt-cache search opencl
-      - run: sudo apt install -y ocl-icd-opencl-dev
+      - install-gpu-deps
       - test_target_blst:
           target: "x86_64-unknown-linux-gnu"
 
@@ -148,9 +151,7 @@ jobs:
     executor: default
     steps:
       - set-env-path
-      - run: sudo apt-get update -y
-      - run: apt-cache search opencl
-      - run: sudo apt install -y ocl-icd-opencl-dev
+      - install-gpu-deps
       - test_target_blst_gpu:
           target: "x86_64-unknown-linux-gnu"
 
