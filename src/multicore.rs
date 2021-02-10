@@ -7,7 +7,7 @@
 
 use crossbeam_channel::{bounded, Receiver};
 use lazy_static::lazy_static;
-use log::{debug, error};
+use log::{error, trace};
 use std::env;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -78,7 +78,7 @@ impl Worker {
         // minimize the chances of memory exhaustion.
         if previous_count > *WORKER_SPAWN_MAX_COUNT {
             THREAD_POOL.install(move || {
-                debug!("[{}] switching to install to help clear backlog[current threads {}, threads requested {}]",
+                trace!("[{}] switching to install to help clear backlog[current threads {}, threads requested {}]",
                        thread_index,
                        THREAD_POOL.current_num_threads(),
                        WORKER_SPAWN_COUNTER.load(Ordering::SeqCst));
@@ -88,7 +88,7 @@ impl Worker {
             });
         } else {
             THREAD_POOL.spawn(move || {
-                debug!(
+                trace!(
                     "[{}] pool is using spawn [current threads {}, threads requested {}]",
                     thread_index,
                     THREAD_POOL.current_num_threads(),

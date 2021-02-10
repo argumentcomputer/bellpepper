@@ -8,6 +8,7 @@ use crate::multiexp::{multiexp as cpu_multiexp, FullDensity};
 use ff::{PrimeField, ScalarEngine};
 use groupy::{CurveAffine, CurveProjective};
 use log::{error, info};
+use rayon::prelude::*;
 use rust_gpu_tools::*;
 use std::any::TypeId;
 use std::sync::Arc;
@@ -287,44 +288,48 @@ where
 
         let chunk_size = ((n as f64) / (num_devices as f64)).ceil() as usize;
 
-        crate::multicore::THREAD_POOL.install(|| {
-            use rayon::prelude::*;
+        let mut acc = <G as CurveAffine>::Projective::zero();
 
-            let mut acc = <G as CurveAffine>::Projective::zero();
-
-            let results = if n > 0 {
+        let results = crate::multicore::THREAD_POOL.install(|| {
+            if n > 0 {
                 bases
-                    .par_chunks(chunk_size)
-                    .zip(exps.par_chunks(chunk_size))
-                    .zip(self.kernels.par_iter_mut())
-                    .map(|((bases, exps), kern)| -> Result<<G as CurveAffine>::Projective, GPUError> {
-                        let mut acc = <G as CurveAffine>::Projective::zero();
-                        for (bases, exps) in bases.chunks(kern.n).zip(exps.chunks(kern.n)) {
-                            let result = kern.multiexp(bases, exps, bases.len())?;
-                            acc.add_assign(&result);
+                .par_chunks(chunk_size)
+                .zip(exps.par_chunks(chunk_size))
+                .zip(self.kernels.par_iter_mut())
+                .map(|((bases, exps), kern)| -> Result<<G as CurveAffine>::Projective, GPUError> {
+                    let mut acc = <G as CurveAffine>::Projective::zero();
+                    for (bases, exps) in bases.chunks(kern.n).zip(exps.chunks(kern.n)) {
+                        match kern.multiexp(bases, exps, bases.len()) {
+                            Ok(result) => acc.add_assign(&result),
+                            Err(e) => return Err(e),
                         }
+                    }
 
-                        Ok(acc)
-                    })
-                    .collect::<Vec<_>>()
+                    Ok(acc)
+                })
+                .collect::<Vec<_>>()
             } else {
                 Vec::new()
-            };
-
-            let cpu_acc = cpu_multiexp(
-                &pool,
-                (Arc::new(cpu_bases.to_vec()), 0),
-                FullDensity,
-                Arc::new(cpu_exps.to_vec()),
-                &mut None,
-            );
-
-            for r in results {
-                acc.add_assign(&r?);
             }
+        });
 
-            acc.add_assign(&cpu_acc.wait().unwrap());
-            Ok(acc)
-        })
+        let cpu_acc = cpu_multiexp(
+            &pool,
+            (Arc::new(cpu_bases.to_vec()), 0),
+            FullDensity,
+            Arc::new(cpu_exps.to_vec()),
+            &mut None,
+        );
+
+        for r in results {
+            match r {
+                Ok(r) => acc.add_assign(&r),
+                Err(e) => return Err(e),
+            }
+        }
+
+        acc.add_assign(&cpu_acc.wait().unwrap());
+
+        Ok(acc)
     }
 }

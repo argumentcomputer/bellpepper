@@ -329,7 +329,6 @@ where
     }
 
     let result = pool.compute(move || multiexp_inner(bases, density_map, exponents, c));
-
     #[cfg(feature = "gpu")]
     {
         // Do not give the control back to the caller till the

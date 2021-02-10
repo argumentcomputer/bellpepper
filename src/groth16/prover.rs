@@ -15,7 +15,7 @@ use crate::multiexp::{multiexp, DensityTracker, FullDensity};
 use crate::{
     Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable, BELLMAN_VERSION,
 };
-use log::info;
+use log::{info, trace};
 
 #[cfg(feature = "gpu")]
 use crate::gpu::PriorityLock;
@@ -278,7 +278,7 @@ where
     let (start, mut provers, input_assignments, aux_assignments) =
         THREAD_POOL.install(|| create_proof_batch_priority_inner(circuits))?;
 
-    // The rest of the proving also has parallism, but not on the outer loops, but within e.g. the
+    // The rest of the proving also has parallelism, but not on the outer loops, but within e.g. the
     // multiexp calculations. This is what the `Worker` is used for. It is important that calling
     // `wait()` on the worker happens *outside* the thread pool, else deadlocks can happen.
     let worker = Worker::new();
@@ -302,6 +302,7 @@ where
 
     #[cfg(feature = "gpu")]
     let prio_lock = if priority {
+        trace!("acquiring priority lock");
         Some(PriorityLock::lock())
     } else {
         None
@@ -508,6 +509,12 @@ where
             },
         )
         .collect::<Result<Vec<_>, SynthesisError>>()?;
+
+    #[cfg(feature = "gpu")]
+    {
+        trace!("dropping priority lock");
+        drop(prio_lock);
+    }
 
     let proof_time = start.elapsed();
     info!("prover time: {:?}", proof_time);
