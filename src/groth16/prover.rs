@@ -10,8 +10,7 @@ use rayon::prelude::*;
 use super::{ParameterSource, Proof};
 use crate::domain::{EvaluationDomain, Scalar};
 use crate::gpu::{LockedFFTKernel, LockedMultiexpKernel};
-use crate::groth16::VerifyingKey;
-use crate::multicore::{Waiter, Worker, THREAD_POOL};
+use crate::multicore::{Worker, THREAD_POOL};
 use crate::multiexp::{multiexp, DensityTracker, FullDensity};
 use crate::{
     Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable, BELLMAN_VERSION,
@@ -274,123 +273,14 @@ where
 {
     info!("Bellperson {} is being used!", BELLMAN_VERSION);
 
-    // Creating the actual proof and preparing are intentionally done in two seperate steps.
-    // The reason is that the preparation make heavy use of `rayon` and we want to assign a
-    // specific thread pool to it.
-    // The computation in the preparations finish eventually and send their results into the
-    // `Waiter`s that are returned. Those `Waiter`s *must* run outside that thread poolm else
-    // one might run into a deadlock, when the computation wasn't yet executed, but the waiter
-    // is already waiting for the result.
-    let (start, vk, h_s, l_s, inputs) =
-        THREAD_POOL.install(|| create_proof_batch_priority_inner(circuits, params, priority))?;
-    let proofs = h_s
-        .into_iter()
-        .zip(l_s.into_iter())
-        .zip(inputs.into_iter())
-        .zip(r_s.into_iter())
-        .zip(s_s.into_iter())
-        .map(
-            |(
-                (((h, l), (a_inputs, a_aux, b_g1_inputs, b_g1_aux, b_g2_inputs, b_g2_aux)), r),
-                s,
-            )| {
-                if vk.delta_g1.is_zero() || vk.delta_g2.is_zero() {
-                    // If this element is zero, someone is trying to perform a
-                    // subversion-CRS attack.
-                    return Err(SynthesisError::UnexpectedIdentity);
-                }
+    // Preparing things for the proofs is done a lot in parallel with the help of Rayon. Make
+    // sure that those things run on the correct thread pool.
+    let (start, mut provers, input_assignments, aux_assignments) =
+        THREAD_POOL.install(|| create_proof_batch_priority_inner(circuits))?;
 
-                let mut g_a = vk.delta_g1.mul(r);
-                g_a.add_assign_mixed(&vk.alpha_g1);
-                let mut g_b = vk.delta_g2.mul(s);
-                g_b.add_assign_mixed(&vk.beta_g2);
-                let mut g_c;
-                {
-                    let mut rs = r;
-                    rs.mul_assign(&s);
-
-                    g_c = vk.delta_g1.mul(rs);
-                    g_c.add_assign(&vk.alpha_g1.mul(s));
-                    g_c.add_assign(&vk.beta_g1.mul(r));
-                }
-                let mut a_answer = a_inputs.wait()?;
-                a_answer.add_assign(&a_aux.wait()?);
-                g_a.add_assign(&a_answer);
-                a_answer.mul_assign(s);
-                g_c.add_assign(&a_answer);
-
-                let mut b1_answer = b_g1_inputs.wait()?;
-                b1_answer.add_assign(&b_g1_aux.wait()?);
-                let mut b2_answer = b_g2_inputs.wait()?;
-                b2_answer.add_assign(&b_g2_aux.wait()?);
-
-                g_b.add_assign(&b2_answer);
-                b1_answer.mul_assign(r);
-                g_c.add_assign(&b1_answer);
-                g_c.add_assign(&h.wait()?);
-                g_c.add_assign(&l.wait()?);
-
-                Ok(Proof {
-                    a: g_a.into_affine(),
-                    b: g_b.into_affine(),
-                    c: g_c.into_affine(),
-                })
-            },
-        )
-        .collect::<Result<Vec<_>, SynthesisError>>()?;
-
-    let proof_time = start.elapsed();
-    info!("prover time: {:?}", proof_time);
-
-    Ok(proofs)
-}
-
-fn create_proof_batch_priority_inner<E, C, P: ParameterSource<E>>(
-    circuits: Vec<C>,
-    params: P,
-    priority: bool,
-) -> Result<
-    (
-        Instant,
-        VerifyingKey<E>,
-        Vec<Waiter<Result<E::G1, SynthesisError>>>,
-        Vec<Waiter<Result<E::G1, SynthesisError>>>,
-        Vec<(
-            Waiter<Result<E::G1, SynthesisError>>,
-            Waiter<Result<E::G1, SynthesisError>>,
-            Waiter<Result<E::G1, SynthesisError>>,
-            Waiter<Result<E::G1, SynthesisError>>,
-            Waiter<Result<E::G2, SynthesisError>>,
-            Waiter<Result<E::G2, SynthesisError>>,
-        )>,
-    ),
-    SynthesisError,
->
-where
-    E: Engine,
-    C: Circuit<E> + Send,
-{
-    let mut provers = circuits
-        .into_par_iter()
-        .map(|circuit| -> Result<_, SynthesisError> {
-            let mut prover = ProvingAssignment::new();
-
-            prover.alloc_input(|| "", || Ok(E::Fr::one()))?;
-
-            circuit.synthesize(&mut prover)?;
-
-            for i in 0..prover.input_assignment.len() {
-                prover.enforce(|| "", |lc| lc + Variable(Index::Input(i)), |lc| lc, |lc| lc);
-            }
-
-            Ok(prover)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    // Start fft/multiexp prover timer
-    let start = Instant::now();
-    info!("starting proof timer");
-
+    // The rest of the proving also has parallism, but not on the outer loops, but within e.g. the
+    // multiexp calculations. This is what the `Worker` is used for. It is important that calling
+    // `wait()` on the worker happens *outside* the thread pool, else deadlocks can happen.
     let worker = Worker::new();
     let input_len = provers[0].input_assignment.len();
     let vk = params.get_vk(input_len)?.clone();
@@ -468,32 +358,6 @@ where
             Ok(h)
         })
         .collect::<Result<Vec<_>, SynthesisError>>()?;
-
-    let input_assignments = provers
-        .par_iter_mut()
-        .map(|prover| {
-            let input_assignment = std::mem::replace(&mut prover.input_assignment, Vec::new());
-            Arc::new(
-                input_assignment
-                    .into_iter()
-                    .map(|s| s.into_repr())
-                    .collect::<Vec<_>>(),
-            )
-        })
-        .collect::<Vec<_>>();
-
-    let aux_assignments = provers
-        .par_iter_mut()
-        .map(|prover| {
-            let aux_assignment = std::mem::replace(&mut prover.aux_assignment, Vec::new());
-            Arc::new(
-                aux_assignment
-                    .into_iter()
-                    .map(|s| s.into_repr())
-                    .collect::<Vec<_>>(),
-            )
-        })
-        .collect::<Vec<_>>();
 
     let l_s = aux_assignments
         .iter()
@@ -587,8 +451,133 @@ where
             ))
         })
         .collect::<Result<Vec<_>, SynthesisError>>()?;
+    drop(multiexp_kern);
 
-    Ok((start, vk, h_s, l_s, inputs))
+    let proofs = h_s
+        .into_iter()
+        .zip(l_s.into_iter())
+        .zip(inputs.into_iter())
+        .zip(r_s.into_iter())
+        .zip(s_s.into_iter())
+        .map(
+            |(
+                (((h, l), (a_inputs, a_aux, b_g1_inputs, b_g1_aux, b_g2_inputs, b_g2_aux)), r),
+                s,
+            )| {
+                if vk.delta_g1.is_zero() || vk.delta_g2.is_zero() {
+                    // If this element is zero, someone is trying to perform a
+                    // subversion-CRS attack.
+                    return Err(SynthesisError::UnexpectedIdentity);
+                }
+
+                let mut g_a = vk.delta_g1.mul(r);
+                g_a.add_assign_mixed(&vk.alpha_g1);
+                let mut g_b = vk.delta_g2.mul(s);
+                g_b.add_assign_mixed(&vk.beta_g2);
+                let mut g_c;
+                {
+                    let mut rs = r;
+                    rs.mul_assign(&s);
+
+                    g_c = vk.delta_g1.mul(rs);
+                    g_c.add_assign(&vk.alpha_g1.mul(s));
+                    g_c.add_assign(&vk.beta_g1.mul(r));
+                }
+                let mut a_answer = a_inputs.wait()?;
+                a_answer.add_assign(&a_aux.wait()?);
+                g_a.add_assign(&a_answer);
+                a_answer.mul_assign(s);
+                g_c.add_assign(&a_answer);
+
+                let mut b1_answer = b_g1_inputs.wait()?;
+                b1_answer.add_assign(&b_g1_aux.wait()?);
+                let mut b2_answer = b_g2_inputs.wait()?;
+                b2_answer.add_assign(&b_g2_aux.wait()?);
+
+                g_b.add_assign(&b2_answer);
+                b1_answer.mul_assign(r);
+                g_c.add_assign(&b1_answer);
+                g_c.add_assign(&h.wait()?);
+                g_c.add_assign(&l.wait()?);
+
+                Ok(Proof {
+                    a: g_a.into_affine(),
+                    b: g_b.into_affine(),
+                    c: g_c.into_affine(),
+                })
+            },
+        )
+        .collect::<Result<Vec<_>, SynthesisError>>()?;
+
+    let proof_time = start.elapsed();
+    info!("prover time: {:?}", proof_time);
+
+    Ok(proofs)
+}
+
+fn create_proof_batch_priority_inner<E, C>(
+    circuits: Vec<C>,
+) -> Result<
+    (
+        Instant,
+        std::vec::Vec<ProvingAssignment<E>>,
+        std::vec::Vec<std::sync::Arc<std::vec::Vec<<E::Fr as PrimeField>::Repr>>>,
+        std::vec::Vec<std::sync::Arc<std::vec::Vec<<E::Fr as PrimeField>::Repr>>>,
+    ),
+    SynthesisError,
+>
+where
+    E: Engine,
+    C: Circuit<E> + Send,
+{
+    let mut provers = circuits
+        .into_par_iter()
+        .map(|circuit| -> Result<_, SynthesisError> {
+            let mut prover = ProvingAssignment::new();
+
+            prover.alloc_input(|| "", || Ok(E::Fr::one()))?;
+
+            circuit.synthesize(&mut prover)?;
+
+            for i in 0..prover.input_assignment.len() {
+                prover.enforce(|| "", |lc| lc + Variable(Index::Input(i)), |lc| lc, |lc| lc);
+            }
+
+            Ok(prover)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    // Start fft/multiexp prover timer
+    let start = Instant::now();
+    info!("starting proof timer");
+
+    let input_assignments = provers
+        .par_iter_mut()
+        .map(|prover| {
+            let input_assignment = std::mem::replace(&mut prover.input_assignment, Vec::new());
+            Arc::new(
+                input_assignment
+                    .into_iter()
+                    .map(|s| s.into_repr())
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let aux_assignments = provers
+        .par_iter_mut()
+        .map(|prover| {
+            let aux_assignment = std::mem::replace(&mut prover.aux_assignment, Vec::new());
+            Arc::new(
+                aux_assignment
+                    .into_iter()
+                    .map(|s| s.into_repr())
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    Ok((start, provers, input_assignments, aux_assignments))
 }
 
 #[cfg(test)]
