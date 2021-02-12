@@ -27,6 +27,7 @@ impl GPULock {
 }
 impl Drop for GPULock {
     fn drop(&mut self) {
+        self.0.unlock().unwrap();
         debug!("GPU lock released!");
     }
 }
@@ -69,6 +70,7 @@ impl PriorityLock {
 }
 impl Drop for PriorityLock {
     fn drop(&mut self) {
+        self.0.unlock().unwrap();
         debug!("Priority lock released!");
     }
 }
