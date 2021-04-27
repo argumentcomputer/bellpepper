@@ -174,17 +174,16 @@ where
             None,
         );
 
-        call_kernel!(
-            kernel,
-            &base_buffer,
-            &bucket_buffer,
-            &result_buffer,
-            &exp_buffer,
-            n as u32,
-            num_groups as u32,
-            num_windows as u32,
-            window_size as u32
-        )?;
+        kernel
+            .arg(&base_buffer)
+            .arg(&bucket_buffer)
+            .arg(&result_buffer)
+            .arg(&exp_buffer)
+            .arg(n as u32)
+            .arg(num_groups as u32)
+            .arg(num_windows as u32)
+            .arg(window_size as u32)
+            .run()?;
 
         let mut results = vec![<G as CurveAffine>::Projective::zero(); num_groups * num_windows];
         result_buffer.read_into(0, &mut results)?;
