@@ -77,6 +77,9 @@ Depending on the size of the proof being passed to the gpu for work, certain car
 | Tesla P100             | 3584  |                |
 | Tesla T4               | 2560  |                |
 | Quadro M5000           | 2048  |                |
+| GeForce RTX 3090       |10496  |                |
+| GeForce RTX 3080       | 8704  |                |
+| GeForce RTX 3070       | 5888  |                |
 | GeForce RTX 2080 Ti    | 4352  |                |
 | GeForce RTX 2080 SUPER | 3072  |                |
 | GeForce RTX 2080       | 2944  |                |
@@ -87,9 +90,11 @@ Depending on the size of the proof being passed to the gpu for work, certain car
 | GeForce GTX 1660 Ti    | 1536  |                |
 | GeForce GTX 1060       | 1280  |                |
 | GeForce GTX 1650 SUPER | 1280  |                |
-| GeForce GTX 1650       | 896   |                |
+| GeForce GTX 1650       |  896  |                |
 |                        |       |                |
 | gfx1010                | 2560  | AMD RX 5700 XT |
+| gfx906                 | 7400  | AMD RADEON VII |
+|------------------------|-------|----------------|
 
 ### Running Tests
 
