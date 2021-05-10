@@ -13,6 +13,7 @@ lazy_static::lazy_static! {
 
             // NVIDIA
             ("Quadro RTX 6000".to_string(), 4608),
+            ("Quadro RTX A6000".to_string(), 10752),
 
             ("TITAN RTX".to_string(), 4608),
 
