@@ -117,8 +117,6 @@ jobs:
       - run: rustup default $(cat rust-toolchain)
       # A nightly build is needed for code coverage reporting
       - run: rustup toolchain install --profile minimal << pipeline.parameters.nightly-version >>
-      - run: rustup component add rustfmt-preview
-      - run: rustup component add clippy-preview
       - run: rustup component add --toolchain << pipeline.parameters.nightly-version >> llvm-tools-preview
       - run: rustc --version
       - run: rm -rf .git
@@ -182,34 +180,20 @@ jobs:
       - *restore-cache
       - set-env-path
       - run:
-          name: Run cargo clippy (blst)
-          command: cargo clippy --no-default-features --features blst
+          name: Run cargo clippy (default features (pairing))
+          command: cargo clippy --all-targets --features gpu -- -D warnings
       - run:
           name: Run cargo clippy (pairing)
-          command: cargo clippy --no-default-features --features pairing
+          command: cargo clippy --all-targets --no-default-features --features pairing -- -D warnings
       - run:
-          name: Run cargo clippy (gpu)
-          command: cargo clippy --features gpu
-
-  build_blst:
-    executor: default
-    steps:
-      - *restore-workspace
-      - *restore-cache
-      - set-env-path
+          name: Run cargo clippy (blst)
+          command: cargo clippy --all-targets --no-default-features --features blst -- -D warnings
       - run:
-          name: Run cargo release build
-          command: cargo build --release --no-default-features --features blst
-
-  build_pairing:
-    executor: default
-    steps:
-      - *restore-workspace
-      - *restore-cache
-      - set-env-path
+          name: Run cargo clippy (pairing,gpu)
+          command: cargo clippy --all-targets --no-default-features --features pairing,gpu -- -D warnings
       - run:
-          name: Run cargo release build
-          command: cargo build --release --no-default-features --features pairing
+          name: Run cargo clippy (blst,gpu)
+          command: cargo clippy --all-targets --no-default-features --features blst,gpu -- -D warnings
 
   coverage_run:
     executor: default
@@ -284,13 +268,6 @@ workflows:
           requires:
             - cargo_fetch
       - test_blst_gpu_x86_64-unknown-linux-gnu:
-          requires:
-            - cargo_fetch
-            
-      - build_blst:
-          requires:
-            - cargo_fetch
-      - build_pairing:
           requires:
             - cargo_fetch
 
