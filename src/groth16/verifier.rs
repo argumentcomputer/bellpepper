@@ -24,6 +24,9 @@ pub fn prepare_verifying_key<E: Engine>(vk: &VerifyingKey<E>) -> PreparedVerifyi
         delta_g2: vk.delta_g2.prepare(),
         ic: vk.ic.clone(),
         multiscalar,
+        alpha_g1: vk.alpha_g1.into_projective(),
+        beta_g2: vk.beta_g2.prepare(),
+        ic_projective: vk.ic.par_iter().map(|i| i.into_projective()).collect(),
     }
 }
 
@@ -72,11 +75,12 @@ pub fn verify_proof<'a, E: Engine>(
             let public_inputs_repr: Vec<_> =
                 public_inputs.iter().map(PrimeField::into_repr).collect();
 
-            let mut acc = multiscalar::par_multiscalar::<&multiscalar::Getter<E>, E>(
-                &multiscalar::ScalarList::Slice(&public_inputs_repr),
-                &subset,
-                std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
-            );
+            let mut acc =
+                multiscalar::par_multiscalar::<&multiscalar::Getter<E::G1Affine>, E::G1Affine>(
+                    &multiscalar::ScalarList::Slice(&public_inputs_repr),
+                    &subset,
+                    std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
+                );
 
             acc.add_assign_mixed(&pvk.ic[0]);
 
@@ -190,7 +194,7 @@ where
                 };
 
                 // \sum Accum_Gamma
-                let acc_g_psi = multiscalar::par_multiscalar::<_, E>(
+                let acc_g_psi = multiscalar::par_multiscalar::<_, E::G1Affine>(
                     &multiscalar::ScalarList::Getter(scalar_getter, num_inputs + 1),
                     &pvk.multiscalar,
                     256,
@@ -207,8 +211,8 @@ where
 
                 // Accum_Delta
                 let acc_d: E::G1 = {
-                    let pre = multiscalar::precompute_fixed_window::<E>(&points, 1);
-                    multiscalar::multiscalar::<E>(
+                    let pre = multiscalar::precompute_fixed_window::<E::G1Affine>(&points, 1);
+                    multiscalar::multiscalar::<E::G1Affine>(
                         &rand_z_repr,
                         &pre,
                         std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,

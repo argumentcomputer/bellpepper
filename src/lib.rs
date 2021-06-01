@@ -1,3 +1,4 @@
+#![allow(clippy::suspicious_arithmetic_impl)]
 //! `bellperson` is a crate for building zk-SNARK circuits. It provides circuit
 //! traits and and primitive structures, as well as basic gadget implementations
 //! such as booleans and number abstractions.
@@ -345,6 +346,16 @@ pub enum SynthesisError {
     /// During GPU multiexp/fft, some GPU related error happened
     #[error("encountered a GPU error: {0}")]
     GPUError(#[from] gpu::GPUError),
+    #[error("attempted to aggregate malformed proofs: {0}")]
+    MalformedProofs(String),
+    #[error("malformed SRS")]
+    MalformedSrs,
+    #[error("non power of two proofs given for aggregation")]
+    NonPowerOfTwo,
+    #[error("incompatible vector length: {0}")]
+    IncompatibleLengthVector(String),
+    #[error("invalid pairing")]
+    InvalidPairing,
 }
 
 /// Represents a constraint system which can have new variables

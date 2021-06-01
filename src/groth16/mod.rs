@@ -7,6 +7,7 @@
 #[cfg(all(test, not(feature = "gpu")))]
 mod tests;
 
+pub mod aggregate;
 mod ext;
 mod generator;
 mod mapped_params;

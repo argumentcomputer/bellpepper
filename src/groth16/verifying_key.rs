@@ -8,7 +8,7 @@ use std::mem;
 
 use super::multiscalar;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct VerifyingKey<E: Engine> {
     // alpha in g1 for verifying and for creating A/C elements of
     // proof. Never the point at infinity.
@@ -226,5 +226,10 @@ pub struct PreparedVerifyingKey<E: Engine> {
     /// Copy of IC from `VerifiyingKey`.
     pub(crate) ic: Vec<E::G1Affine>,
 
-    pub(crate) multiscalar: multiscalar::MultiscalarPrecompOwned<E>,
+    pub(crate) multiscalar: multiscalar::MultiscalarPrecompOwned<E::G1Affine>,
+
+    // Aggregation specific prep
+    pub(crate) alpha_g1: E::G1,
+    pub(crate) beta_g2: <E::G2Affine as PairingCurveAffine>::Prepared,
+    pub(crate) ic_projective: Vec<E::G1>,
 }
