@@ -35,6 +35,15 @@ impl<E: Engine> std::ops::Deref for Challenge<E> {
     }
 }
 
+impl<E: Engine> Serialize for Challenge<E> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
 impl<E: Engine> Transcript<E> {
     pub fn new(application_tag: &str) -> Self {
         let mut hasher = sha2::Sha256::new();
