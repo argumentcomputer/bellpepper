@@ -522,45 +522,56 @@ pub fn verify_kzg_v<E: Engine, R: rand::RngCore + Send>(
     let mut ng = v_srs.g.clone();
     // e(A,B) = e(C,D) <=> e(A,B)e(-C,D) == 1 <=> e(A,B)e(C,D)^-1 == 1
     ng.negate();
-    par! {
-        // verify first part of opening - v1
-        // e(-g, v1-(f_v(z)}*h)) ==> e(g^-1,h^{f_v(a)} * h^{-f_v(z)})
-        let _check1 = pairing_checks.merge_miller_inputs(&[(
-            &ng.into_affine(),
-            // in additive notation: final_vkey = uH,
-            // uH - f_v(z)H = (u - f_v)H --> v1h^{-af_v(z)}
-            &sub!(
-                final_vkey.0.into_projective(),
-                &mul!(v_srs.h, vpoly_eval_z)
-            )
-            .into_affine(),
-        ),
-        // e(g^{a - z}, opening_1) ==> e(g^{a-z}, h^q(a))
-        (
-            &sub!(v_srs.g_alpha, &mul!(v_srs.g, kzg_challenge.clone()))
-                .into_affine(),
-            &vkey_opening.0,
-        )], &E::Fqk::one()),
+    let ng = ng.into_affine();
 
-        // verify second part of opening - v2 - similar but changing secret exponent
-        // e(g, v2 h^{-bf_v(z)})
-        let _check2 = pairing_checks.merge_miller_inputs(&[(
-            &ng.into_affine(),
-            // in additive notation: final_vkey = uH,
-            // uH - f_v(z)H = (u - f_v)H --> v1h^{-f_v(z)}
-            &sub!(
-                final_vkey.1.into_projective(),
-                &mul!(v_srs.h, vpoly_eval_z)
-            )
-            .into_affine(),
+    par! {
+        // e(g, C_f * h^{-y}) == e(v1 * g^{-x}, \pi) = 1
+        let _check1 = kzg_check_v::<E, R>(
+            v_srs,
+            ng,
+            *kzg_challenge,
+            vpoly_eval_z,
+            final_vkey.0.into_projective(),
+            v_srs.g_alpha,
+            vkey_opening.0,
+            pairing_checks,
         ),
-        // e(g^{b - z}, opening_1)
-        (
-            &sub!(v_srs.g_beta, &mul!(v_srs.g, kzg_challenge.clone()))
-                .into_affine(),
-            &vkey_opening.1,
-        )], &E::Fqk::one())
+
+        // e(g, C_f * h^{-y}) == e(v2 * g^{-x}, \pi) = 1
+        let _check2 = kzg_check_v::<E, R>(
+            v_srs,
+            ng,
+            *kzg_challenge,
+            vpoly_eval_z,
+            final_vkey.1.into_projective(),
+            v_srs.g_beta,
+            vkey_opening.1,
+            pairing_checks,
+        )
     };
+}
+
+fn kzg_check_v<E: Engine, R: rand::RngCore + Send>(
+    v_srs: &VerifierSRS<E>,
+    ng: E::G1Affine,
+    x: E::Fr,
+    y: E::Fr,
+    cf: E::G2,
+    vk: E::G1,
+    pi: E::G2Affine,
+    pairing_checks: &PairingChecks<E, R>,
+) {
+    // KZG Check: e(g, C_f * h^{-y}) = e(vk * g^{-x}, \pi)
+    // Transformed, such that
+    // e(-g, C_f * h^{-y}) * e(vk * g^{-x}, \pi) = 1
+
+    // C_f - (h * y)
+    let b = sub!(cf, &mul!(v_srs.h, y)).into_affine();
+
+    // vk - (g * x)
+    let c = sub!(vk, &mul!(v_srs.g, x)).into_affine();
+
+    pairing_checks.merge_miller_inputs(&[(&ng, &b), (&c, &pi)], &E::Fqk::one());
 }
 
 /// Similar to verify_kzg_opening_g2 but for g1.
@@ -582,47 +593,58 @@ pub fn verify_kzg_w<E: Engine, R: rand::RngCore + Send>(
     let mut fwz = fz;
     fwz.mul_assign(&zn);
 
-    // -h such that when we test a pairing equation we only need to check if
-    // it's equal 1 at the end:
-    // e(a,b) = e(c,d) <=> e(a,b)e(c,-d) = 1
-    let mut nh = v_srs.h.clone();
+    let mut nh = v_srs.h;
     nh.negate();
+    let nh = nh.into_affine();
 
     par! {
-        // first check on w1
-        // e(w_1 / g^{f_w(z)},h) == e(\pi_{w,1},h^a/h^z) \\
-        // e(g^{f_w(a) - f_w(z)},
-        let _check1 = pairing_checks.merge_miller_inputs(&[(
-            &sub!(
-                final_wkey.0.into_projective(),
-                &mul!(v_srs.g, fwz)
-            )
-            .into_affine(),
-            &nh.into_affine(),
+        // e(C_f * g^{-y}, h) = e(\pi, w1 * h^{-x})
+        let _check1 = kzg_check_w::<E, R>(
+            v_srs,
+            nh,
+            *kzg_challenge,
+            fwz,
+            final_wkey.0.into_projective(),
+            v_srs.h_alpha,
+            wkey_opening.0,
+            pairing_checks,
         ),
-        // e(opening, h^{a - z})
-        (
-            &wkey_opening.0,
-            &sub!(v_srs.h_alpha, &mul!(v_srs.h, *kzg_challenge))
-                .into_affine(),
-        )], &E::Fqk::one()),
-        // then do second check
-        // e(w_2 / g^{f_w(z)},h) == e(\pi_{w,2},h^b/h^z) \\
-        let _check2 = pairing_checks.merge_miller_inputs(&[(
-            &sub!(
-                final_wkey.1.into_projective(),
-                &mul!(v_srs.g, fwz)
-            )
-            .into_affine() ,
-            &nh.into_affine(),
-        ),
-        // e(opening, h^{b - z})
-        (
-            &wkey_opening.1,
-            &sub!(v_srs.h_beta, &mul!(v_srs.h, *kzg_challenge))
-                .into_affine(),
-        )], &E::Fqk::one())
+
+        // e(C_f * g^{-y}, h) = e(\pi, w2 * h^{-x})
+        let _check2 = kzg_check_w::<E, R>(
+            v_srs,
+            nh,
+            *kzg_challenge,
+            fwz,
+            final_wkey.1.into_projective(),
+            v_srs.h_beta,
+            wkey_opening.1,
+            pairing_checks,
+        )
     };
+}
+
+fn kzg_check_w<E: Engine, R: rand::RngCore + Send>(
+    v_srs: &VerifierSRS<E>,
+    nh: E::G2Affine,
+    x: E::Fr,
+    y: E::Fr,
+    cf: E::G1,
+    wk: E::G2,
+    pi: E::G1Affine,
+    pairing_checks: &PairingChecks<E, R>,
+) {
+    // KZG Check: e(C_f * g^{-y}, h) = e(\pi, wk * h^{-x})
+    // Transformed, such that
+    // e(C_f * g^{-y}, -h) * e(\pi, wk * h^{-x}) = 1
+
+    // C_f - (g * y)
+    let a = sub!(cf, &mul!(v_srs.g, y)).into_affine();
+
+    // wk - (h * x)
+    let d = sub!(wk, &mul!(v_srs.h, x)).into_affine();
+
+    pairing_checks.merge_miller_inputs(&[(&a, &nh), (&pi, &d)], &E::Fqk::one());
 }
 
 /// Keeps track of the variables that have been sent by the prover and must
