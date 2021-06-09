@@ -497,15 +497,14 @@ pub(super) fn polynomial_evaluation_product_form_from_transcript<F: Field>(
     let mut power_zr = *z;
     power_zr.mul_assign(r_shift);
 
-    // 0 iteration
-    let mut res = add!(F::one(), &mul!(transcript[0], &power_zr));
-    power_zr.mul_assign(&power_zr.clone());
+    let one = F::one();
 
-    // the rest
-    for x in transcript[1..].iter() {
-        res.mul_assign(&add!(F::one(), &mul!(*x, &power_zr)));
-        power_zr.mul_assign(&power_zr.clone());
+    let mut res = add!(one, &mul!(transcript[0], &power_zr));
+    for x in &transcript[1..] {
+        power_zr.square();
+        res.mul_assign(&add!(one, &mul!(*x, &power_zr)));
     }
+
     res
 }
 
@@ -526,13 +525,16 @@ fn polynomial_coefficients_from_transcript<F: Field>(transcript: &[F], r_shift: 
     let mut coefficients = vec![F::one()];
     let mut power_2_r = *r_shift;
 
-    for x in transcript.iter() {
+    for (i, x) in transcript.iter().enumerate() {
         let n = coefficients.len();
+        if i > 0 {
+            power_2_r.square();
+        }
         for j in 0..n {
             let coeff = mul!(coefficients[j], &mul!(*x, &power_2_r));
             coefficients.push(coeff);
         }
-        power_2_r.mul_assign(&power_2_r.clone());
     }
+
     coefficients
 }
