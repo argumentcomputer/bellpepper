@@ -26,6 +26,7 @@ use std::time::Instant;
 /// Verifies the aggregated proofs thanks to the Groth16 verifying key, the
 /// verifier SRS from the aggregation scheme, all the public inputs of the
 /// proofs and the aggregated proof.
+///
 /// WARNING: transcript_include represents everything that should be included in
 /// the transcript from outside the boundary of this function. This is especially
 /// relevant for ALL public inputs of ALL individual proofs. In the regular case,
@@ -324,7 +325,7 @@ fn gipa_verify_tipp_mipp<E: Engine>(
     let mut challenges = Vec::new();
     let mut challenges_inv = Vec::new();
 
-    let mut c_inv: E::Fr = *Transcript::<E>::new("gipa")
+    let mut c_inv: E::Fr = *Transcript::<E>::new("gipa-0")
         .write(hcom)
         .write(&proof.ip_ab)
         .write(&proof.agg_c)
@@ -332,15 +333,14 @@ fn gipa_verify_tipp_mipp<E: Engine>(
         .into_challenge();
     let mut c = c_inv.inverse().unwrap();
 
-    let mut first_loop = true;
-
     // We first generate all challenges as this is the only consecutive process
     // that can not be parallelized then we scale the commitments in a
     // parallelized way
-    for ((comm_ab, z_ab), (comm_c, z_c)) in comms_ab
+    for (i, ((comm_ab, z_ab), (comm_c, z_c))) in comms_ab
         .iter()
         .zip(zs_ab.iter())
         .zip(comms_c.iter().zip(zs_c.iter()))
+        .enumerate()
     {
         let (tab_l, tab_r) = comm_ab;
         let (zab_l, zab_r) = z_ab;
@@ -348,11 +348,10 @@ fn gipa_verify_tipp_mipp<E: Engine>(
         let (zc_l, zc_r) = z_c;
 
         // Fiat-Shamir challenge
-        if first_loop {
-            first_loop = false;
-        // already generated c_inv and c outside of the loop
+        if i == 0 {
+            // already generated c_inv and c outside of the loop
         } else {
-            c_inv = *Transcript::<E>::new("gipa")
+            c_inv = *Transcript::<E>::new(&format!("gipa-{}", i))
                 .write(&c_inv)
                 .write(&zab_l)
                 .write(&zab_r)
@@ -565,7 +564,7 @@ fn kzg_check_v<E: Engine, R: rand::RngCore + Send>(
     // Transformed, such that
     // e(-g, C_f * h^{-y}) * e(vk * g^{-x}, \pi) = 1
 
-    // C_f - (h * y)
+    // C_f - (y * h)
     let b = sub!(cf, &mul!(v_srs.h, y)).into_affine();
 
     // vk - (g * x)
@@ -638,10 +637,10 @@ fn kzg_check_w<E: Engine, R: rand::RngCore + Send>(
     // Transformed, such that
     // e(C_f * g^{-y}, -h) * e(\pi, wk * h^{-x}) = 1
 
-    // C_f - (g * y)
+    // C_f - (y * g)
     let a = sub!(cf, &mul!(v_srs.g, y)).into_affine();
 
-    // wk - (h * x)
+    // wk - (x * h)
     let d = sub!(wk, &mul!(v_srs.h, x)).into_affine();
 
     pairing_checks.merge_miller_inputs(&[(&a, &nh), (&pi, &d)], &E::Fqk::one());

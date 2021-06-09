@@ -220,7 +220,7 @@ fn gipa_tipp_mipp<E: Engine>(
     let mut challenges: Vec<E::Fr> = Vec::new();
     let mut challenges_inv: Vec<E::Fr> = Vec::new();
 
-    let mut c_inv: E::Fr = *Transcript::<E>::new("gipa")
+    let mut c_inv: E::Fr = *Transcript::<E>::new("gipa-0")
         .write(hcom)
         .write(ip_ab)
         .write(agg_c)
@@ -228,7 +228,7 @@ fn gipa_tipp_mipp<E: Engine>(
         .into_challenge();
     let mut c = c_inv.inverse().unwrap();
 
-    let mut first_loop = true;
+    let mut i = 0;
 
     while m_a.len() > 1 {
         // recursive step
@@ -277,11 +277,10 @@ fn gipa_tipp_mipp<E: Engine>(
 
         // Fiat-Shamir challenge
         // combine both TIPP and MIPP transcript
-        if first_loop {
-            first_loop = false;
-        // already generated c_inv and c outside of the loop
+        if i == 0 {
+            // already generated c_inv and c outside of the loop
         } else {
-            c_inv = *Transcript::<E>::new("gipa")
+            c_inv = *Transcript::<E>::new(&format!("gipa-{}", i))
                 .write(&c_inv)
                 .write(&zab_l)
                 .write(&zab_r)
@@ -333,6 +332,8 @@ fn gipa_tipp_mipp<E: Engine>(
         z_c.push((zc_l, zc_r));
         challenges.push(c);
         challenges_inv.push(c_inv);
+
+        i += 1;
     }
 
     assert!(m_a.len() == 1 && m_b.len() == 1);

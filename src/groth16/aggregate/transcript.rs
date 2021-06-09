@@ -6,6 +6,8 @@ use sha2::{Digest, Sha256};
 
 use crate::bls::Engine;
 
+const PREFIX: &str = "snarkpack-v1";
+
 #[derive(Debug)]
 pub struct Transcript<E: Engine> {
     hasher: Sha256,
@@ -47,6 +49,7 @@ impl<E: Engine> Serialize for Challenge<E> {
 impl<E: Engine> Transcript<E> {
     pub fn new(application_tag: &str) -> Self {
         let mut hasher = sha2::Sha256::new();
+        hasher.update(PREFIX);
         hasher.update(application_tag);
 
         Transcript {
