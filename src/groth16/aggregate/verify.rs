@@ -6,9 +6,12 @@ use log::*;
 use rayon::prelude::*;
 
 use super::{
-    accumulator::PairingChecks, inner_product,
-    prove::polynomial_evaluation_product_form_from_transcript, structured_scalar_power,
-    transcript::Transcript, AggregateProof, KZGOpening, VerifierSRS,
+    accumulator::PairingChecks,
+    inner_product,
+    prove::polynomial_evaluation_product_form_from_transcript,
+    structured_scalar_power,
+    transcript::{Challenge, Transcript},
+    AggregateProof, KZGOpening, VerifierSRS,
 };
 use crate::bls::{Engine, PairingCurveAffine};
 use crate::groth16::{
@@ -23,6 +26,7 @@ use std::time::Instant;
 /// Verifies the aggregated proofs thanks to the Groth16 verifying key, the
 /// verifier SRS from the aggregation scheme, all the public inputs of the
 /// proofs and the aggregated proof.
+///
 /// WARNING: transcript_include represents everything that should be included in
 /// the transcript from outside the boundary of this function. This is especially
 /// relevant for ALL public inputs of ALL individual proofs. In the regular case,
@@ -49,18 +53,22 @@ pub fn verify_aggregate_proof<E: Engine + std::fmt::Debug, R: rand::RngCore + Se
         }
     }
 
-    // Random linear combination of proofs
-    let mut transcript = Transcript::new("snarkpack");
-    let r = transcript
-        .write_domain_separator("random-r")
-        .write(&proof.com_ab.0)
-        .write(&proof.com_ab.1)
-        .write(&proof.com_c.0)
-        .write(&proof.com_c.1)
-        .write(&transcript_include)
-        .read_challenge();
+    if public_inputs.len() != proof.tmipp.gipa.nproofs as usize {
+        return Err(SynthesisError::MalformedProofs(
+            "public inputs length does not match nproofs".to_string(),
+        ));
+    }
 
-    transcript.write(&proof.ip_ab).write(&proof.agg_c);
+    let hcom = Transcript::<E>::new("hcom")
+        .write(&proof.com_ab)
+        .write(&proof.com_c)
+        .into_challenge();
+
+    // Random linear combination of proofs
+    let r = Transcript::<E>::new("random-r")
+        .write(&hcom)
+        .write(&transcript_include)
+        .into_challenge();
 
     let pairing_checks = PairingChecks::new(rng);
     let pairing_checks_copy = &pairing_checks;
@@ -71,11 +79,11 @@ pub fn verify_aggregate_proof<E: Engine + std::fmt::Debug, R: rand::RngCore + Se
         s.spawn(move |_| {
             let now = Instant::now();
             verify_tipp_mipp::<E, R>(
-                &mut transcript,
                 ip_verifier_srs,
                 proof,
                 &r, // we give the extra r as it's not part of the proof itself - it is simply used on top for the groth16 aggregation
                 pairing_checks_copy,
+                &hcom,
             );
             debug!("TIPP took {} ms", now.elapsed().as_millis(),);
         });
@@ -187,17 +195,17 @@ pub fn verify_aggregate_proof<E: Engine + std::fmt::Debug, R: rand::RngCore + Se
 /// the randomness used to produce a random linear combination of A and B and
 /// used in the MIPP part with C
 fn verify_tipp_mipp<E: Engine, R: rand::RngCore + Send>(
-    transcript: &mut Transcript<E>,
     v_srs: &VerifierSRS<E>,
     proof: &AggregateProof<E>,
     r_shift: &E::Fr,
     pairing_checks: &PairingChecks<E, R>,
+    hcom: &Challenge<E>,
 ) {
     info!("verify with srs shift");
     let now = Instant::now();
     // (T,U), Z for TIPP and MIPP  and all challenges
     let (final_res, final_r, challenges, challenges_inv) =
-        gipa_verify_tipp_mipp(transcript, &proof, r_shift);
+        gipa_verify_tipp_mipp(&proof, r_shift, hcom);
     debug!(
         "TIPP verify: gipa verify tipp {}ms",
         now.elapsed().as_millis()
@@ -207,14 +215,13 @@ fn verify_tipp_mipp<E: Engine, R: rand::RngCore + Send>(
     let fvkey = proof.tmipp.gipa.final_vkey;
     let fwkey = proof.tmipp.gipa.final_wkey;
     // KZG challenge point
-    let c = transcript
-        .write_domain_separator("random-z")
-        .write(&challenges.first().unwrap())
+    let c = Transcript::<E>::new("random-z")
+        .write(&challenges[0])
         .write(&fvkey.0)
         .write(&fvkey.1)
         .write(&fwkey.0)
         .write(&fwkey.1)
-        .read_challenge();
+        .into_challenge();
 
     // we take reference so they are able to be copied in the par! macro
     let final_a = &proof.tmipp.gipa.final_a;
@@ -299,9 +306,9 @@ fn verify_tipp_mipp<E: Engine, R: rand::RngCore + Send>(
 /// MIPP share the same challenges however, enabling to re-use common operations
 /// between them, such as the KZG proof for commitment keys.
 fn gipa_verify_tipp_mipp<E: Engine>(
-    transcript: &mut Transcript<E>,
     proof: &AggregateProof<E>,
     r_shift: &E::Fr,
+    hcom: &E::Fr,
 ) -> (GipaTUZ<E>, E::Fr, Vec<E::Fr>, Vec<E::Fr>) {
     info!("gipa verify TIPP");
     let gipa = &proof.tmipp.gipa;
@@ -318,39 +325,51 @@ fn gipa_verify_tipp_mipp<E: Engine>(
     let mut challenges = Vec::new();
     let mut challenges_inv = Vec::new();
 
-    transcript.write_domain_separator("gipa");
+    let mut c_inv: E::Fr = *Transcript::<E>::new("gipa-0")
+        .write(hcom)
+        .write(&proof.ip_ab)
+        .write(&proof.agg_c)
+        .write(&r_shift)
+        .into_challenge();
+    let mut c = c_inv.inverse().unwrap();
 
     // We first generate all challenges as this is the only consecutive process
     // that can not be parallelized then we scale the commitments in a
     // parallelized way
-    for ((comm_ab, z_ab), (comm_c, z_c)) in comms_ab
+    for (i, ((comm_ab, z_ab), (comm_c, z_c))) in comms_ab
         .iter()
         .zip(zs_ab.iter())
         .zip(comms_c.iter().zip(zs_c.iter()))
+        .enumerate()
     {
         let (tab_l, tab_r) = comm_ab;
         let (zab_l, zab_r) = z_ab;
         let (tc_l, tc_r) = comm_c;
         let (zc_l, zc_r) = z_c;
-        // Fiat-Shamir challenge
-        let c_inv = transcript
-            .write(&zab_l)
-            .write(&zab_r)
-            .write(&zc_l)
-            .write(&zc_r)
-            .write(&tab_l.0)
-            .write(&tab_l.1)
-            .write(&tab_r.0)
-            .write(&tab_r.1)
-            .write(&tc_l.0)
-            .write(&tc_l.1)
-            .write(&tc_r.0)
-            .write(&tc_r.1)
-            .read_challenge();
 
-        let c = c_inv.inverse().unwrap();
+        // Fiat-Shamir challenge
+        if i == 0 {
+            // already generated c_inv and c outside of the loop
+        } else {
+            c_inv = *Transcript::<E>::new(&format!("gipa-{}", i))
+                .write(&c_inv)
+                .write(&zab_l)
+                .write(&zab_r)
+                .write(&zc_l)
+                .write(&zc_r)
+                .write(&tab_l.0)
+                .write(&tab_l.1)
+                .write(&tab_r.0)
+                .write(&tab_r.1)
+                .write(&tc_l.0)
+                .write(&tc_l.1)
+                .write(&tc_r.0)
+                .write(&tc_r.1)
+                .into_challenge();
+            c = c_inv.inverse().unwrap();
+        }
         challenges.push(c);
-        challenges_inv.push(*c_inv);
+        challenges_inv.push(c_inv);
     }
 
     debug!(
@@ -502,45 +521,56 @@ pub fn verify_kzg_v<E: Engine, R: rand::RngCore + Send>(
     let mut ng = v_srs.g.clone();
     // e(A,B) = e(C,D) <=> e(A,B)e(-C,D) == 1 <=> e(A,B)e(C,D)^-1 == 1
     ng.negate();
-    par! {
-        // verify first part of opening - v1
-        // e(-g, v1-(f_v(z)}*h)) ==> e(g^-1,h^{f_v(a)} * h^{-f_v(z)})
-        let _check1 = pairing_checks.merge_miller_inputs(&[(
-            &ng.into_affine(),
-            // in additive notation: final_vkey = uH,
-            // uH - f_v(z)H = (u - f_v)H --> v1h^{-af_v(z)}
-            &sub!(
-                final_vkey.0.into_projective(),
-                &mul!(v_srs.h, vpoly_eval_z)
-            )
-            .into_affine(),
-        ),
-        // e(g^{a - z}, opening_1) ==> e(g^{a-z}, h^q(a))
-        (
-            &sub!(v_srs.g_alpha, &mul!(v_srs.g, kzg_challenge.clone()))
-                .into_affine(),
-            &vkey_opening.0,
-        )], &E::Fqk::one()),
+    let ng = ng.into_affine();
 
-        // verify second part of opening - v2 - similar but changing secret exponent
-        // e(g, v2 h^{-bf_v(z)})
-        let _check2 = pairing_checks.merge_miller_inputs(&[(
-            &ng.into_affine(),
-            // in additive notation: final_vkey = uH,
-            // uH - f_v(z)H = (u - f_v)H --> v1h^{-f_v(z)}
-            &sub!(
-                final_vkey.1.into_projective(),
-                &mul!(v_srs.h, vpoly_eval_z)
-            )
-            .into_affine(),
+    par! {
+        // e(g, C_f * h^{-y}) == e(v1 * g^{-x}, \pi) = 1
+        let _check1 = kzg_check_v::<E, R>(
+            v_srs,
+            ng,
+            *kzg_challenge,
+            vpoly_eval_z,
+            final_vkey.0.into_projective(),
+            v_srs.g_alpha,
+            vkey_opening.0,
+            pairing_checks,
         ),
-        // e(g^{b - z}, opening_1)
-        (
-            &sub!(v_srs.g_beta, &mul!(v_srs.g, kzg_challenge.clone()))
-                .into_affine(),
-            &vkey_opening.1,
-        )], &E::Fqk::one())
+
+        // e(g, C_f * h^{-y}) == e(v2 * g^{-x}, \pi) = 1
+        let _check2 = kzg_check_v::<E, R>(
+            v_srs,
+            ng,
+            *kzg_challenge,
+            vpoly_eval_z,
+            final_vkey.1.into_projective(),
+            v_srs.g_beta,
+            vkey_opening.1,
+            pairing_checks,
+        )
     };
+}
+
+fn kzg_check_v<E: Engine, R: rand::RngCore + Send>(
+    v_srs: &VerifierSRS<E>,
+    ng: E::G1Affine,
+    x: E::Fr,
+    y: E::Fr,
+    cf: E::G2,
+    vk: E::G1,
+    pi: E::G2Affine,
+    pairing_checks: &PairingChecks<E, R>,
+) {
+    // KZG Check: e(g, C_f * h^{-y}) = e(vk * g^{-x}, \pi)
+    // Transformed, such that
+    // e(-g, C_f * h^{-y}) * e(vk * g^{-x}, \pi) = 1
+
+    // C_f - (y * h)
+    let b = sub!(cf, &mul!(v_srs.h, y)).into_affine();
+
+    // vk - (g * x)
+    let c = sub!(vk, &mul!(v_srs.g, x)).into_affine();
+
+    pairing_checks.merge_miller_inputs(&[(&ng, &b), (&c, &pi)], &E::Fqk::one());
 }
 
 /// Similar to verify_kzg_opening_g2 but for g1.
@@ -562,47 +592,58 @@ pub fn verify_kzg_w<E: Engine, R: rand::RngCore + Send>(
     let mut fwz = fz;
     fwz.mul_assign(&zn);
 
-    // -h such that when we test a pairing equation we only need to check if
-    // it's equal 1 at the end:
-    // e(a,b) = e(c,d) <=> e(a,b)e(c,-d) = 1
-    let mut nh = v_srs.h.clone();
+    let mut nh = v_srs.h;
     nh.negate();
+    let nh = nh.into_affine();
 
     par! {
-        // first check on w1
-        // e(w_1 / g^{f_w(z)},h) == e(\pi_{w,1},h^a/h^z) \\
-        // e(g^{f_w(a) - f_w(z)},
-        let _check1 = pairing_checks.merge_miller_inputs(&[(
-            &sub!(
-                final_wkey.0.into_projective(),
-                &mul!(v_srs.g, fwz)
-            )
-            .into_affine(),
-            &nh.into_affine(),
+        // e(C_f * g^{-y}, h) = e(\pi, w1 * h^{-x})
+        let _check1 = kzg_check_w::<E, R>(
+            v_srs,
+            nh,
+            *kzg_challenge,
+            fwz,
+            final_wkey.0.into_projective(),
+            v_srs.h_alpha,
+            wkey_opening.0,
+            pairing_checks,
         ),
-        // e(opening, h^{a - z})
-        (
-            &wkey_opening.0,
-            &sub!(v_srs.h_alpha, &mul!(v_srs.h, *kzg_challenge))
-                .into_affine(),
-        )], &E::Fqk::one()),
-        // then do second check
-        // e(w_2 / g^{f_w(z)},h) == e(\pi_{w,2},h^b/h^z) \\
-        let _check2 = pairing_checks.merge_miller_inputs(&[(
-            &sub!(
-                final_wkey.1.into_projective(),
-                &mul!(v_srs.g, fwz)
-            )
-            .into_affine() ,
-            &nh.into_affine(),
-        ),
-        // e(opening, h^{b - z})
-        (
-            &wkey_opening.1,
-            &sub!(v_srs.h_beta, &mul!(v_srs.h, *kzg_challenge))
-                .into_affine(),
-        )], &E::Fqk::one())
+
+        // e(C_f * g^{-y}, h) = e(\pi, w2 * h^{-x})
+        let _check2 = kzg_check_w::<E, R>(
+            v_srs,
+            nh,
+            *kzg_challenge,
+            fwz,
+            final_wkey.1.into_projective(),
+            v_srs.h_beta,
+            wkey_opening.1,
+            pairing_checks,
+        )
     };
+}
+
+fn kzg_check_w<E: Engine, R: rand::RngCore + Send>(
+    v_srs: &VerifierSRS<E>,
+    nh: E::G2Affine,
+    x: E::Fr,
+    y: E::Fr,
+    cf: E::G1,
+    wk: E::G2,
+    pi: E::G1Affine,
+    pairing_checks: &PairingChecks<E, R>,
+) {
+    // KZG Check: e(C_f * g^{-y}, h) = e(\pi, wk * h^{-x})
+    // Transformed, such that
+    // e(C_f * g^{-y}, -h) * e(\pi, wk * h^{-x}) = 1
+
+    // C_f - (y * g)
+    let a = sub!(cf, &mul!(v_srs.g, y)).into_affine();
+
+    // wk - (x * h)
+    let d = sub!(wk, &mul!(v_srs.h, x)).into_affine();
+
+    pairing_checks.merge_miller_inputs(&[(&a, &nh), (&pi, &d)], &E::Fqk::one());
 }
 
 /// Keeps track of the variables that have been sent by the prover and must
