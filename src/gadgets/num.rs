@@ -121,7 +121,9 @@ impl<E: ScalarEngine> AllocatedNum<E> {
             found_one |= b;
             if !found_one {
                 // a_bit should also be false
-                a_bit.map(|e| assert!(!e));
+                if let Some(e) = a_bit {
+                    assert!(!e);
+                }
                 continue;
             }
 
@@ -409,6 +411,7 @@ impl<E: ScalarEngine> Num<E> {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn add(self, other: &Self) -> Self {
         let lc = self.lc + &other.lc;
         let value = match (self.value, other.value) {
@@ -590,7 +593,7 @@ mod test {
                 .skip(1)
                 .zip(bits.iter().rev())
             {
-                if let &Boolean::Is(ref a) = a {
+                if let Boolean::Is(ref a) = *a {
                     assert_eq!(b, a.get_value().unwrap());
                 } else {
                     unreachable!()
@@ -630,12 +633,10 @@ mod test {
 
         let mut expected_sums = vec![Fr::zero(); n];
         let mut value = Fr::zero();
-        for i in 0..n {
+        for (i, expected_sum) in expected_sums.iter_mut().enumerate() {
             let coeff = Fr::random(&mut rng);
             lc = lc + (coeff, Variable::new_unchecked(Index::Aux(i)));
-            let mut tmp = expected_sums[i];
-            tmp.add_assign(&coeff);
-            expected_sums[i] = tmp;
+            expected_sum.add_assign(&coeff);
 
             value.add_assign(&coeff);
         }
@@ -643,7 +644,7 @@ mod test {
         let scalar = Fr::random(&mut rng);
         let num = Num {
             value: Some(value),
-            lc: lc.clone(),
+            lc,
         };
 
         let scaled_num = num.clone().scale(scalar);

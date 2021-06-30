@@ -90,6 +90,7 @@ impl SqrtField for Fr {
         }
     }
 
+    #[allow(clippy::many_single_char_names)]
     fn sqrt(&self) -> Option<Self> {
         // Tonelli-Shank's algorithm for q mod 16 = 1
         // https://eprint.iacr.org/2012/685.pdf (page 12, algorithm 5)
@@ -377,6 +378,7 @@ impl CurveProjective for Fr {
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub struct FakePoint;
 
+#[allow(clippy::derive_hash_xor_eq)]
 impl std::hash::Hash for FakePoint {
     fn hash<H: std::hash::Hasher>(&self, _state: &mut H) {
         unimplemented!()

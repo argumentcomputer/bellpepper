@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use crate::bls::Engine;
 use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]
 pub struct BenchCS<E: Engine> {
     inputs: usize,

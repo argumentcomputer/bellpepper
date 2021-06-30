@@ -398,6 +398,7 @@ impl<E: Engine> TippMippProof<E> {
 
 /// KZGOpening represents the KZG opening of a commitment key (which is a tuple
 /// given commitment keys are a tuple).
+#[allow(clippy::upper_case_acronyms)]
 pub type KZGOpening<G> = (G, G);
 
 fn read_affine<G: CurveAffine, R: std::io::Read>(mut source: R) -> std::io::Result<G> {
@@ -422,7 +423,7 @@ mod tests {
         let q = G2Projective::one().into_affine();
         let a = Bls12::pairing(p, q);
 
-        let proof = AggregateProof::<Bls12> {
+        AggregateProof::<Bls12> {
             com_ab: (a, a),
             com_c: (a, a),
             ip_ab: a,
@@ -446,8 +447,7 @@ mod tests {
                 vkey_opening: (G2Affine::one(), G2Affine::one()),
                 wkey_opening: (G1Affine::one(), G1Affine::one()),
             },
-        };
-        proof
+        }
     }
 
     #[test]

@@ -182,7 +182,7 @@ pub fn verify_aggregate_proof<E: Engine + std::fmt::Debug, R: rand::RngCore + Se
             vec![left, middle, right],
             // final value ip_ab is what we want to compare in the groth16
             // aggregated equation A * B
-            proof.ip_ab.clone(),
+            proof.ip_ab,
         );
     });
 
@@ -271,7 +271,7 @@ fn verify_tipp_mipp<E: Engine, R: rand::RngCore + Send>(
         // Verify base inner product commitment
         // Z ==  c ^ r
         let final_z =
-            inner_product::multiexponentiation::<E::G1Affine>(&[final_c.clone()],
+            inner_product::multiexponentiation::<E::G1Affine>(&[*final_c],
             &[final_r]),
         // Check commiment correctness
         // T = e(C,v1)
@@ -305,6 +305,7 @@ fn verify_tipp_mipp<E: Engine, R: rand::RngCore + Send>(
 /// * There are T,U,Z vectors as well for the MIPP relationship. Both TIPP and
 /// MIPP share the same challenges however, enabling to re-use common operations
 /// between them, such as the KZG proof for commitment keys.
+#[allow(clippy::type_complexity)]
 fn gipa_verify_tipp_mipp<E: Engine>(
     proof: &AggregateProof<E>,
     r_shift: &E::Fr,
@@ -379,11 +380,11 @@ fn gipa_verify_tipp_mipp<E: Engine>(
 
     let now = Instant::now();
     // output of the pair commitment T and U in TIPP -> COM((v,w),A,B)
-    let (t_ab, u_ab) = proof.com_ab.clone();
+    let (t_ab, u_ab) = proof.com_ab;
     let z_ab = proof.ip_ab; // in the end must be equal to Z = A^r * B
 
     // COM(v,C)
-    let (t_c, u_c) = proof.com_c.clone();
+    let (t_c, u_c) = proof.com_c;
     let z_c = proof.agg_c; // in the end must be equal to Z = C^r
 
     let mut final_res = GipaTUZ {
@@ -400,6 +401,7 @@ fn gipa_verify_tipp_mipp<E: Engine>(
     // Since at the end we want to multiple all "t" values together, we do
     // multiply all of them in parrallel and then merge then back at the end.
     // same for u and z.
+    #[allow(clippy::upper_case_acronyms)]
     enum Op<'a, E: Engine> {
         TAB(&'a E::Fqk, <E::Fr as PrimeField>::Repr),
         UAB(&'a E::Fqk, <E::Fr as PrimeField>::Repr),
@@ -518,7 +520,7 @@ pub fn verify_kzg_v<E: Engine, R: rand::RngCore + Send>(
     // -g such that when we test a pairing equation we only need to check if
     // it's equal 1 at the end:
     // e(a,b) = e(c,d) <=> e(a,b)e(-c,d) = 1
-    let mut ng = v_srs.g.clone();
+    let mut ng = v_srs.g;
     // e(A,B) = e(C,D) <=> e(A,B)e(-C,D) == 1 <=> e(A,B)e(C,D)^-1 == 1
     ng.negate();
     let ng = ng.into_affine();
@@ -550,6 +552,7 @@ pub fn verify_kzg_v<E: Engine, R: rand::RngCore + Send>(
     };
 }
 
+#[allow(clippy::too_many_arguments)]
 fn kzg_check_v<E: Engine, R: rand::RngCore + Send>(
     v_srs: &VerifierSRS<E>,
     ng: E::G1Affine,
@@ -623,6 +626,7 @@ pub fn verify_kzg_w<E: Engine, R: rand::RngCore + Send>(
     };
 }
 
+#[allow(clippy::too_many_arguments)]
 fn kzg_check_w<E: Engine, R: rand::RngCore + Send>(
     v_srs: &VerifierSRS<E>,
     nh: E::G2Affine,
@@ -649,6 +653,7 @@ fn kzg_check_w<E: Engine, R: rand::RngCore + Send>(
 /// Keeps track of the variables that have been sent by the prover and must
 /// be multiplied together by the verifier. Both MIPP and TIPP are merged
 /// together.
+#[allow(clippy::upper_case_acronyms)]
 struct GipaTUZ<E: Engine> {
     pub tab: E::Fqk,
     pub uab: E::Fqk,

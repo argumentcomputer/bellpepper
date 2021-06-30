@@ -38,6 +38,7 @@ pub struct PairingChecks<E: Engine, R: rand::RngCore + Send> {
 }
 
 impl<E: Engine, R: rand::RngCore + Send> PairingChecks<E, R> {
+    #[allow(clippy::type_complexity)]
     pub fn new(rng: R) -> Self {
         let (merge_send, merge_recv): (
             Sender<Result<PairingCheck<E>, SynthesisError>>,
@@ -158,10 +159,8 @@ impl<E: Engine, R: rand::RngCore + Send> PairingChecks<E, R> {
         // This means that if the aggrigation is invalid, it is expected that the message cannot
         // be sent.
         let sent = self.merge_send.send(Ok(check));
-        if let Err(_) = sent {
-            if self.valid.load(SeqCst) {
-                panic!("Channel was closed although it is still valid.")
-            }
+        if sent.is_err() && self.valid.load(SeqCst) {
+            panic!("Channel was closed although it is still valid.")
         }
     }
 
@@ -254,21 +253,15 @@ where
                 (na.prepare(), b.prepare())
             })
             .map(|(a, b)| E::miller_loop(&[(&a, &b)]))
-            .fold(
-                || E::Fqk::one(),
-                |mut acc, res| {
-                    acc.mul_assign(&res);
-                    acc
-                },
-            )
-            .reduce(
-                || E::Fqk::one(),
-                |mut acc, res| {
-                    acc.mul_assign(&res);
-                    acc
-                },
-            );
-        let mut outt = out.clone();
+            .fold(E::Fqk::one, |mut acc, res| {
+                acc.mul_assign(&res);
+                acc
+            })
+            .reduce(E::Fqk::one, |mut acc, res| {
+                acc.mul_assign(&res);
+                acc
+            });
+        let mut outt = *out;
         if out != &E::Fqk::one() {
             // we only need to make this expensive operation is the output is
             // not one since 1^r = 1
@@ -298,7 +291,7 @@ where
 fn mul_if_not_one<E: Engine>(left: &mut E::Fqk, right: &E::Fqk) {
     let one = E::Fqk::one();
     if left == &one {
-        *left = right.clone();
+        *left = *right;
         return;
     } else if right == &one {
         // nothing to do here
@@ -331,7 +324,7 @@ mod test {
     fn gen_pairing_check<R: RngCore>(r: &mut R) -> PairingCheck<Bls12> {
         let g1r = G1Projective::random(r);
         let g2r = G2Projective::random(r);
-        let exp = Bls12::pairing(g1r.clone(), g2r.clone());
+        let exp = Bls12::pairing(g1r, g2r);
         let coeff = derive_non_zero::<Bls12, _>(r);
         let tuple = PairingCheck::<Bls12>::new_random_from_miller_inputs(
             coeff,

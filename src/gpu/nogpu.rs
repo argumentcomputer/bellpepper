@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 // This module is compiled instead of `fft.rs` and `multiexp.rs` if `gpu` feature is disabled.
-
+#[allow(clippy::upper_case_acronyms)]
 pub struct FFTKernel<E>(PhantomData<E>)
 where
     E: ScalarEngine;
@@ -16,11 +16,11 @@ where
     E: ScalarEngine,
 {
     pub fn create(_: bool) -> GPUResult<FFTKernel<E>> {
-        return Err(GPUError::GPUDisabled);
+        Err(GPUError::GPUDisabled)
     }
 
     pub fn radix_fft(&mut self, _: &mut [E::Fr], _: &E::Fr, _: u32) -> GPUResult<()> {
-        return Err(GPUError::GPUDisabled);
+        Err(GPUError::GPUDisabled)
     }
 }
 
@@ -33,7 +33,7 @@ where
     E: ScalarEngine,
 {
     pub fn create(_: bool) -> GPUResult<MultiexpKernel<E>> {
-        return Err(GPUError::GPUDisabled);
+        Err(GPUError::GPUDisabled)
     }
 
     pub fn multiexp<G>(
@@ -47,7 +47,7 @@ where
     where
         G: CurveAffine,
     {
-        return Err(GPUError::GPUDisabled);
+        Err(GPUError::GPUDisabled)
     }
 }
 
@@ -55,6 +55,7 @@ use crate::bls::Engine;
 
 macro_rules! locked_kernel {
     ($class:ident) => {
+        #[allow(clippy::upper_case_acronyms)]
         pub struct $class<E>(PhantomData<E>);
 
         impl<E> $class<E>

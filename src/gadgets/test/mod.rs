@@ -21,6 +21,7 @@ enum NamedObject {
 }
 
 /// Constraint system for testing purposes.
+#[allow(clippy::type_complexity)]
 pub struct TestConstraintSystem<E: ScalarEngine> {
     named_objects: HashMap<String, NamedObject>,
     current_namespace: Vec<String>,
@@ -75,7 +76,7 @@ fn proc_lc<E: ScalarEngine>(terms: &LinearCombination<E>) -> BTreeMap<OrderedVar
     let mut to_remove = vec![];
     for (var, coeff) in map.iter() {
         if coeff.is_zero() {
-            to_remove.push(var.clone())
+            to_remove.push(*var)
         }
     }
 
@@ -184,7 +185,7 @@ impl<E: ScalarEngine> TestConstraintSystem<E> {
         };
 
         for &(ref a, ref b, ref c, ref name) in &self.constraints {
-            write!(&mut s, "\n").unwrap();
+            writeln!(&mut s).unwrap();
 
             write!(&mut s, "{}: ", name).unwrap();
             pp(&mut s, a);
@@ -194,7 +195,7 @@ impl<E: ScalarEngine> TestConstraintSystem<E> {
             pp(&mut s, c);
         }
 
-        write!(&mut s, "\n").unwrap();
+        writeln!(&mut s).unwrap();
 
         s
     }
@@ -404,7 +405,7 @@ impl<E: ScalarEngine> ConstraintSystem<E> for TestConstraintSystem<E> {
     {
         let name = name_fn().into();
         let path = compute_path(&self.current_namespace, name.clone());
-        self.set_named_obj(path.clone(), NamedObject::Namespace);
+        self.set_named_obj(path, NamedObject::Namespace);
         self.current_namespace.push(name);
     }
 

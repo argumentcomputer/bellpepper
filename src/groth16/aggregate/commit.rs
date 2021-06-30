@@ -84,7 +84,7 @@ where
             })
             .unzip();
 
-        Ok(Self { a: a, b: b })
+        Ok(Self { a, b })
     }
 
     /// Returns the left and right commitment key part. It makes copy.
@@ -128,7 +128,7 @@ where
             })
             .unzip();
 
-        Ok(Self { a: a, b: b })
+        Ok(Self { a, b })
     }
 
     /// Returns the first values in the vector of v1 and v2 (respectively
@@ -183,6 +183,7 @@ pub fn pair<E: Engine>(
     Ok((t1, u1))
 }
 
+#[allow(clippy::many_single_char_names)]
 #[cfg(test)]
 mod tests {
     use super::*;

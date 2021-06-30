@@ -131,6 +131,7 @@ pub fn aggregate_proofs<E: Engine + std::fmt::Debug>(
 /// commitment key v is used to commit to A and C recursively in GIPA such that
 /// only one KZG proof is needed for v. In the original paper version, since the
 /// challenges of GIPA would be different, two KZG proofs would be needed.
+#[allow(clippy::too_many_arguments)]
 fn prove_tipp_mipp<E: Engine>(
     srs: &ProverSRS<E>,
     a: &[E::G1Affine],
@@ -142,7 +143,7 @@ fn prove_tipp_mipp<E: Engine>(
     agg_c: &E::G1,
     hcom: &E::Fr,
 ) -> Result<TippMippProof<E>, SynthesisError> {
-    let r_shift = r_vec[1].clone();
+    let r_shift = r_vec[1];
     // Run GIPA
     let (proof, mut challenges, mut challenges_inv) =
         gipa_tipp_mipp::<E>(a, b, c, &srs.vkey, &wkey, r_vec, ip_ab, agg_c, hcom)?;
@@ -194,6 +195,11 @@ fn prove_tipp_mipp<E: Engine>(
 /// It returns a proof containing all intermdiate committed values, as well as
 /// the challenges generated necessary to do the polynomial commitment proof
 /// later in TIPP.
+#[allow(
+    clippy::many_single_char_names,
+    clippy::type_complexity,
+    clippy::too_many_arguments
+)]
 fn gipa_tipp_mipp<E: Engine>(
     a: &[E::G1Affine],
     b: &[E::G2Affine],

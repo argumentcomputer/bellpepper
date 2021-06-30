@@ -86,8 +86,7 @@ where
     }
 
     let alloc_num = AllocatedNum::alloc(cs.namespace(|| "input"), || {
-        num.get_value()
-            .ok_or_else(|| SynthesisError::AssignmentMissing)
+        num.get_value().ok_or(SynthesisError::AssignmentMissing)
     })?;
 
     // num * 1 = input

@@ -26,6 +26,7 @@ pub const MAX_SRS_SIZE: usize = (2 << 19) + 1;
 /// This GenericSRS is usually formed from the transcript of two distinct power of taus ceremony
 /// ,in other words from two distinct Groth16 CRS.
 /// See [there](https://github.com/nikkolasg/taupipp) a way on how to generate this GenesisSRS.
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Debug)]
 pub struct GenericSRS<E: Engine> {
     /// $\{g^a^i\}_{i=0}^{N}$ where N is the smallest size of the two Groth16 CRS.
@@ -42,6 +43,7 @@ pub struct GenericSRS<E: Engine> {
 /// aggregate. It contains as well the commitment keys for this specific size.
 /// Note the size must be a power of two for the moment - if it is not, padding must be
 /// applied.
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Debug)]
 pub struct ProverSRS<E: Engine> {
     /// number of proofs to aggregate
@@ -67,6 +69,7 @@ pub struct ProverSRS<E: Engine> {
 /// Contains the necessary elements to verify an aggregated Groth16 proof; it is of fixed size
 /// regardless of the number of proofs aggregated. However, a verifier SRS will be determined by
 /// the number of proofs being aggregated.
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Debug)]
 pub struct VerifierSRS<E: Engine> {
     pub n: usize,
@@ -155,7 +158,7 @@ impl<E: Engine> GenericSRS<E> {
             n,
         };
         let vk = VerifierSRS::<E> {
-            n: n,
+            n,
             g: self.g_alpha_powers[0].into_projective(),
             h: self.h_alpha_powers[0].into_projective(),
             g_alpha: self.g_alpha_powers[1].into_projective(),
@@ -238,7 +241,6 @@ impl<E: Engine> GenericSRS<E> {
                     g1_repr
                         .into_affine()
                         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
-                        .and_then(|s| Ok(s))
                 })
                 .collect::<io::Result<Vec<_>>>()?;
             *offset += vec_len * point_len;
@@ -321,7 +323,7 @@ pub(crate) fn structured_generators_scalar_power<G: CurveProjective>(
 
     let window_size = msm::fixed_base::get_mul_window_size(num);
     let scalar_bits = G::Scalar::NUM_BITS as usize;
-    let g_table = msm::fixed_base::get_window_table(scalar_bits, window_size, g.clone());
+    let g_table = msm::fixed_base::get_window_table(scalar_bits, window_size, *g);
     let powers_of_g = msm::fixed_base::multi_scalar_mul::<G>(
         scalar_bits,
         window_size,
@@ -361,14 +363,12 @@ fn read_vec<G: CurveAffine, R: Read>(r: &mut R) -> io::Result<Vec<G>> {
     for encoded in &mut data {
         r.read_exact(encoded.as_mut())?;
     }
-    Ok(data
-        .par_iter()
+    data.par_iter()
         .map(|enc| {
             enc.into_affine()
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
-                .and_then(|s| Ok(s))
         })
-        .collect::<io::Result<Vec<_>>>()?)
+        .collect::<io::Result<Vec<_>>>()
 }
 
 #[cfg(test)]

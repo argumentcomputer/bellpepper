@@ -286,6 +286,7 @@ mod test {
         }
     }
 
+    #[allow(clippy::needless_range_loop)]
     #[test]
     fn test_synth() {
         let mut rng = XorShiftRng::from_seed([

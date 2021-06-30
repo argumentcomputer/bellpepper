@@ -360,10 +360,7 @@ pub enum Boolean {
 
 impl Boolean {
     pub fn is_constant(&self) -> bool {
-        match *self {
-            Boolean::Constant(_) => true,
-            _ => false,
-        }
+        matches!(*self, Boolean::Constant(_))
     }
 
     pub fn enforce_equal<E, CS>(mut cs: CS, a: &Self, b: &Self) -> Result<(), SynthesisError>
@@ -1513,6 +1510,7 @@ mod test {
         }
     }
 
+    #[allow(clippy::identity_op)]
     #[test]
     fn test_u64_into_boolean_vec_le() {
         let mut cs = TestConstraintSystem::<Bls12>::new();
@@ -1534,6 +1532,7 @@ mod test {
         assert_eq!(bits[63 - 22].get_value().unwrap(), false);
     }
 
+    #[allow(clippy::identity_op)]
     #[test]
     fn test_field_into_allocated_bits_le() {
         let mut cs = TestConstraintSystem::<Bls12>::new();

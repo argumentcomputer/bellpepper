@@ -3,6 +3,8 @@
 //!
 //! [SHA-256]: https://tools.ietf.org/html/rfc6234
 
+#![allow(clippy::many_single_char_names)]
+
 use super::boolean::Boolean;
 use super::multieq::MultiEq;
 use super::uint32::UInt32;
