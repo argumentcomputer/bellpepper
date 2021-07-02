@@ -136,6 +136,9 @@
 // Requires nightly for aarch64
 #![cfg_attr(target_arch = "aarch64", feature(stdsimd))]
 
+#[cfg(all(feature = "pairing", feature = "blst"))]
+compile_error!("pairing and blst features are mutually exclusive. Running with --no-default-features might help.");
+
 #[cfg(test)]
 #[macro_use]
 extern crate hex_literal;
