@@ -40,6 +40,7 @@ impl Ord for OrderedVariable {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub struct MetricCS<E: Engine> {
     named_objects: HashMap<String, NamedObject>,
     current_namespace: Vec<String>,
@@ -66,7 +67,7 @@ fn proc_lc<E: ScalarEngine>(terms: &LinearCombination<E>) -> BTreeMap<OrderedVar
     let mut to_remove = vec![];
     for (var, coeff) in map.iter() {
         if coeff.is_zero() {
-            to_remove.push(var.clone())
+            to_remove.push(*var)
         }
     }
 

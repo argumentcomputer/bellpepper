@@ -15,13 +15,13 @@ use super::{
 use crate::{Circuit, ConstraintSystem, SynthesisError};
 
 #[derive(Clone)]
-struct XORDemo<E: Engine> {
+struct XorDemo<E: Engine> {
     a: Option<bool>,
     b: Option<bool>,
     _marker: PhantomData<E>,
 }
 
-impl<E: Engine> Circuit<E> for XORDemo<E> {
+impl<E: Engine> Circuit<E> for XorDemo<E> {
     fn synthesize<CS: ConstraintSystem<E>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
         let a_var = cs.alloc(
             || "a",
@@ -104,7 +104,7 @@ fn test_xordemo() {
     let tau = Fr::from_str("3673").unwrap();
 
     let params = {
-        let c = XORDemo::<DummyEngine> {
+        let c = XorDemo::<DummyEngine> {
             a: None,
             b: None,
             _marker: PhantomData,
@@ -288,7 +288,7 @@ fn test_xordemo() {
     let s = Fr::from_str("17146").unwrap();
 
     let proof = {
-        let c = XORDemo {
+        let c = XorDemo {
             a: Some(true),
             b: Some(false),
             _marker: PhantomData,
@@ -400,7 +400,7 @@ fn test_create_batch_single() {
     let tau = Fr::from_str("3673").unwrap();
 
     let params = {
-        let c = XORDemo::<DummyEngine> {
+        let c = XorDemo::<DummyEngine> {
             a: None,
             b: None,
             _marker: PhantomData,
@@ -417,7 +417,7 @@ fn test_create_batch_single() {
     let r2 = Fr::from_str("27132").unwrap();
     let s2 = Fr::from_str("17142").unwrap();
 
-    let c = XORDemo {
+    let c = XorDemo {
         a: Some(true),
         b: Some(false),
         _marker: PhantomData,
@@ -425,13 +425,8 @@ fn test_create_batch_single() {
     let proof_single_1 = create_proof(c.clone(), &params, r1, s1).unwrap();
     let proof_single_2 = create_proof(c.clone(), &params, r2, s2).unwrap();
 
-    let proof_batch = create_proof_batch(
-        vec![c.clone(), c.clone()],
-        &params,
-        vec![r1, r2],
-        vec![s1, s2],
-    )
-    .unwrap();
+    let proof_batch =
+        create_proof_batch(vec![c.clone(), c], &params, vec![r1, r2], vec![s1, s2]).unwrap();
 
     assert_eq!(proof_batch[0], proof_single_1);
     assert_eq!(proof_batch[1], proof_single_2);
@@ -458,7 +453,7 @@ fn test_verify_random_single() {
     ]);
 
     let params = {
-        let c = XORDemo::<Bls12> {
+        let c = XorDemo::<Bls12> {
             a: None,
             b: None,
             _marker: PhantomData,
@@ -470,7 +465,7 @@ fn test_verify_random_single() {
     let pvk = prepare_verifying_key(&params.vk);
 
     for _ in 0..50 {
-        let c = XORDemo {
+        let c = XorDemo {
             a: Some(true),
             b: Some(false),
             _marker: PhantomData,
@@ -539,7 +534,7 @@ fn test_verify_random_batch() {
     ]);
 
     let params = {
-        let c = XORDemo::<Bls12> {
+        let c = XorDemo::<Bls12> {
             a: None,
             b: None,
             _marker: PhantomData,
@@ -552,7 +547,7 @@ fn test_verify_random_batch() {
 
     let inputs = vec![vec![Fr::one()], vec![Fr::one()], vec![Fr::one()]];
     for _ in 0..50 {
-        let c = XORDemo {
+        let c = XorDemo {
             a: Some(true),
             b: Some(false),
             _marker: PhantomData,

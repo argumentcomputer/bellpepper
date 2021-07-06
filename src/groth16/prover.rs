@@ -524,6 +524,7 @@ where
     Ok(proofs)
 }
 
+#[allow(clippy::type_complexity)]
 fn create_proof_batch_priority_inner<E, C>(
     circuits: Vec<C>,
 ) -> Result<
@@ -628,7 +629,7 @@ mod tests {
                     if rng.gen() {
                         let el = Fr::random(&mut rng);
                         full_assignment
-                            .alloc(|| format!("alloc:{},{}", i, k), || Ok(el.clone()))
+                            .alloc(|| format!("alloc:{},{}", i, k), || Ok(el))
                             .unwrap();
                         partial_assignment
                             .alloc(|| format!("alloc:{},{}", i, k), || Ok(el))
@@ -638,7 +639,7 @@ mod tests {
                     if rng.gen() {
                         let el = Fr::random(&mut rng);
                         full_assignment
-                            .alloc_input(|| format!("alloc_input:{},{}", i, k), || Ok(el.clone()))
+                            .alloc_input(|| format!("alloc_input:{},{}", i, k), || Ok(el))
                             .unwrap();
                         partial_assignment
                             .alloc_input(|| format!("alloc_input:{},{}", i, k), || Ok(el))

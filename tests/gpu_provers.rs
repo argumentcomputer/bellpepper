@@ -88,7 +88,7 @@ pub fn test_parallel_prover() {
             println!(
                 "Higher proof gen finished in {}s and {}ms",
                 now.elapsed().as_secs(),
-                now.elapsed().subsec_nanos() / 1000000
+                now.elapsed().subsec_millis()
             );
 
             // Sleep in between higher proofs so that LOWER thread can acquire GPU again
@@ -109,7 +109,7 @@ pub fn test_parallel_prover() {
             println!(
                 "Lower proof gen finished in {}s and {}ms",
                 now.elapsed().as_secs(),
-                now.elapsed().subsec_nanos() / 1000000
+                now.elapsed().subsec_millis()
             );
         }
     }

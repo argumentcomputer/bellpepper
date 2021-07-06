@@ -38,9 +38,9 @@ const MIMC_ROUNDS: usize = 322;
 fn mimc<E: Engine>(mut xl: E::Fr, mut xr: E::Fr, constants: &[E::Fr]) -> E::Fr {
     assert_eq!(constants.len(), MIMC_ROUNDS);
 
-    for i in 0..MIMC_ROUNDS {
+    for constant in constants {
         let mut tmp1 = xl;
-        tmp1.add_assign(&constants[i]);
+        tmp1.add_assign(&constant);
         let mut tmp2 = tmp1;
         tmp2.square();
         tmp2.mul_assign(&tmp1);
@@ -55,7 +55,7 @@ fn mimc<E: Engine>(mut xl: E::Fr, mut xr: E::Fr, constants: &[E::Fr]) -> E::Fr {
 /// This is our demo circuit for proving knowledge of the
 /// preimage of a MiMC hash invocation.
 #[derive(Clone)]
-struct MiMCDemo<'a, E: Engine> {
+struct MimcDemo<'a, E: Engine> {
     xl: Option<E::Fr>,
     xr: Option<E::Fr>,
     constants: &'a [E::Fr],
@@ -64,7 +64,7 @@ struct MiMCDemo<'a, E: Engine> {
 /// Our demo circuit implements this `Circuit` trait which
 /// is used during paramgen and proving in order to
 /// synthesize the constraint system.
-impl<'a, E: Engine> Circuit<E> for MiMCDemo<'a, E> {
+impl<'a, E: Engine> Circuit<E> for MimcDemo<'a, E> {
     fn synthesize<CS: ConstraintSystem<E>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
         assert_eq!(self.constants.len(), MIMC_ROUNDS);
 
@@ -163,7 +163,7 @@ fn test_mimc() {
 
     // Create parameters for our circuit
     let params = {
-        let c = MiMCDemo::<Bls12> {
+        let c = MimcDemo::<Bls12> {
             xl: None,
             xr: None,
             constants: &constants,
@@ -200,7 +200,7 @@ fn test_mimc() {
         {
             // Create an instance of our circuit (with the
             // witness)
-            let c = MiMCDemo {
+            let c = MimcDemo {
                 xl: Some(xl),
                 xr: Some(xr),
                 constants: &constants,
@@ -232,7 +232,7 @@ fn test_mimc() {
         let xl = <Bls12 as ScalarEngine>::Fr::random(rng);
         let xr = <Bls12 as ScalarEngine>::Fr::random(rng);
 
-        let c = MiMCDemo {
+        let c = MimcDemo {
             xl: Some(xl),
             xr: Some(xr),
             constants: &constants,
@@ -282,10 +282,10 @@ fn test_mimc() {
             .map(|p| (*p).clone())
             .collect::<Vec<Proof<_>>>();
 
-        for i in 0..proofs.len() {
+        for mut bad_proof in bad_proofs.iter_mut() {
             use groupy::CurveProjective;
 
-            let p = &mut bad_proofs[i];
+            let p = &mut bad_proof;
 
             let mut a: <Bls12 as Engine>::G1 = p.a.into();
             a.add_assign(&<Bls12 as Engine>::G1::one());

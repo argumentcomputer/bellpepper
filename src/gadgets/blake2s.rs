@@ -2,6 +2,8 @@
 //!
 //! [BLAKE2s]: https://tools.ietf.org/html/rfc7693
 
+#![allow(clippy::many_single_char_names)]
+
 use super::{boolean::Boolean, multieq::MultiEq, uint32::UInt32};
 use crate::{ConstraintSystem, SynthesisError};
 use ff::ScalarEngine;
@@ -79,6 +81,7 @@ const SIGMA: [[usize; 16]; 10] = [
        END FUNCTION.
 */
 
+#[allow(clippy::too_many_arguments)]
 fn mixing_g<E: ScalarEngine, CS: ConstraintSystem<E>, M>(
     mut cs: M,
     v: &mut [UInt32],
@@ -347,21 +350,17 @@ pub fn blake2s<E: ScalarEngine, CS: ConstraintSystem<E>>(
     assert_eq!(personalization.len(), 8);
     assert!(input.len() % 8 == 0);
 
-    let mut h = Vec::with_capacity(8);
-    h.push(UInt32::constant(0x6A09_E667 ^ 0x0101_0000 ^ 32));
-    h.push(UInt32::constant(0xBB67_AE85));
-    h.push(UInt32::constant(0x3C6E_F372));
-    h.push(UInt32::constant(0xA54F_F53A));
-    h.push(UInt32::constant(0x510E_527F));
-    h.push(UInt32::constant(0x9B05_688C));
-
-    // Personalization is stored here
-    h.push(UInt32::constant(
-        0x1F83_D9AB ^ LittleEndian::read_u32(&personalization[0..4]),
-    ));
-    h.push(UInt32::constant(
-        0x5BE0_CD19 ^ LittleEndian::read_u32(&personalization[4..8]),
-    ));
+    let mut h = vec![
+        UInt32::constant(0x6A09_E667 ^ 0x0101_0000 ^ 32),
+        UInt32::constant(0xBB67_AE85),
+        UInt32::constant(0x3C6E_F372),
+        UInt32::constant(0xA54F_F53A),
+        UInt32::constant(0x510E_527F),
+        UInt32::constant(0x9B05_688C),
+        // Personalization is stored here
+        UInt32::constant(0x1F83_D9AB ^ LittleEndian::read_u32(&personalization[0..4])),
+        UInt32::constant(0x5BE0_CD19 ^ LittleEndian::read_u32(&personalization[4..8])),
+    ];
 
     let mut blocks: Vec<Vec<UInt32>> = vec![];
 
@@ -638,7 +637,7 @@ mod test {
             hex!("a1309e334376c8f36a736a4ab0e691ef931ee3ebdb9ea96187127136fea622a1"),
             hex!("82fefff60f265cea255252f7c194a7f93965dffee0609ef74eb67f0d76cd41c6"),
         ];
-        for i in 0..2 {
+        for expected in &expecteds {
             let mut h = Blake2sParams::new()
                 .hash_length(32)
                 .personal(b"12345678")
@@ -690,7 +689,7 @@ mod test {
                 }
             }
 
-            assert_eq!(expecteds[i], hash_result.as_bytes());
+            assert_eq!(expected, hash_result.as_bytes());
         }
     }
 }

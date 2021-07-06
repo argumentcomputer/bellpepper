@@ -40,17 +40,16 @@ lazy_static::lazy_static! {
             ("GeForce GTX 1650".to_string(), 896),
         ].into_iter().collect();
 
-        match env::var("BELLMAN_CUSTOM_GPU").and_then(|var| {
-            for card in var.split(",") {
-                let splitted = card.split(":").collect::<Vec<_>>();
+        if let Ok(var) = env::var("BELLMAN_CUSTOM_GPU") {
+            for card in var.split(',') {
+                let splitted = card.split(':').collect::<Vec<_>>();
                 if splitted.len() != 2 { panic!("Invalid BELLMAN_CUSTOM_GPU!"); }
                 let name = splitted[0].trim().to_string();
                 let cores : usize = splitted[1].trim().parse().expect("Invalid BELLMAN_CUSTOM_GPU!");
                 info!("Adding \"{}\" to GPU list with {} CUDA cores.", name, cores);
                 core_counts.insert(name, cores);
             }
-            Ok(())
-        }) { Err(_) => { }, Ok(_) => { } }
+        }
 
         core_counts
     };

@@ -1,3 +1,5 @@
+#![allow(clippy::upper_case_acronyms)]
+
 #[cfg(feature = "gpu")]
 use rust_gpu_tools::opencl;
 

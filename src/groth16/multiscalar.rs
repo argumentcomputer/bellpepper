@@ -263,13 +263,10 @@ where
 
             multiscalar(&scalars, &subset, nbits)
         }) // Accumulate results
-        .reduce(
-            || G::Projective::zero(),
-            |mut acc, part| {
-                acc.add_assign(&part);
-                acc
-            },
-        )
+        .reduce(G::Projective::zero, |mut acc, part| {
+            acc.add_assign(&part);
+            acc
+        })
 }
 
 #[cfg(target_arch = "x86_64")]

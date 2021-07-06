@@ -89,7 +89,7 @@ impl<E: Engine, G: Group<E>> EvaluationDomain<E, G> {
         worker: &Worker,
         kern: &mut Option<gpu::LockedFFTKernel<E>>,
     ) -> gpu::GPUResult<()> {
-        best_fft(kern, &mut self.coeffs, worker, &self.omega, self.exp)?;
+        best_fft(kern, &mut self.coeffs, worker, &self.omega, self.exp);
         Ok(())
     }
 
@@ -98,7 +98,7 @@ impl<E: Engine, G: Group<E>> EvaluationDomain<E, G> {
         worker: &Worker,
         kern: &mut Option<gpu::LockedFFTKernel<E>>,
     ) -> gpu::GPUResult<()> {
-        best_fft(kern, &mut self.coeffs, worker, &self.omegainv, self.exp)?;
+        best_fft(kern, &mut self.coeffs, worker, &self.omegainv, self.exp);
 
         worker.scope(self.coeffs.len(), |scope, chunk| {
             let minv = self.minv;
@@ -293,13 +293,13 @@ fn best_fft<E: Engine, T: Group<E>>(
     worker: &Worker,
     omega: &E::Fr,
     log_n: u32,
-) -> gpu::GPUResult<()> {
+) {
     if let Some(ref mut kern) = kern {
         if kern
             .with(|k: &mut gpu::FFTKernel<E>| gpu_fft(k, a, omega, log_n))
             .is_ok()
         {
-            return Ok(());
+            return;
         }
     }
 
@@ -309,8 +309,6 @@ fn best_fft<E: Engine, T: Group<E>>(
     } else {
         parallel_fft(a, worker, omega, log_n, log_cpus);
     }
-
-    Ok(())
 }
 
 pub fn gpu_fft<E: Engine, T: Group<E>>(
@@ -326,11 +324,12 @@ pub fn gpu_fft<E: Engine, T: Group<E>>(
     // size.
     // For compatibility/performance reasons we decided to transmute the array to the desired type
     // as it seems safe and needs less modifications in the current structure of Bellman library.
-    let a = unsafe { std::mem::transmute::<&mut [T], &mut [E::Fr]>(a) };
+    let a = unsafe { &mut *(a as *mut [T] as *mut [E::Fr]) };
     kern.radix_fft(a, omega, log_n)?;
     Ok(())
 }
 
+#[allow(clippy::many_single_char_names)]
 pub fn serial_fft<E: ScalarEngine, T: Group<E>>(a: &mut [T], omega: &E::Fr, log_n: u32) {
     fn bitreverse(mut n: u32, l: u32) -> u32 {
         let mut r = 0;
@@ -609,8 +608,7 @@ mod tests {
 
             let mut now = Instant::now();
             gpu_fft(&mut kern, &mut v1.coeffs, &v1.omega, log_d).expect("GPU FFT failed!");
-            let gpu_dur =
-                now.elapsed().as_secs() * 1000 as u64 + now.elapsed().subsec_millis() as u64;
+            let gpu_dur = now.elapsed().as_secs() * 1000 + now.elapsed().subsec_millis() as u64;
             println!("GPU took {}ms.", gpu_dur);
 
             now = Instant::now();
@@ -619,8 +617,7 @@ mod tests {
             } else {
                 parallel_fft(&mut v2.coeffs, &worker, &v2.omega, log_d, log_cpus);
             }
-            let cpu_dur =
-                now.elapsed().as_secs() * 1000 as u64 + now.elapsed().subsec_millis() as u64;
+            let cpu_dur = now.elapsed().as_secs() * 1000 + now.elapsed().subsec_millis() as u64;
             println!("CPU ({} cores) took {}ms.", 1 << log_cpus, cpu_dur);
 
             println!("Speedup: x{}", cpu_dur as f32 / gpu_dur as f32);

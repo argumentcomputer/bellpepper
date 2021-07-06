@@ -85,11 +85,15 @@ impl UInt32 {
 
         let mut value = Some(0u32);
         for b in bits {
-            value.as_mut().map(|v| *v <<= 1);
+            if let Some(v) = value.as_mut() {
+                *v <<= 1;
+            }
 
             match b.get_value() {
                 Some(true) => {
-                    value.as_mut().map(|v| *v |= 1);
+                    if let Some(v) = value.as_mut() {
+                        *v |= 1;
+                    }
                 }
                 Some(false) => {}
                 None => {
@@ -118,24 +122,32 @@ impl UInt32 {
 
         let mut value = Some(0u32);
         for b in new_bits.iter().rev() {
-            value.as_mut().map(|v| *v <<= 1);
+            if let Some(v) = value.as_mut() {
+                *v <<= 1;
+            }
 
             match *b {
                 Boolean::Constant(b) => {
                     if b {
-                        value.as_mut().map(|v| *v |= 1);
+                        if let Some(v) = value.as_mut() {
+                            *v |= 1;
+                        }
                     }
                 }
                 Boolean::Is(ref b) => match b.get_value() {
                     Some(true) => {
-                        value.as_mut().map(|v| *v |= 1);
+                        if let Some(v) = value.as_mut() {
+                            *v |= 1;
+                        }
                     }
                     Some(false) => {}
                     None => value = None,
                 },
                 Boolean::Not(ref b) => match b.get_value() {
                     Some(false) => {
-                        value.as_mut().map(|v| *v |= 1);
+                        if let Some(v) = value.as_mut() {
+                            *v |= 1;
+                        }
                     }
                     Some(true) => {}
                     None => value = None,
@@ -281,6 +293,7 @@ impl UInt32 {
     }
 
     /// Perform modular addition of several `UInt32` objects.
+    #[allow(clippy::unnecessary_unwrap)]
     pub fn addmany<E, CS, M>(mut cs: M, operands: &[Self]) -> Result<Self, SynthesisError>
     where
         E: ScalarEngine,
@@ -311,7 +324,9 @@ impl UInt32 {
             // Accumulate the value
             match op.value {
                 Some(val) => {
-                    result_value.as_mut().map(|v| *v += u64::from(val));
+                    if let Some(v) = result_value.as_mut() {
+                        *v += u64::from(val);
+                    }
                 }
                 None => {
                     // If any of our operands have unknown value, we won't
@@ -494,13 +509,13 @@ mod test {
             for b in r.bits.iter() {
                 match *b {
                     Boolean::Is(ref b) => {
-                        assert!(b.get_value().unwrap() == (expected & 1 == 1));
+                        assert_eq!(b.get_value().unwrap(), expected & 1 == 1);
                     }
                     Boolean::Not(ref b) => {
-                        assert!(!b.get_value().unwrap() == (expected & 1 == 1));
+                        assert_ne!(b.get_value().unwrap(), expected & 1 == 1);
                     }
                     Boolean::Constant(b) => {
-                        assert!(b == (expected & 1 == 1));
+                        assert_eq!(b, expected & 1 == 1);
                     }
                 }
 
@@ -553,6 +568,7 @@ mod test {
     }
 
     #[test]
+    #[allow(clippy::many_single_char_names)]
     fn test_uint32_addmany() {
         let mut rng = XorShiftRng::from_seed([
             0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
@@ -587,10 +603,10 @@ mod test {
             for b in r.bits.iter() {
                 match *b {
                     Boolean::Is(ref b) => {
-                        assert!(b.get_value().unwrap() == (expected & 1 == 1));
+                        assert_eq!(b.get_value().unwrap(), expected & 1 == 1);
                     }
                     Boolean::Not(ref b) => {
-                        assert!(!b.get_value().unwrap() == (expected & 1 == 1));
+                        assert_ne!(b.get_value().unwrap(), expected & 1 == 1);
                     }
                     Boolean::Constant(_) => unreachable!(),
                 }
@@ -692,15 +708,15 @@ mod test {
             assert!(r.value == Some(expected));
 
             for b in r.bits.iter() {
-                match b {
-                    &Boolean::Is(ref b) => {
-                        assert!(b.get_value().unwrap() == (expected & 1 == 1));
+                match *b {
+                    Boolean::Is(ref b) => {
+                        assert_eq!(b.get_value().unwrap(), expected & 1 == 1);
                     }
-                    &Boolean::Not(ref b) => {
-                        assert!(!b.get_value().unwrap() == (expected & 1 == 1));
+                    Boolean::Not(ref b) => {
+                        assert_ne!(b.get_value().unwrap(), expected & 1 == 1);
                     }
-                    &Boolean::Constant(b) => {
-                        assert!(b == (expected & 1 == 1));
+                    Boolean::Constant(b) => {
+                        assert_eq!(b, expected & 1 == 1);
                     }
                 }
 
@@ -736,15 +752,15 @@ mod test {
             assert!(r.value == Some(expected));
 
             for b in r.bits.iter() {
-                match b {
-                    &Boolean::Is(ref b) => {
-                        assert!(b.get_value().unwrap() == (expected & 1 == 1));
+                match *b {
+                    Boolean::Is(ref b) => {
+                        assert_eq!(b.get_value().unwrap(), expected & 1 == 1);
                     }
-                    &Boolean::Not(ref b) => {
-                        assert!(!b.get_value().unwrap() == (expected & 1 == 1));
+                    Boolean::Not(ref b) => {
+                        assert_ne!(b.get_value().unwrap(), expected & 1 == 1);
                     }
-                    &Boolean::Constant(b) => {
-                        assert!(b == (expected & 1 == 1));
+                    Boolean::Constant(b) => {
+                        assert_eq!(b, expected & 1 == 1);
                     }
                 }
 

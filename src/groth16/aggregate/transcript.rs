@@ -79,7 +79,7 @@ impl<E: Engine> Transcript<E> {
                 if c == one {
                     continue;
                 }
-                if let Some(_) = c.inverse() {
+                if c.inverse().is_some() {
                     break c;
                 }
             }

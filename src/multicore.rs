@@ -36,7 +36,7 @@ lazy_static! {
         .unwrap();
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Worker {}
 
 impl Worker {
