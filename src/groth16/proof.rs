@@ -80,12 +80,13 @@ impl<E: Engine> Proof<E> {
     }
 
     pub fn read_many(proof_bytes: &[u8], num_proofs: usize) -> io::Result<Vec<Self>> {
-        use crate::multicore::THREAD_POOL;
+        use crate::multicore::RAYON_THREAD_POOL;
         use rayon::prelude::*;
+
         debug_assert_eq!(proof_bytes.len(), num_proofs * Self::size());
 
         // Decompress and group check in parallel
-        THREAD_POOL.install(|| {
+        RAYON_THREAD_POOL.install(|| {
             #[derive(Clone, Copy)]
             enum ProofPart<E: Engine> {
                 A(E::G1Affine),

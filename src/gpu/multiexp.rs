@@ -288,7 +288,7 @@ where
 
         let mut acc = <G as CurveAffine>::Projective::zero();
 
-        let results = crate::multicore::THREAD_POOL.install(|| {
+        let results = crate::multicore::RAYON_THREAD_POOL.install(|| {
             if n > 0 {
                 bases
                 .par_chunks(chunk_size)

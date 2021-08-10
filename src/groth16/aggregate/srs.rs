@@ -267,39 +267,22 @@ pub fn setup_fake_srs<E: Engine, R: rand::RngCore>(rng: &mut R, size: usize) -> 
     let g = E::G1::one();
     let h = E::G2::one();
 
-    let mut g_alpha_powers = Vec::new();
-    let mut g_beta_powers = Vec::new();
-    let mut h_alpha_powers = Vec::new();
-    let mut h_beta_powers = Vec::new();
-    rayon::scope(|s| {
-        let alpha = &alpha;
-        let h = &h;
-        let g = &g;
-        let beta = &beta;
-        let g_alpha_powers = &mut g_alpha_powers;
-        s.spawn(move |_| {
-            *g_alpha_powers = structured_generators_scalar_power(2 * size, g, alpha);
-        });
-        let g_beta_powers = &mut g_beta_powers;
-        s.spawn(move |_| {
-            *g_beta_powers = structured_generators_scalar_power(2 * size, g, beta);
-        });
-
-        let h_alpha_powers = &mut h_alpha_powers;
-        s.spawn(move |_| {
-            *h_alpha_powers = structured_generators_scalar_power(2 * size, h, alpha);
-        });
-
-        let h_beta_powers = &mut h_beta_powers;
-        s.spawn(move |_| {
-            *h_beta_powers = structured_generators_scalar_power(2 * size, h, beta);
-        });
-    });
+    let alpha = &alpha;
+    let h = &h;
+    let g = &g;
+    let beta = &beta;
+    par! {
+        let g_alpha_powers = structured_generators_scalar_power(2 * size, g, alpha),
+        let g_beta_powers = structured_generators_scalar_power(2 * size, g, beta),
+        let h_alpha_powers = structured_generators_scalar_power(2 * size, h, alpha),
+        let h_beta_powers = structured_generators_scalar_power(2 * size, h, beta)
+    };
 
     debug_assert!(h_alpha_powers[0] == E::G2::one().into_affine());
     debug_assert!(h_beta_powers[0] == E::G2::one().into_affine());
     debug_assert!(g_alpha_powers[0] == E::G1::one().into_affine());
     debug_assert!(g_beta_powers[0] == E::G1::one().into_affine());
+
     GenericSRS {
         g_alpha_powers,
         g_beta_powers,

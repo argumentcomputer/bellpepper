@@ -73,118 +73,114 @@ pub fn verify_aggregate_proof<E: Engine + std::fmt::Debug, R: rand::RngCore + Se
     let pairing_checks = PairingChecks::new(rng);
     let pairing_checks_copy = &pairing_checks;
 
-    rayon::scope(move |_s| {
-        // 1.Check TIPA proof ab
-        // 2.Check TIPA proof c
-        //        s.spawn(move |_| {
-        let now = Instant::now();
-        verify_tipp_mipp::<E, R>(
-            ip_verifier_srs,
-            proof,
-            &r, // we give the extra r as it's not part of the proof itself - it is simply used on top for the groth16 aggregation
-            pairing_checks_copy,
-            &hcom,
-        );
-        debug!("TIPP took {} ms", now.elapsed().as_millis(),);
-        //        });
+    // 1.Check TIPA proof ab
+    // 2.Check TIPA proof c
+    //        s.spawn(move |_| {
+    let now = Instant::now();
+    verify_tipp_mipp::<E, R>(
+        ip_verifier_srs,
+        proof,
+        &r, // we give the extra r as it's not part of the proof itself - it is simply used on top for the groth16 aggregation
+        pairing_checks_copy,
+        &hcom,
+    );
+    debug!("TIPP took {} ms", now.elapsed().as_millis(),);
 
-        // Check aggregate pairing product equation
-        // SUM of a geometric progression
-        // SUM a^i = (1 - a^n) / (1 - a) = -(1-a^n)/-(1-a)
-        // = (a^n - 1) / (a - 1)
-        info!("checking aggregate pairing");
-        let mut r_sum = r.pow(&[public_inputs.len() as u64]);
-        r_sum.sub_assign(&E::Fr::one());
-        let b = sub!(*r, &E::Fr::one()).inverse().unwrap();
-        r_sum.mul_assign(&b);
+    // Check aggregate pairing product equation
+    // SUM of a geometric progression
+    // SUM a^i = (1 - a^n) / (1 - a) = -(1-a^n)/-(1-a)
+    // = (a^n - 1) / (a - 1)
+    info!("checking aggregate pairing");
+    let mut r_sum = r.pow(&[public_inputs.len() as u64]);
+    r_sum.sub_assign(&E::Fr::one());
+    let b = sub!(*r, &E::Fr::one()).inverse().unwrap();
+    r_sum.mul_assign(&b);
 
-        // The following parts 3 4 5 are independently computing the parts of the Groth16
-        // verification equation
-        // NOTE From this point on, we are only checking *one* pairing check (the Groth16
-        // verification equation) so we don't need to randomize as all other checks are being
-        // randomized already. When merging all pairing checks together, this will be the only one
-        // non-randomized.
-        //
-        let (r_vec_sender, r_vec_receiver) = bounded(1);
-        //        s.spawn(move |_| {
-        let now = Instant::now();
-        r_vec_sender
-            .send(structured_scalar_power(public_inputs.len(), &*r))
-            .unwrap();
-        let elapsed = now.elapsed().as_millis();
-        debug!("generation of r vector: {}ms", elapsed);
-        //        });
+    // The following parts 3 4 5 are independently computing the parts of the Groth16
+    // verification equation
+    // NOTE From this point on, we are only checking *one* pairing check (the Groth16
+    // verification equation) so we don't need to randomize as all other checks are being
+    // randomized already. When merging all pairing checks together, this will be the only one
+    // non-randomized.
+    //
+    let (r_vec_sender, r_vec_receiver) = bounded(1);
 
-        par! {
-            // 3. Compute left part of the final pairing equation
-            let left = {
-                let mut alpha_g1_r_sum = pvk.alpha_g1;
-                alpha_g1_r_sum.mul_assign(r_sum);
+    let now = Instant::now();
+    r_vec_sender
+        .send(structured_scalar_power(public_inputs.len(), &*r))
+        .unwrap();
+    let elapsed = now.elapsed().as_millis();
+    debug!("generation of r vector: {}ms", elapsed);
 
-                E::miller_loop(&[(&alpha_g1_r_sum.into_affine().prepare(), &pvk.beta_g2)])
-            },
-            // 4. Compute right part of the final pairing equation
-            let right = {
-                E::miller_loop(&[(
-                    // e(c^r vector form, h^delta)
-                    // let agg_c = inner_product::multiexponentiation::<E::G1Affine>(&c, r_vec)
-                    &proof.agg_c.into_affine().prepare(),
-                    &pvk.delta_g2,
-                )])
-            },
-            // 5. compute the middle part of the final pairing equation, the one
-            //    with the public inputs
-            let middle = {
-                    // We want to compute MUL(i:0 -> l) S_i ^ (SUM(j:0 -> n) ai,j * r^j)
-                    // this table keeps tracks of incremental computation of each i-th
-                    // exponent to later multiply with S_i
-                    // The index of the table is i, which is an index of the public
-                    // input element
-                    // We incrementally build the r vector and the table
-                    // NOTE: in this version it's not r^2j but simply r^j
+    par! {
+        // 3. Compute left part of the final pairing equation
+        let left = {
+            let mut alpha_g1_r_sum = pvk.alpha_g1;
+            alpha_g1_r_sum.mul_assign(r_sum);
 
-                    let l = public_inputs[0].len();
-                    let mut g_ic = pvk.ic_projective[0];
-                    g_ic.mul_assign(r_sum);
+            E::miller_loop(&[(&alpha_g1_r_sum.into_affine().prepare(), &pvk.beta_g2)])
+        },
+        // 4. Compute right part of the final pairing equation
+        let right = {
+            E::miller_loop(&[(
+                // e(c^r vector form, h^delta)
+                // let agg_c = inner_product::multiexponentiation::<E::G1Affine>(&c, r_vec)
+                &proof.agg_c.into_affine().prepare(),
+                &pvk.delta_g2,
+            )])
+        },
+        // 5. compute the middle part of the final pairing equation, the one
+        //    with the public inputs
+        let middle = {
+                // We want to compute MUL(i:0 -> l) S_i ^ (SUM(j:0 -> n) ai,j * r^j)
+                // this table keeps tracks of incremental computation of each i-th
+                // exponent to later multiply with S_i
+                // The index of the table is i, which is an index of the public
+                // input element
+                // We incrementally build the r vector and the table
+                // NOTE: in this version it's not r^2j but simply r^j
 
-                    let powers = r_vec_receiver.recv().unwrap();
+                let l = public_inputs[0].len();
+                let mut g_ic = pvk.ic_projective[0];
+                g_ic.mul_assign(r_sum);
 
-                    let now = Instant::now();
-                    // now we do the multi exponentiation
-                    let getter = |i: usize| -> <E::Fr as PrimeField>::Repr {
-                        // i denotes the column of the public input, and j denotes which public input
-                        let mut c = public_inputs[0][i];
-                        for j in 1..public_inputs.len() {
-                            let mut ai = public_inputs[j][i];
-                            ai.mul_assign(&powers[j]);
-                            c.add_assign(&ai);
-                        }
-                        c.into_repr()
-                    };
+                let powers = r_vec_receiver.recv().unwrap();
 
-                    let totsi = par_multiscalar::<_, E::G1Affine>(
-                        &ScalarList::Getter(getter, l),
-                        &pvk.multiscalar.at_point(1),
-                        std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
-                    );
+                let now = Instant::now();
+                // now we do the multi exponentiation
+                let getter = |i: usize| -> <E::Fr as PrimeField>::Repr {
+                    // i denotes the column of the public input, and j denotes which public input
+                    let mut c = public_inputs[0][i];
+                    for j in 1..public_inputs.len() {
+                        let mut ai = public_inputs[j][i];
+                        ai.mul_assign(&powers[j]);
+                        c.add_assign(&ai);
+                    }
+                    c.into_repr()
+                };
 
-                    g_ic.add_assign(&totsi);
+                let totsi = par_multiscalar::<_, E::G1Affine>(
+                    &ScalarList::Getter(getter, l),
+                    &pvk.multiscalar.at_point(1),
+                    std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
+                );
 
-                    let ml = E::miller_loop(&[(&g_ic.into_affine().prepare(), &pvk.gamma_g2)]);
-                    let elapsed = now.elapsed().as_millis();
-                    debug!("table generation: {}ms", elapsed);
+                g_ic.add_assign(&totsi);
 
-                    ml
-            }
-        };
+                let ml = E::miller_loop(&[(&g_ic.into_affine().prepare(), &pvk.gamma_g2)]);
+                let elapsed = now.elapsed().as_millis();
+                debug!("table generation: {}ms", elapsed);
 
-        pairing_checks_copy.merge_nonrandom(
-            vec![left, middle, right],
-            // final value ip_ab is what we want to compare in the groth16
-            // aggregated equation A * B
-            proof.ip_ab,
-        );
-    });
+                ml
+        }
+    };
+
+    pairing_checks_copy.merge_nonrandom(
+        vec![left, middle, right],
+        // final value ip_ab is what we want to compare in the groth16
+        // aggregated equation A * B
+        proof.ip_ab,
+    );
 
     let res = pairing_checks.verify();
     info!("aggregate verify done");
