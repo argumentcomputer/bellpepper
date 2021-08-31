@@ -53,22 +53,37 @@ impl PriorityLock {
         debug!("Priority lock acquired!");
         PriorityLock(f)
     }
+
     pub fn wait(priority: bool) {
         if !priority {
-            File::create(tmp_path(PRIORITY_LOCK_NAME))
+            if let Err(err) = File::create(tmp_path(PRIORITY_LOCK_NAME))
                 .unwrap()
                 .lock_exclusive()
-                .unwrap();
+            {
+                warn!("failed to create priority log: {:?}", err);
+            }
         }
     }
+
     pub fn should_break(priority: bool) -> bool {
-        !priority
-            && File::create(tmp_path(PRIORITY_LOCK_NAME))
-                .unwrap()
-                .try_lock_exclusive()
-                .is_err()
+        if priority {
+            return false;
+        }
+        if let Err(err) = File::create(tmp_path(PRIORITY_LOCK_NAME))
+            .unwrap()
+            .try_lock_shared()
+        {
+            // Check that the error is actually a locking one
+            if err.raw_os_error() == fs2::lock_contended_error().raw_os_error() {
+                return true;
+            } else {
+                warn!("failed to check lock: {:?}", err);
+            }
+        }
+        false
     }
 }
+
 impl Drop for PriorityLock {
     fn drop(&mut self) {
         self.0.unlock().unwrap();
