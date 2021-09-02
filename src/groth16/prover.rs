@@ -16,9 +16,9 @@ use crate::multiexp::{multiexp, DensityTracker, FullDensity};
 use crate::{
     Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable, BELLMAN_VERSION,
 };
-use log::info;
 #[cfg(any(feature = "cuda", feature = "opencl"))]
 use log::trace;
+use log::{debug, info};
 
 #[cfg(any(feature = "cuda", feature = "opencl"))]
 use crate::gpu::PriorityLock;
@@ -287,6 +287,9 @@ where
     let input_len = input_assignments[0].len();
     let vk = params.get_vk(input_len)?.clone();
     let n = provers[0].a.len();
+    let a_aux_density_total = provers[0].a_aux_density.get_total_density();
+    let b_input_density_total = provers[0].b_input_density.get_total_density();
+    let b_aux_density_total = provers[0].b_aux_density.get_total_density();
 
     // Make sure all circuits have the same input len.
     for prover in &provers {
@@ -294,6 +297,21 @@ where
             prover.a.len(),
             n,
             "only equaly sized circuits are supported"
+        );
+        debug_assert_eq!(
+            a_aux_density_total,
+            prover.a_aux_density.get_total_density(),
+            "only identical circuits are supported"
+        );
+        debug_assert_eq!(
+            b_input_density_total,
+            prover.b_input_density.get_total_density(),
+            "only identical circuits are supported"
+        );
+        debug_assert_eq!(
+            b_aux_density_total,
+            prover.b_aux_density.get_total_density(),
+            "only identical circuits are supported"
         );
     }
 
@@ -348,47 +366,59 @@ where
     drop(fft_kern);
     let mut multiexp_kern = Some(LockedMultiexpKernel::<E>::new(log_d, priority));
 
+    debug!("get h");
+    let params_h = params.get_h(n)?;
+    debug!("multiexp h");
     let h_s = a_s
         .into_iter()
         .map(|a| {
-            let h = multiexp(
+            multiexp(
                 &worker,
-                params.get_h(a.len())?,
+                params_h.clone(),
                 FullDensity,
                 a,
                 &mut multiexp_kern,
-            );
-            Ok(h)
+            )
         })
-        .collect::<Result<Vec<_>, SynthesisError>>()?;
-
+        .collect::<Vec<_>>();
+    drop(params_h);
+    debug!("get l");
+    let params_l = params.get_l(provers[0].aux_assignment.len())?;
+    debug!("multiexp l");
     let l_s = aux_assignments
         .iter()
         .map(|aux_assignment| {
-            let l = multiexp(
+            multiexp(
                 &worker,
-                params.get_l(aux_assignment.len())?,
+                params_l.clone(),
                 FullDensity,
                 aux_assignment.clone(),
                 &mut multiexp_kern,
-            );
-            Ok(l)
+            )
         })
-        .collect::<Result<Vec<_>, SynthesisError>>()?;
+        .collect::<Vec<_>>();
+    drop(params_l);
 
+    debug!("get_a b_g1 b_g2");
+    let a_aux_density_total = provers[0].a_aux_density.get_total_density();
+    let b_input_density_total = provers[0].b_input_density.get_total_density();
+    let b_aux_density_total = provers[0].b_aux_density.get_total_density();
+
+    let (a_inputs_source, a_aux_source) = params.get_a(input_len, a_aux_density_total)?;
+    let (b_g1_inputs_source, b_g1_aux_source) =
+        params.get_b_g1(b_input_density_total, b_aux_density_total)?;
+    let (b_g2_inputs_source, b_g2_aux_source) =
+        params.get_b_g2(b_input_density_total, b_aux_density_total)?;
+
+    debug!("multiexp a b_g1 b_g2");
     let inputs = provers
         .into_iter()
         .zip(input_assignments.iter())
         .zip(aux_assignments.iter())
         .map(|((prover, input_assignment), aux_assignment)| {
-            let a_aux_density_total = prover.a_aux_density.get_total_density();
-
-            let (a_inputs_source, a_aux_source) =
-                params.get_a(input_assignment.len(), a_aux_density_total)?;
-
             let a_inputs = multiexp(
                 &worker,
-                a_inputs_source,
+                a_inputs_source.clone(),
                 FullDensity,
                 input_assignment.clone(),
                 &mut multiexp_kern,
@@ -396,23 +426,18 @@ where
 
             let a_aux = multiexp(
                 &worker,
-                a_aux_source,
+                a_aux_source.clone(),
                 Arc::new(prover.a_aux_density),
                 aux_assignment.clone(),
                 &mut multiexp_kern,
             );
 
             let b_input_density = Arc::new(prover.b_input_density);
-            let b_input_density_total = b_input_density.get_total_density();
             let b_aux_density = Arc::new(prover.b_aux_density);
-            let b_aux_density_total = b_aux_density.get_total_density();
-
-            let (b_g1_inputs_source, b_g1_aux_source) =
-                params.get_b_g1(b_input_density_total, b_aux_density_total)?;
 
             let b_g1_inputs = multiexp(
                 &worker,
-                b_g1_inputs_source,
+                b_g1_inputs_source.clone(),
                 b_input_density.clone(),
                 input_assignment.clone(),
                 &mut multiexp_kern,
@@ -420,42 +445,46 @@ where
 
             let b_g1_aux = multiexp(
                 &worker,
-                b_g1_aux_source,
+                b_g1_aux_source.clone(),
                 b_aux_density.clone(),
                 aux_assignment.clone(),
                 &mut multiexp_kern,
             );
 
-            let (b_g2_inputs_source, b_g2_aux_source) =
-                params.get_b_g2(b_input_density_total, b_aux_density_total)?;
-
             let b_g2_inputs = multiexp(
                 &worker,
-                b_g2_inputs_source,
+                b_g2_inputs_source.clone(),
                 b_input_density,
                 input_assignment.clone(),
                 &mut multiexp_kern,
             );
             let b_g2_aux = multiexp(
                 &worker,
-                b_g2_aux_source,
+                b_g2_aux_source.clone(),
                 b_aux_density,
                 aux_assignment.clone(),
                 &mut multiexp_kern,
             );
 
-            Ok((
+            (
                 a_inputs,
                 a_aux,
                 b_g1_inputs,
                 b_g1_aux,
                 b_g2_inputs,
                 b_g2_aux,
-            ))
+            )
         })
-        .collect::<Result<Vec<_>, SynthesisError>>()?;
+        .collect::<Vec<_>>();
     drop(multiexp_kern);
+    drop(a_inputs_source);
+    drop(a_aux_source);
+    drop(b_g1_inputs_source);
+    drop(b_g1_aux_source);
+    drop(b_g2_inputs_source);
+    drop(b_g2_aux_source);
 
+    debug!("proofs");
     let proofs = h_s
         .into_iter()
         .zip(l_s.into_iter())
