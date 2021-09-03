@@ -152,14 +152,14 @@ pub mod multiexp;
 pub mod test_utils;
 pub mod util_cs;
 
-use ff::Field;
+mod lc;
+pub use lc::{Index, LinearCombination, Variable};
 
-use pairing::Engine;
-use rustc_hash::FxHashMap as HashMap;
 use std::convert::TryInto;
 use std::io;
 use std::marker::PhantomData;
-use std::ops::{Add, AddAssign, MulAssign, Sub};
+
+use pairing::Engine;
 
 const BELLMAN_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -170,154 +170,6 @@ const BELLMAN_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub trait Circuit<E: Engine> {
     /// Synthesize the circuit into a rank-1 quadratic constraint system.
     fn synthesize<CS: ConstraintSystem<E>>(self, cs: &mut CS) -> Result<(), SynthesisError>;
-}
-
-/// Represents a variable in our constraint system.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Variable(Index);
-
-impl Variable {
-    /// This constructs a variable with an arbitrary index.
-    /// Circuit implementations are not recommended to use this.
-    pub fn new_unchecked(idx: Index) -> Variable {
-        Variable(idx)
-    }
-
-    /// This returns the index underlying the variable.
-    /// Circuit implementations are not recommended to use this.
-    pub fn get_unchecked(&self) -> Index {
-        self.0
-    }
-}
-
-/// Represents the index of either an input variable or
-/// auxiliary variable.
-#[derive(Copy, Clone, PartialEq, Debug, Eq, Hash)]
-pub enum Index {
-    Input(usize),
-    Aux(usize),
-}
-
-/// This represents a linear combination of some variables, with coefficients
-/// in the scalar field of a pairing-friendly elliptic curve group.
-#[derive(Clone)]
-pub struct LinearCombination<E: Engine>(HashMap<Variable, E::Fr>);
-impl<E: Engine> Default for LinearCombination<E> {
-    fn default() -> Self {
-        Self::zero()
-    }
-}
-
-impl<E: Engine> LinearCombination<E> {
-    pub fn zero() -> LinearCombination<E> {
-        LinearCombination(HashMap::default())
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = (&Variable, &E::Fr)> + '_ {
-        self.0.iter()
-    }
-
-    pub fn add_unsimplified(mut self, (coeff, var): (E::Fr, Variable)) -> LinearCombination<E> {
-        self.0
-            .entry(var)
-            .or_insert_with(E::Fr::zero)
-            .add_assign(&coeff);
-
-        self
-    }
-}
-
-impl<E: Engine> Add<(E::Fr, Variable)> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
-
-    fn add(mut self, (coeff, var): (E::Fr, Variable)) -> LinearCombination<E> {
-        self.0
-            .entry(var)
-            .or_insert_with(E::Fr::zero)
-            .add_assign(&coeff);
-
-        self
-    }
-}
-
-impl<E: Engine> Sub<(E::Fr, Variable)> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
-
-    #[allow(clippy::suspicious_arithmetic_impl)]
-    fn sub(self, (coeff, var): (E::Fr, Variable)) -> LinearCombination<E> {
-        self + (-coeff, var)
-    }
-}
-
-impl<E: Engine> Add<Variable> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
-
-    fn add(self, other: Variable) -> LinearCombination<E> {
-        self + (E::Fr::one(), other)
-    }
-}
-
-impl<E: Engine> Sub<Variable> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
-
-    fn sub(self, other: Variable) -> LinearCombination<E> {
-        self - (E::Fr::one(), other)
-    }
-}
-
-impl<'a, E: Engine> Add<&'a LinearCombination<E>> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
-
-    fn add(mut self, other: &'a LinearCombination<E>) -> LinearCombination<E> {
-        for (var, val) in &other.0 {
-            self.0
-                .entry(*var)
-                .or_insert_with(E::Fr::zero)
-                .add_assign(val);
-        }
-
-        self
-    }
-}
-
-impl<'a, E: Engine> Sub<&'a LinearCombination<E>> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
-
-    fn sub(mut self, other: &'a LinearCombination<E>) -> LinearCombination<E> {
-        for (var, val) in &other.0 {
-            self = self - (*val, *var);
-        }
-
-        self
-    }
-}
-
-impl<'a, E: Engine> Add<(E::Fr, &'a LinearCombination<E>)> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
-
-    fn add(mut self, (coeff, other): (E::Fr, &'a LinearCombination<E>)) -> LinearCombination<E> {
-        for s in &other.0 {
-            let mut tmp = *s.1;
-            tmp.mul_assign(&coeff);
-            self = self + (tmp, *s.0);
-        }
-
-        self
-    }
-}
-
-impl<'a, E: Engine> Sub<(E::Fr, &'a LinearCombination<E>)> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
-
-    fn sub(mut self, (coeff, other): (E::Fr, &'a LinearCombination<E>)) -> LinearCombination<E> {
-        for s in &other.0 {
-            let mut tmp = *s.1;
-            tmp.mul_assign(&coeff);
-            self = self - (tmp, *s.0);
-        }
-
-        self
-    }
 }
 
 /// This is an error that could occur during circuit synthesis contexts,
@@ -588,39 +440,4 @@ pub(crate) fn le_bytes_to_u64s(le_bytes: &[u8]) -> Vec<u64> {
         .chunks(8)
         .map(|chunk| u64::from_le_bytes(chunk.try_into().unwrap()))
         .collect()
-}
-
-#[cfg(all(test, feature = "groth16"))]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_add_simplify() {
-        use blstrs::Bls12;
-
-        let n = 5;
-
-        let mut lc = LinearCombination::<Bls12>::zero();
-
-        let mut expected_sums = vec![<Bls12 as Engine>::Fr::zero(); n];
-        let mut total_additions = 0;
-        for (i, expected_sum) in expected_sums.iter_mut().enumerate() {
-            for _ in 0..i + 1 {
-                let coeff = <Bls12 as Engine>::Fr::one();
-                lc = lc + (coeff, Variable::new_unchecked(Index::Aux(i)));
-                expected_sum.add_assign(&coeff);
-                total_additions += 1;
-            }
-        }
-
-        // There are only as many terms as distinct variable Indexes — not one per addition operation.
-        assert_eq!(n, lc.0.len());
-        assert!(lc.0.len() != total_additions);
-
-        // Each variable has the expected coefficient, the sume of those added by its Index.
-        lc.0.iter().for_each(|(var, coeff)| match var.0 {
-            Index::Aux(i) => assert_eq!(expected_sums[i], *coeff),
-            _ => panic!("unexpected variable type"),
-        });
-    }
 }

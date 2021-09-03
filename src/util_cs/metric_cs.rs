@@ -58,7 +58,7 @@ pub struct MetricCS<E: Engine> {
 
 fn proc_lc<E: Engine>(terms: &LinearCombination<E>) -> BTreeMap<OrderedVariable, E::Fr> {
     let mut map = BTreeMap::new();
-    for (&var, &coeff) in terms.iter() {
+    for (var, &coeff) in terms.iter() {
         map.entry(OrderedVariable(var))
             .or_insert_with(E::Fr::zero)
             .add_assign(&coeff);

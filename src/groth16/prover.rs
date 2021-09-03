@@ -23,44 +23,6 @@ use log::{debug, info};
 #[cfg(any(feature = "cuda", feature = "opencl"))]
 use crate::gpu::PriorityLock;
 
-fn eval<E: Engine>(
-    lc: &LinearCombination<E>,
-    mut input_density: Option<&mut DensityTracker>,
-    mut aux_density: Option<&mut DensityTracker>,
-    input_assignment: &[E::Fr],
-    aux_assignment: &[E::Fr],
-) -> E::Fr {
-    let mut acc = E::Fr::zero();
-
-    for (&index, &coeff) in lc.0.iter() {
-        let mut tmp;
-
-        match index {
-            Variable(Index::Input(i)) => {
-                tmp = input_assignment[i];
-                if let Some(ref mut v) = input_density {
-                    v.inc(i);
-                }
-            }
-            Variable(Index::Aux(i)) => {
-                tmp = aux_assignment[i];
-                if let Some(ref mut v) = aux_density {
-                    v.inc(i);
-                }
-            }
-        }
-
-        if coeff == E::Fr::one() {
-            acc.add_assign(&tmp);
-        } else {
-            tmp.mul_assign(&coeff);
-            acc.add_assign(&tmp);
-        }
-    }
-
-    acc
-}
-
 struct ProvingAssignment<E: Engine> {
     // Density of queries
     a_aux_density: DensityTracker,
@@ -180,34 +142,43 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
         let b = b(LinearCombination::zero());
         let c = c(LinearCombination::zero());
 
-        self.a.push(eval(
-            &a,
+        let input_assignment = &self.input_assignment;
+        let aux_assignment = &self.aux_assignment;
+        let a_aux_density = &mut self.a_aux_density;
+        let b_input_density = &mut self.b_input_density;
+        let b_aux_density = &mut self.b_aux_density;
+
+        let a_res = a.eval(
             // Inputs have full density in the A query
             // because there are constraints of the
             // form x * 0 = 0 for each input.
             None,
-            Some(&mut self.a_aux_density),
-            &self.input_assignment,
-            &self.aux_assignment,
-        ));
-        self.b.push(eval(
-            &b,
-            Some(&mut self.b_input_density),
-            Some(&mut self.b_aux_density),
-            &self.input_assignment,
-            &self.aux_assignment,
-        ));
-        self.c.push(eval(
-            &c,
+            Some(a_aux_density),
+            input_assignment,
+            aux_assignment,
+        );
+
+        let b_res = b.eval(
+            Some(b_input_density),
+            Some(b_aux_density),
+            input_assignment,
+            aux_assignment,
+        );
+
+        let c_res = c.eval(
             // There is no C polynomial query,
             // though there is an (beta)A + (alpha)B + C
             // query for all aux variables.
             // However, that query has full density.
             None,
             None,
-            &self.input_assignment,
-            &self.aux_assignment,
-        ));
+            input_assignment,
+            aux_assignment,
+        );
+
+        self.a.push(a_res);
+        self.b.push(b_res);
+        self.c.push(c_res);
     }
 
     fn push_namespace<NR, N>(&mut self, _: N)
@@ -611,6 +582,7 @@ where
     E: Engine,
     C: Circuit<E> + Send,
 {
+    let start = Instant::now();
     let mut provers = circuits
         .into_par_iter()
         .map(|circuit| -> Result<_, SynthesisError> {
@@ -627,6 +599,8 @@ where
             Ok(prover)
         })
         .collect::<Result<Vec<_>, _>>()?;
+
+    info!("synthesis time: {:?}", start.elapsed());
 
     // Start fft/multiexp prover timer
     let start = Instant::now();

@@ -435,7 +435,7 @@ impl<E: Engine> Num<E> {
     }
 
     pub fn scale(mut self, scalar: E::Fr) -> Self {
-        for (_variable, fr) in self.lc.0.iter_mut() {
+        for (_variable, fr) in self.lc.iter_mut() {
             fr.mul_assign(&scalar);
         }
 
@@ -661,7 +661,7 @@ mod test {
         assert_eq!(scaled_value, scaled_num.value.unwrap());
 
         // Each variable has the expected coefficient, the sume of those added by its Index.
-        scaled_num.lc.0.iter().for_each(|(var, coeff)| match var.0 {
+        scaled_num.lc.iter().for_each(|(var, coeff)| match var.0 {
             Index::Aux(i) => {
                 let mut tmp = expected_sums[i];
                 tmp.mul_assign(&scalar);
