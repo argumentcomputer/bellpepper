@@ -11,7 +11,7 @@ parameters:
 executors:
   default:
     machine:
-      image: ubuntu-1604-cuda-10.1:201909-23
+      image: ubuntu-2004-cuda-11.2:202103-01
     working_directory: ~/gpuci
     resource_class: gpu.nvidia.medium
 
@@ -40,6 +40,7 @@ commands:
       - run:
           name: Install libraries for GPU tests
           command: |
+            sudo apt update
             sudo apt-get update -y
             sudo apt install -y ocl-icd-opencl-dev
 
