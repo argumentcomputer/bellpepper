@@ -4,7 +4,7 @@ use std::iter;
 use std::ops::AddAssign;
 use std::sync::Arc;
 
-use bit_vec::{self, BitVec};
+use bitvec::prelude::*;
 use ff::{Field, PrimeField};
 use group::{prime::PrimeCurveAffine, Group};
 use log::{info, warn};
@@ -87,12 +87,16 @@ impl<G: PrimeCurveAffine> Source<G> for (Arc<Vec<G>>, usize) {
     }
 }
 
-pub trait QueryDensity {
+pub trait QueryDensity: Sized {
     /// Returns whether the base exists.
     type Iter: Iterator<Item = bool>;
 
     fn iter(self) -> Self::Iter;
     fn get_query_size(self) -> Option<usize>;
+    fn generate_exps<E: Engine>(
+        self,
+        exponents: Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>,
+    ) -> Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>;
 }
 
 #[derive(Clone)]
@@ -114,6 +118,13 @@ impl<'a> QueryDensity for &'a FullDensity {
     fn get_query_size(self) -> Option<usize> {
         None
     }
+
+    fn generate_exps<E: Engine>(
+        self,
+        exponents: Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>,
+    ) -> Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>> {
+        exponents
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -123,14 +134,29 @@ pub struct DensityTracker {
 }
 
 impl<'a> QueryDensity for &'a DensityTracker {
-    type Iter = bit_vec::Iter<'a>;
+    type Iter = bitvec::slice::BitValIter<'a, Lsb0, usize>;
 
     fn iter(self) -> Self::Iter {
-        self.bv.iter()
+        self.bv.iter().by_val()
     }
 
     fn get_query_size(self) -> Option<usize> {
         Some(self.bv.len())
+    }
+
+    fn generate_exps<E: Engine>(
+        self,
+        exponents: Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>>,
+    ) -> Arc<Vec<<<E as Engine>::Fr as PrimeField>::Repr>> {
+        let exps: Vec<_> = exponents
+            .iter()
+            .zip(self.bv.iter())
+            .filter_map(|(&e, d)| if *d { Some(e) } else { None })
+            .collect();
+
+        debug_assert_eq!(exps.len(), exponents.len());
+
+        Arc::new(exps)
     }
 }
 
@@ -338,18 +364,10 @@ where
 {
     if let Some(ref mut kern) = kern {
         if let Ok(p) = kern.with(|k: &mut gpu::MultiexpKernel<E>| {
-            let mut exps: Vec<<<E as Engine>::Fr as PrimeField>::Repr> =
-                { (0..exponents.len()).map(|_| exponents[0]).collect() };
-            let mut n = 0;
-            for (&e, d) in exponents.iter().zip(density_map.as_ref().iter()) {
-                if d {
-                    exps[n] = e;
-                    n += 1;
-                }
-            }
-
+            let exps = density_map.as_ref().generate_exps::<E>(exponents.clone());
             let (bss, skip) = bases.clone().get();
-            k.multiexp(pool, bss, Arc::new(exps), skip, n)
+            let n = exps.len();
+            k.multiexp(pool, bss, exps, skip, n)
         }) {
             return Waiter::done(Ok(p));
         }
