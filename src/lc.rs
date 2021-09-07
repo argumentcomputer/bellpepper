@@ -35,8 +35,88 @@ pub enum Index {
 /// in the scalar field of a pairing-friendly elliptic curve group.
 #[derive(Clone)]
 pub struct LinearCombination<E: Engine> {
-    inputs: Vec<(usize, E::Fr)>,
-    aux: Vec<(usize, E::Fr)>,
+    inputs: Indexer<E::Fr>,
+    aux: Indexer<E::Fr>,
+}
+
+#[derive(Clone)]
+struct Indexer<T> {
+    values: Vec<(usize, T)>,
+    // (index, key) of the last insertion operation
+    last_inserted: Option<(usize, usize)>,
+}
+
+impl<T> Default for Indexer<T> {
+    fn default() -> Self {
+        Indexer {
+            values: Vec::new(),
+            last_inserted: None,
+        }
+    }
+}
+
+impl<T> Indexer<T> {
+    pub fn from_value(index: usize, value: T) -> Self {
+        Indexer {
+            values: vec![(index, value)],
+            last_inserted: Some((0, index)),
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&usize, &T)> + '_ {
+        self.values.iter().map(|(key, value)| (key, value))
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&mut usize, &mut T)> + '_ {
+        self.values.iter_mut().map(|(key, value)| (key, value))
+    }
+
+    pub fn insert_or_update<F, G>(&mut self, key: usize, insert: F, update: G)
+    where
+        F: FnOnce() -> T,
+        G: FnOnce(&mut T),
+    {
+        if let Some((last_index, last_key)) = self.last_inserted {
+            if last_key == key {
+                // update the same key again
+                update(&mut self.values[last_index].1);
+                return;
+            } else if last_key + 1 == key {
+                // optimization for follow on updates
+                let i = last_index + 1;
+                if i >= self.values.len() {
+                    // insert at the end
+                    self.values.push((key, insert()));
+                    self.last_inserted = Some((i, key));
+                } else if self.values[i].0 == key {
+                    // update
+                    update(&mut self.values[i].1);
+                } else {
+                    // insert
+                    self.values.insert(i, (key, insert()));
+                    self.last_inserted = Some((i, key));
+                }
+                return;
+            }
+        }
+        match self.values.binary_search_by_key(&key, |(k, _)| *k) {
+            Ok(i) => {
+                update(&mut self.values[i].1);
+            }
+            Err(i) => {
+                self.values.insert(i, (key, insert()));
+                self.last_inserted = Some((i, key));
+            }
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
 }
 
 impl<E: Engine> Default for LinearCombination<E> {
@@ -48,9 +128,26 @@ impl<E: Engine> Default for LinearCombination<E> {
 impl<E: Engine> LinearCombination<E> {
     pub fn zero() -> LinearCombination<E> {
         LinearCombination {
-            inputs: Vec::new(),
-            aux: Vec::new(),
+            inputs: Default::default(),
+            aux: Default::default(),
         }
+    }
+
+    pub fn from_coeff(var: Variable, coeff: E::Fr) -> Self {
+        match var {
+            Variable(Index::Input(i)) => Self {
+                inputs: Indexer::from_value(i, coeff),
+                aux: Default::default(),
+            },
+            Variable(Index::Aux(i)) => Self {
+                inputs: Default::default(),
+                aux: Indexer::from_value(i, coeff),
+            },
+        }
+    }
+
+    pub fn from_variable(var: Variable) -> Self {
+        Self::from_coeff(var, E::Fr::one())
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (Variable, &E::Fr)> + '_ {
@@ -61,12 +158,12 @@ impl<E: Engine> LinearCombination<E> {
     }
 
     #[inline]
-    pub(crate) fn iter_inputs(&self) -> impl Iterator<Item = &(usize, E::Fr)> + '_ {
+    pub(crate) fn iter_inputs(&self) -> impl Iterator<Item = (&usize, &E::Fr)> + '_ {
         self.inputs.iter()
     }
 
     #[inline]
-    pub(crate) fn iter_aux(&self) -> impl Iterator<Item = &(usize, E::Fr)> + '_ {
+    pub(crate) fn iter_aux(&self) -> impl Iterator<Item = (&usize, &E::Fr)> + '_ {
         self.aux.iter()
     }
 
@@ -81,32 +178,16 @@ impl<E: Engine> LinearCombination<E> {
             )
     }
 
+    #[inline]
     fn add_assign_unsimplified_input(&mut self, new_var: usize, coeff: E::Fr) {
-        match self
-            .inputs
-            .binary_search_by_key(&new_var, |(var, _coeff)| *var)
-        {
-            Ok(index) => {
-                self.inputs[index].1 += coeff;
-            }
-            Err(index) => {
-                self.inputs.insert(index, (new_var, coeff));
-            }
-        }
+        self.inputs
+            .insert_or_update(new_var, || coeff, |val| *val += coeff);
     }
 
+    #[inline]
     fn add_assign_unsimplified_aux(&mut self, new_var: usize, coeff: E::Fr) {
-        match self
-            .aux
-            .binary_search_by_key(&new_var, |(var, _coeff)| *var)
-        {
-            Ok(index) => {
-                self.aux[index].1 += coeff;
-            }
-            Err(index) => {
-                self.aux.insert(index, (new_var, coeff));
-            }
-        }
+        self.aux
+            .insert_or_update(new_var, || coeff, |val| *val += coeff);
     }
 
     pub fn add_unsimplified(mut self, (coeff, var): (E::Fr, Variable)) -> LinearCombination<E> {
@@ -122,10 +203,12 @@ impl<E: Engine> LinearCombination<E> {
         self
     }
 
+    #[inline]
     fn sub_assign_unsimplified_input(&mut self, new_var: usize, coeff: E::Fr) {
         self.add_assign_unsimplified_input(new_var, -coeff);
     }
 
+    #[inline]
     fn sub_assign_unsimplified_aux(&mut self, new_var: usize, coeff: E::Fr) {
         self.add_assign_unsimplified_aux(new_var, -coeff);
     }
@@ -148,7 +231,7 @@ impl<E: Engine> LinearCombination<E> {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.inputs.is_empty() && self.aux.is_empty()
     }
 
     pub(crate) fn eval(
@@ -231,11 +314,11 @@ impl<'a, E: Engine> Add<&'a LinearCombination<E>> for LinearCombination<E> {
     type Output = LinearCombination<E>;
 
     fn add(mut self, other: &'a LinearCombination<E>) -> LinearCombination<E> {
-        for (var, val) in &other.inputs {
+        for (var, val) in other.inputs.iter() {
             self.add_assign_unsimplified_input(*var, *val);
         }
 
-        for (var, val) in &other.aux {
+        for (var, val) in other.aux.iter() {
             self.add_assign_unsimplified_aux(*var, *val);
         }
 
@@ -247,11 +330,11 @@ impl<'a, E: Engine> Sub<&'a LinearCombination<E>> for LinearCombination<E> {
     type Output = LinearCombination<E>;
 
     fn sub(mut self, other: &'a LinearCombination<E>) -> LinearCombination<E> {
-        for (var, val) in &other.inputs {
+        for (var, val) in other.inputs.iter() {
             self.sub_assign_unsimplified_input(*var, *val);
         }
 
-        for (var, val) in &other.aux {
+        for (var, val) in other.aux.iter() {
             self.sub_assign_unsimplified_aux(*var, *val);
         }
 
@@ -263,11 +346,11 @@ impl<'a, E: Engine> Add<(E::Fr, &'a LinearCombination<E>)> for LinearCombination
     type Output = LinearCombination<E>;
 
     fn add(mut self, (coeff, other): (E::Fr, &'a LinearCombination<E>)) -> LinearCombination<E> {
-        for (var, val) in &other.inputs {
+        for (var, val) in other.inputs.iter() {
             self.add_assign_unsimplified_input(*var, *val * coeff);
         }
 
-        for (var, val) in &other.aux {
+        for (var, val) in other.aux.iter() {
             self.add_assign_unsimplified_aux(*var, *val * coeff);
         }
 
@@ -279,11 +362,11 @@ impl<'a, E: Engine> Sub<(E::Fr, &'a LinearCombination<E>)> for LinearCombination
     type Output = LinearCombination<E>;
 
     fn sub(mut self, (coeff, other): (E::Fr, &'a LinearCombination<E>)) -> LinearCombination<E> {
-        for (var, val) in &other.inputs {
+        for (var, val) in other.inputs.iter() {
             self.sub_assign_unsimplified_input(*var, *val * coeff);
         }
 
-        for (var, val) in &other.aux {
+        for (var, val) in other.aux.iter() {
             self.sub_assign_unsimplified_aux(*var, *val * coeff);
         }
 
@@ -322,5 +405,29 @@ mod tests {
             Index::Aux(i) => assert_eq!(expected_sums[i], *coeff),
             _ => panic!("unexpected variable type"),
         });
+    }
+
+    #[test]
+    fn test_insert_or_update() {
+        let mut indexer = Indexer::default();
+        let one = <Bls12 as Engine>::Fr::one();
+        let mut two = one;
+        two += one;
+
+        indexer.insert_or_update(2, || one, |v| *v += one);
+        assert_eq!(&indexer.values, &[(2, one)]);
+        assert_eq!(&indexer.last_inserted, &Some((0, 2)));
+
+        indexer.insert_or_update(3, || one, |v| *v += one);
+        assert_eq!(&indexer.values, &[(2, one), (3, one)]);
+        assert_eq!(&indexer.last_inserted, &Some((1, 3)));
+
+        indexer.insert_or_update(1, || one, |v| *v += one);
+        assert_eq!(&indexer.values, &[(1, one), (2, one), (3, one)]);
+        assert_eq!(&indexer.last_inserted, &Some((0, 1)));
+
+        indexer.insert_or_update(2, || one, |v| *v += one);
+        assert_eq!(&indexer.values, &[(1, one), (2, two), (3, one)]);
+        assert_eq!(&indexer.last_inserted, &Some((0, 1)));
     }
 }
