@@ -379,7 +379,7 @@ impl<E: Engine> From<AllocatedNum<E>> for Num<E> {
     fn from(num: AllocatedNum<E>) -> Num<E> {
         Num {
             value: num.value,
-            lc: LinearCombination::<E>::zero() + num.variable,
+            lc: LinearCombination::<E>::from_variable(num.variable),
         }
     }
 }
