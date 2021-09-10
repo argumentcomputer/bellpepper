@@ -9,7 +9,7 @@ use rand_core::RngCore;
 use rayon::prelude::*;
 
 use super::{ParameterSource, Proof};
-use crate::domain::{EvaluationDomain, Scalar};
+use crate::domain::EvaluationDomain;
 use crate::gpu::{self, LockedFFTKernel, LockedMultiexpKernel};
 use crate::multicore::Worker;
 use crate::multiexp::{multiexp, DensityTracker, FullDensity};
@@ -68,9 +68,9 @@ struct ProvingAssignment<E: Engine> {
     b_aux_density: DensityTracker,
 
     // Evaluations of A, B, C polynomials
-    a: Vec<Scalar<E>>,
-    b: Vec<Scalar<E>>,
-    c: Vec<Scalar<E>>,
+    a: Vec<E::Fr>,
+    b: Vec<E::Fr>,
+    c: Vec<E::Fr>,
 
     // Assignments of variables
     input_assignment: Vec<E::Fr>,
@@ -89,7 +89,7 @@ impl<E: Engine> fmt::Debug for ProvingAssignment<E> {
                 &self
                     .a
                     .iter()
-                    .map(|v| format!("Fr({:?})", v.0))
+                    .map(|v| format!("Fr({:?})", v))
                     .collect::<Vec<_>>(),
             )
             .field(
@@ -97,7 +97,7 @@ impl<E: Engine> fmt::Debug for ProvingAssignment<E> {
                 &self
                     .b
                     .iter()
-                    .map(|v| format!("Fr({:?})", v.0))
+                    .map(|v| format!("Fr({:?})", v))
                     .collect::<Vec<_>>(),
             )
             .field(
@@ -105,7 +105,7 @@ impl<E: Engine> fmt::Debug for ProvingAssignment<E> {
                 &self
                     .c
                     .iter()
-                    .map(|v| format!("Fr({:?})", v.0))
+                    .map(|v| format!("Fr({:?})", v))
                     .collect::<Vec<_>>(),
             )
             .field("input_assignment", &self.input_assignment)
@@ -180,7 +180,7 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
         let b = b(LinearCombination::zero());
         let c = c(LinearCombination::zero());
 
-        self.a.push(Scalar(eval(
+        self.a.push(eval(
             &a,
             // Inputs have full density in the A query
             // because there are constraints of the
@@ -189,15 +189,15 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
             Some(&mut self.a_aux_density),
             &self.input_assignment,
             &self.aux_assignment,
-        )));
-        self.b.push(Scalar(eval(
+        ));
+        self.b.push(eval(
             &b,
             Some(&mut self.b_input_density),
             Some(&mut self.b_aux_density),
             &self.input_assignment,
             &self.aux_assignment,
-        )));
-        self.c.push(Scalar(eval(
+        ));
+        self.c.push(eval(
             &c,
             // There is no C polynomial query,
             // though there is an (beta)A + (alpha)B + C
@@ -207,7 +207,7 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
             None,
             &self.input_assignment,
             &self.aux_assignment,
-        )));
+        ));
     }
 
     fn push_namespace<NR, N>(&mut self, _: N)
@@ -340,7 +340,7 @@ where
             a.truncate(a_len);
 
             Ok(Arc::new(
-                a.into_iter().map(|s| s.0.to_repr()).collect::<Vec<_>>(),
+                a.into_iter().map(|s| s.to_repr()).collect::<Vec<_>>(),
             ))
         })
         .collect::<Result<Vec<_>, SynthesisError>>()?;

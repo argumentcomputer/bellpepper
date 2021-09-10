@@ -12,7 +12,7 @@ use rand_core::RngCore;
 
 use super::{Parameters, VerifyingKey};
 
-use crate::domain::{EvaluationDomain, Scalar};
+use crate::domain::EvaluationDomain;
 use crate::gpu;
 use crate::multicore::Worker;
 use crate::{Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
@@ -214,8 +214,8 @@ where
     }
 
     // Create bases for blind evaluation of polynomials at tau
-    let powers_of_tau = vec![Scalar::<E>(E::Fr::zero()); assembly.num_constraints];
-    let mut powers_of_tau = EvaluationDomain::<E, _>::from_coeffs(powers_of_tau)?;
+    let powers_of_tau = vec![E::Fr::zero(); assembly.num_constraints];
+    let mut powers_of_tau = EvaluationDomain::<E>::from_coeffs(powers_of_tau)?;
 
     // Compute G1 window table
     let mut g1_wnaf = Wnaf::new();
@@ -237,7 +237,8 @@ where
         assembly.num_inputs + assembly.num_aux
     });
 
-    let gamma_inverse = Option::from(gamma.invert()).ok_or(SynthesisError::UnexpectedIdentity)?;
+    let gamma_inverse: E::Fr =
+        Option::from(gamma.invert()).ok_or(SynthesisError::UnexpectedIdentity)?;
     let delta_inverse = Option::from(delta.invert()).ok_or(SynthesisError::UnexpectedIdentity)?;
 
     let worker = Worker::new();
@@ -254,7 +255,7 @@ where
                         let mut current_tau_power = tau.pow_vartime(&[(i * chunk) as u64]);
 
                         for p in powers_of_tau {
-                            p.0 = current_tau_power;
+                            *p = current_tau_power;
                             current_tau_power.mul_assign(&tau);
                         }
                     });
@@ -281,8 +282,7 @@ where
                         .take(h_affine.len())
                         .map(|p| {
                             // Compute final exponent
-                            let mut exp = p.0;
-                            exp.mul_assign(&coeff);
+                            let exp = *p * coeff;
 
                             // Exponentiate
                             g1_wnaf.scalar(&exp)
@@ -315,7 +315,7 @@ where
         g2_wnaf: &Wnaf<usize, &[E::G2], &mut Vec<i64>>,
 
         // Lagrange coefficients for tau
-        powers_of_tau: &[Scalar<E>],
+        powers_of_tau: &[E::Fr],
 
         // QAP polynomials
         at: &[Vec<(E::Fr, usize)>],
@@ -376,13 +376,13 @@ where
                         .zip(ct.iter())
                     {
                         fn eval_at_tau<E: Engine>(
-                            powers_of_tau: &[Scalar<E>],
+                            powers_of_tau: &[E::Fr],
                             p: &[(E::Fr, usize)],
                         ) -> E::Fr {
                             let mut acc = E::Fr::zero();
 
                             for &(ref coeff, index) in p {
-                                let mut n = powers_of_tau[index].0;
+                                let mut n = powers_of_tau[index];
                                 n.mul_assign(coeff);
                                 acc.add_assign(&n);
                             }
@@ -391,9 +391,9 @@ where
                         }
 
                         // Evaluate QAP polynomials at tau
-                        let mut at = eval_at_tau(powers_of_tau, at);
-                        let mut bt = eval_at_tau(powers_of_tau, bt);
-                        let ct = eval_at_tau(powers_of_tau, ct);
+                        let mut at = eval_at_tau::<E>(powers_of_tau, at);
+                        let mut bt = eval_at_tau::<E>(powers_of_tau, bt);
+                        let ct = eval_at_tau::<E>(powers_of_tau, ct);
 
                         // Compute A query (in G1)
                         if !bool::from(at.is_zero()) {
@@ -428,7 +428,7 @@ where
     }
 
     // Evaluate for inputs.
-    eval(
+    eval::<E>(
         &g1_wnaf,
         &g2_wnaf,
         &powers_of_tau,
@@ -446,7 +446,7 @@ where
     );
 
     // Evaluate for auxiliary variables.
-    eval(
+    eval::<E>(
         &g1_wnaf,
         &g2_wnaf,
         &powers_of_tau,
