@@ -4,7 +4,6 @@ use groupy::{CurveAffine, CurveProjective};
 use rayon::prelude::*;
 
 use super::{multiscalar, PreparedVerifyingKey, Proof, VerifyingKey};
-use crate::multicore::VERIFIER_POOL as POOL;
 use crate::SynthesisError;
 
 /// Generate a prepared verifying key, required to verify a proofs.
@@ -58,28 +57,26 @@ pub fn verify_proof<'a, E: Engine>(
     let mut ml_acc = E::Fqk::zero();
 
     // Start the two independent miller loops
-    POOL.scoped(|s| {
+    rayon::in_place_scope(|s| {
         // - Thread 1: Calculate ML alpha * beta
         let ml_a_b = &mut ml_a_b;
-        s.execute(move || {
+        s.spawn(move |_| {
             *ml_a_b = E::miller_loop(&[(&proof.a.prepare(), &proof.b.prepare())]);
         });
 
         // - Thread 2: Calculate ML C * (-delta)
         let ml_all = &mut ml_all;
-        s.execute(move || *ml_all = E::miller_loop(&[(&proof.c.prepare(), &pvk.neg_delta_g2)]));
+        s.spawn(move |_| *ml_all = E::miller_loop(&[(&proof.c.prepare(), &pvk.neg_delta_g2)]));
 
         // - Accumulate inputs (on the current thread)
         let subset = pvk.multiscalar.at_point(1);
-        let public_inputs_repr: Vec<_> =
-            public_inputs.iter().map(PrimeField::into_repr).collect();
+        let public_inputs_repr: Vec<_> = public_inputs.iter().map(PrimeField::into_repr).collect();
 
-        let mut acc =
-            multiscalar::par_multiscalar::<&multiscalar::Getter<E::G1Affine>, E::G1Affine>(
-                &multiscalar::ScalarList::Slice(&public_inputs_repr),
-                &subset,
-                std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
-            );
+        let mut acc = multiscalar::par_multiscalar::<&multiscalar::Getter<E::G1Affine>, E::G1Affine>(
+            &multiscalar::ScalarList::Slice(&public_inputs_repr),
+            &subset,
+            std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
+        );
 
         acc.add_assign_mixed(&pvk.ic[0]);
 
@@ -164,10 +161,10 @@ where
     let accum_y = &accum_y;
     let rand_z_repr = &rand_z_repr;
 
-    POOL.scoped(|s| {
+    rayon::in_place_scope(|s| {
         // - Thread 1: Calculate MillerLoop(\sum Accum_Gamma)
         let ml_g = &mut ml_g;
-        s.execute(move || {
+        s.spawn(move |_| {
             let scalar_getter = |idx: usize| -> <E::Fr as ff::PrimeField>::Repr {
                 if idx == 0 {
                     return accum_y.into_repr();
@@ -203,7 +200,7 @@ where
 
         // - Thread 2: Calculate MillerLoop(Accum_Delta)
         let ml_d = &mut ml_d;
-        s.execute(move || {
+        s.spawn(move |_| {
             let points: Vec<_> = proofs.iter().map(|p| p.c).collect();
 
             // Accum_Delta
@@ -221,7 +218,7 @@ where
 
         // - Thread 3: Calculate MillerLoop(Accum_AB)
         let acc_ab = &mut acc_ab;
-        s.execute(move || {
+        s.spawn(move |_| {
             let accum_ab_mls: Vec<_> = proofs
                 .par_iter()
                 .zip(rand_z_repr.par_iter())
@@ -247,16 +244,13 @@ where
             }
         });
 
-        // Thread 4: Calculate Y^-Accum_Y
-        let y = &mut y;
-        s.execute(move || {
-            // -Accum_Y
-            let mut accum_y_neg = *accum_y;
-            accum_y_neg.negate();
+        // Thread 4(current): Calculate Y^-Accum_Y
+        // -Accum_Y
+        let mut accum_y_neg = *accum_y;
+        accum_y_neg.negate();
 
-            // Y^-Accum_Y
-            *y = pvk.alpha_g1_beta_g2.pow(&accum_y_neg.into_repr());
-        });
+        // Y^-Accum_Y
+        y = pvk.alpha_g1_beta_g2.pow(&accum_y_neg.into_repr());
     });
 
     let mut ml_all = acc_ab;

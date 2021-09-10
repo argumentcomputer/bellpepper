@@ -3,10 +3,10 @@ macro_rules! try_par {
         $(
             let mut $name = None;
         )+
-            crate::multicore::THREAD_POOL.scoped(|s| {
+            rayon::in_place_scope(|s| {
                 $(
                     let $name = &mut $name;
-                    s.execute(move || {
+                    s.spawn(move |_| {
                         *$name = Some($f);
                     });)+
             });
@@ -21,10 +21,10 @@ macro_rules! par {
         $(
             let mut $name = None;
         )+
-            crate::multicore::THREAD_POOL.scoped(|s| {
+            rayon::in_place_scope(|s| {
                 $(
                     let $name = &mut $name;
-                    s.execute(move || {
+                    s.spawn(move |_| {
                         *$name = Some($f);
                     });)+
             });
@@ -38,11 +38,11 @@ macro_rules! par {
             let mut $name1 = None;
             let mut $name2 = None;
         )+
-            crate::multicore::THREAD_POOL.scoped(|s| {
+            rayon::in_place_scope(|s| {
                 $(
                     let $name1 = &mut $name1;
                     let $name2 = &mut $name2;
-                    s.execute(move || {
+                    s.spawn(move |_| {
                         let (a, b) = $f;
                         *$name1 = Some(a);
                         *$name2 = Some(b);

@@ -1,9 +1,5 @@
 //! An interface for dealing with the kinds of parallel computations involved in
-//! `bellperson`. It's currently just a thin wrapper around [`CpuPool`] and
-//! [`rayon`] but may be extended in the future to allow for various
-//! parallelism strategies.
-//!
-//! [`CpuPool`]: futures_cpupool::CpuPool
+//! `bellperson`.
 
 use std::env;
 
@@ -11,19 +7,36 @@ use crossbeam_channel::{bounded, Receiver};
 use lazy_static::lazy_static;
 use yastl::Pool;
 
-const MAX_VERIFIER_THREADS: usize = 6;
-
 lazy_static! {
-    static ref NUM_CPUS: usize = env::var("BELLMAN_NUM_CPUS")
-        .ok()
-        .and_then(|num| num.parse().ok())
-        .unwrap_or_else(num_cpus::get);
+    static ref NUM_CPUS: usize = read_num_cpus();
     pub static ref THREAD_POOL: Pool = Pool::new(*NUM_CPUS);
-    pub static ref VERIFIER_POOL: Pool = Pool::new(NUM_CPUS.max(MAX_VERIFIER_THREADS));
-    pub static ref RAYON_THREAD_POOL: rayon::ThreadPool = rayon::ThreadPoolBuilder::new()
-        .num_threads(*NUM_CPUS)
-        .build()
-        .expect("failed to build rayon threadpool");
+}
+
+fn read_num_cpus() -> usize {
+    match env::var("BELLMAN_NUM_CPUS")
+        .ok()
+        .and_then(|num| num.parse::<usize>().ok())
+    {
+        Some(num) => {
+            log::warn!("BELLMAN_NUM_CPUS is deprecated, please switch to RAYON_NUM_THREADS");
+            // proxy to RAYON_NUM_THREAS for now
+            env::set_var("RAYON_NUM_THREADS", num.to_string());
+
+            num
+        }
+        None => {
+            match env::var("RAYON_NUM_THREADS")
+                .ok()
+                .and_then(|num| num.parse().ok())
+            {
+                Some(num) => {
+                    // rayon defaults to the same value as num_cpus::get
+                    num
+                }
+                None => num_cpus::get(),
+            }
+        }
+    }
 }
 
 #[derive(Clone, Default)]
@@ -114,7 +127,59 @@ fn log2_floor(num: usize) -> u32 {
 
 #[cfg(test)]
 mod tests {
+    use std::env::{self, VarError};
+    use std::panic::{self, RefUnwindSafe, UnwindSafe};
+    use std::sync::Mutex;
+
     use super::*;
+
+    lazy_static! {
+        static ref SERIAL_TEST: Mutex<()> = Default::default();
+    }
+
+    /// Sets environment variables to the given value for the duration of the closure.
+    /// Restores the previous values when the closure completes or panics, before unwinding the panic.
+    pub fn with_env_vars<F>(kvs: Vec<(&str, Option<&str>)>, closure: F)
+    where
+        F: Fn() + UnwindSafe + RefUnwindSafe,
+    {
+        let guard = SERIAL_TEST.lock().unwrap();
+        let mut old_kvs: Vec<(&str, Result<String, VarError>)> = Vec::new();
+        for (k, v) in kvs {
+            let old_v = env::var(k);
+            old_kvs.push((k, old_v));
+            match v {
+                None => env::remove_var(k),
+                Some(v) => env::set_var(k, v),
+            }
+        }
+
+        match panic::catch_unwind(|| {
+            closure();
+        }) {
+            Ok(_) => {
+                for (k, v) in old_kvs {
+                    reset_env(k, v);
+                }
+            }
+            Err(err) => {
+                for (k, v) in old_kvs {
+                    reset_env(k, v);
+                }
+                drop(guard);
+                panic::resume_unwind(err);
+            }
+        };
+    }
+
+    fn reset_env(k: &str, old: Result<String, VarError>) {
+        if let Ok(v) = old {
+            env::set_var(k, v);
+        } else {
+            env::remove_var(k);
+        }
+    }
+
     #[test]
     fn test_log2_floor() {
         assert_eq!(log2_floor(1), 0);
@@ -124,5 +189,43 @@ mod tests {
         assert_eq!(log2_floor(6), 2);
         assert_eq!(log2_floor(7), 2);
         assert_eq!(log2_floor(8), 3);
+    }
+
+    #[test]
+    fn test_read_num_cpus() {
+        // use bellman if set
+        with_env_vars(
+            vec![("BELLMAN_NUM_CPUS", Some("6")), ("RAYON_NUM_THREADS", None)],
+            || {
+                assert_eq!(read_num_cpus(), 6);
+            },
+        );
+
+        // bellman has priority over rayon
+        with_env_vars(
+            vec![
+                ("BELLMAN_NUM_CPUS", Some("6")),
+                ("RAYON_NUM_THREADS", Some("7")),
+            ],
+            || {
+                assert_eq!(read_num_cpus(), 6);
+            },
+        );
+
+        // use rayon if set, if bellman is not
+        with_env_vars(
+            vec![("BELLMAN_NUM_CPUS", None), ("RAYON_NUM_THREADS", Some("7"))],
+            || {
+                assert_eq!(read_num_cpus(), 7);
+            },
+        );
+
+        // use num cpus if none is set
+        with_env_vars(
+            vec![("BELLMAN_NUM_CPUS", None), ("RAYON_NUM_THREADS", None)],
+            || {
+                assert_eq!(read_num_cpus(), num_cpus::get());
+            },
+        );
     }
 }
