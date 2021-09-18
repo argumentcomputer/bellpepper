@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
-use crate::bls::Engine;
 use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
+use pairing::Engine;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]
@@ -40,9 +40,6 @@ impl<E: Engine> Default for BenchCS<E> {
         }
     }
 }
-
-// Safety: Engine is static and this is only a marker
-unsafe impl<E: Engine> Send for BenchCS<E> {}
 
 impl<E: Engine> ConstraintSystem<E> for BenchCS<E> {
     type Root = Self;
