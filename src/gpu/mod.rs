@@ -2,45 +2,48 @@ mod error;
 
 pub use self::error::*;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 mod locks;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 pub use self::locks::*;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
+mod program;
+
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 mod sources;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 pub use self::sources::*;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 mod utils;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 pub use self::utils::*;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 mod fft;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 pub use self::fft::*;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 mod multiexp;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 pub use self::multiexp::*;
 
-#[cfg(not(feature = "gpu"))]
+#[cfg(not(any(feature = "cuda", feature = "opencl")))]
 mod nogpu;
 
-#[cfg(not(feature = "gpu"))]
+#[cfg(not(any(feature = "cuda", feature = "opencl")))]
 pub use self::nogpu::*;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 pub use ec_gpu::GpuEngine;
-#[cfg(not(feature = "gpu"))]
+#[cfg(not(any(feature = "cuda", feature = "opencl")))]
 pub trait GpuEngine {}
-#[cfg(not(feature = "gpu"))]
+#[cfg(not(any(feature = "cuda", feature = "opencl")))]
 impl<E: pairing::Engine> GpuEngine for E {}

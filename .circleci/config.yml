@@ -32,7 +32,7 @@ commands:
           name: Set the PATH env variable
           command: |
             # Also put the Rust LLVM tools into the PATH.
-            echo 'export PATH="$HOME:~/.cargo/bin:~/.rustup/toolchains/<< pipeline.parameters.nightly-version >>-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin:$PATH"' | tee --append $BASH_ENV
+            echo 'export PATH="$HOME:~/.cargo/bin:~/.rustup/toolchains/<< pipeline.parameters.nightly-version >>-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin:/usr/local/cuda-11.2/bin:$PATH"' | tee --append $BASH_ENV
             source $BASH_ENV
 
   install-gpu-deps:
@@ -41,50 +41,9 @@ commands:
           name: Install libraries for GPU tests
           command: |
             sudo apt update
-            sudo apt-get update -y
             sudo apt install -y ocl-icd-opencl-dev
 
-  test_target_blst:
-    parameters:
-      target:
-        type: string
-    steps:
-      - *restore-workspace
-      - *restore-cache
-      - run:
-          name: Test blst (<< parameters.target >>)
-          command: TARGET=<< parameters.target >> cargo test --all
-          no_output_timeout: 15m
-
-  test_target_blst_gpu:
-    parameters:
-      target:
-        type: string
-    steps:
-      - *restore-workspace
-      - *restore-cache
-      - run:
-          name: Test blst (GPU) (<< parameters.target >>)
-          command: TARGET=<< parameters.target >> cargo test --all --release --features gpu
-          no_output_timeout: 30m
-
-  test_target_blst_ignored:
-    parameters:
-      target:
-        type: string
-    steps:
-      - *restore-workspace
-      - *restore-cache
-      - run:
-          name: Test blst ignored (<< parameters.target >>)
-          command: TARGET=<< parameters.target >> cargo test --release -- --ignored
-          no_output_timeout: 30m
-      - run:
-          name: Show results
-          command: cat aggregation.csv
-
 jobs:
-
   cargo_fetch:
     executor: default
     steps:
@@ -122,29 +81,46 @@ jobs:
             - "~/.cargo"
             - "~/.rustup"
 
-  test_blst_x86_64-unknown-linux-gnu:
+  test:
     executor: default
+    parameters:
+      cargo-args:
+        description: Addtional arguments for the cargo command
+        type: string
+        default: ""
+      framework:
+        description: Whether to use CUDA or OpenCL
+        type: string
+        default: ""
+    environment:
+      RUST_LOG: debug
+      # Build the kernel only for the single architecture that is used on CI. This should reduce
+      # the overall compile-time significantly.
+      BELLMAN_CUDA_NVCC_ARGS: --fatbin --gpu-architecture=sm_75 --generate-code=arch=compute_75,code=sm_75
     steps:
       - set-env-path
       - install-gpu-deps
-      - test_target_blst:
-          target: "x86_64-unknown-linux-gnu"
+      - *restore-workspace
+      - *restore-cache
+      - run:
+          name: Test << parameters.framework>> with << parameters.cargo-args >>
+          command: BELLMAN_GPU_FRAMEWORK=<< parameters.framework >> cargo test << parameters.cargo-args >>
 
-  test_blst_gpu_x86_64-unknown-linux-gnu:
+  test_ignored:
     executor: default
+    environment:
+      RUST_LOG: debug
     steps:
       - set-env-path
-      - install-gpu-deps
-      - test_target_blst_gpu:
-          target: "x86_64-unknown-linux-gnu"
-
-  test_blst_ignored_x86_64-unknown-linux-gnu:
-    executor: default
-    steps:
-      - set-env-path
-      - install-gpu-deps
-      - test_target_blst_ignored:
-          target: "x86_64-unknown-linux-gnu"
+      - *restore-workspace
+      - *restore-cache
+      - run:
+          name: Test ignored
+          command: cargo test --release -- --ignored
+          no_output_timeout: 30m
+      - run:
+          name: Show results
+          command: cat aggregation.csv
 
   rustfmt:
     executor: default
@@ -158,6 +134,11 @@ jobs:
 
   clippy:
     executor: default
+    environment:
+      RUST_LOG: debug
+      # Build the kernel only for the single architecture that is used on CI. This should reduce
+      # the overall compile-time significantly.
+      BELLMAN_CUDA_NVCC_ARGS: --fatbin --gpu-architecture=sm_75 --generate-code=arch=compute_75,code=sm_75
     steps:
       - *restore-workspace
       - *restore-cache
@@ -166,8 +147,14 @@ jobs:
           name: Run cargo clippy (default features)
           command: cargo clippy --all --all-targets -- -D warnings
       - run:
-          name: Run cargo clippy (gpu)
-          command: cargo clippy --all --all-targets --features gpu -- -D warnings
+          name: Run cargo clippy (opencl)
+          command: cargo clippy --all --all-targets --features opencl -- -D warnings
+      - run:
+          name: Run cargo clippy (cuda)
+          command: cargo clippy --all --all-targets --features cuda -- -D warnings
+      - run:
+          name: Run cargo clippy (cuda,opencl)
+          command: cargo clippy --all --all-targets --features cuda,opencl -- -D warnings
 
   coverage_run:
     executor: default
@@ -230,17 +217,36 @@ workflows:
       - clippy:
           requires:
             - cargo_fetch
-            
-      - test_blst_x86_64-unknown-linux-gnu:
+      - test:
+          name: "Test CPU"
+          cargo-args: "--workspace"
           requires:
             - cargo_fetch
-      - test_blst_gpu_x86_64-unknown-linux-gnu:
+      - test:
+          name: "Test OpenCL only"
+          cargo-args: "--workspace --release --features opencl"
           requires:
             - cargo_fetch
-      - test_blst_ignored_x86_64-unknown-linux-gnu:
+      - test:
+          name: "Test CUDA only"
+          cargo-args: "--release --features cuda"
           requires:
             - cargo_fetch
-
+      - test:
+          name: "Test CUDA/OpenCL (CUDA at run-time)"
+          cargo-args: "--release --features cuda,opencl"
+          framework: cuda
+          requires:
+            - cargo_fetch
+      - test:
+          name: "Test CUDA/OpenCL (OpenCL at run-time)"
+          cargo-args: "--release --features cuda,opencl"
+          framework: opencl
+          requires:
+            - cargo_fetch
+      - test_ignored:
+          requires:
+            - cargo_fetch
       #- coverage_run:
       #    name: coverage_default_features
       #    requires:

@@ -369,7 +369,7 @@ where
 
     #[allow(clippy::let_and_return)]
     let result = pool.compute(move || multiexp_inner(bases, density_map, exponents, c));
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "cuda", feature = "opencl"))]
     {
         // Do not give the control back to the caller till the
         // multiexp is done. We may want to reacquire the GPU again
@@ -377,7 +377,7 @@ where
         let result = result.wait();
         Waiter::done(result)
     }
-    #[cfg(not(feature = "gpu"))]
+    #[cfg(not(any(feature = "cuda", feature = "opencl")))]
     result
 }
 
@@ -446,7 +446,7 @@ where
     }
 }
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 #[test]
 pub fn gpu_multiexp_consistency() {
     use blstrs::Bls12;

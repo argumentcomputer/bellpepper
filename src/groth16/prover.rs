@@ -17,10 +17,10 @@ use crate::{
     Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable, BELLMAN_VERSION,
 };
 use log::info;
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 use log::trace;
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 use crate::gpu::PriorityLock;
 
 fn eval<E: Engine>(
@@ -302,7 +302,7 @@ where
         log_d += 1;
     }
 
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "cuda", feature = "opencl"))]
     let prio_lock = if priority {
         trace!("acquiring priority lock");
         Some(PriorityLock::lock())
@@ -512,7 +512,7 @@ where
         )
         .collect::<Result<Vec<_>, SynthesisError>>()?;
 
-    #[cfg(feature = "gpu")]
+    #[cfg(any(feature = "cuda", feature = "opencl"))]
     {
         trace!("dropping priority lock");
         drop(prio_lock);
