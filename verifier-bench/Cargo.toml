@@ -19,5 +19,6 @@ blstrs = { git = "https://github.com/filecoin-project/blstrs", branch = "master"
 
 [features]
 default = ["groth16"]
-gpu = ["bellperson/gpu", "blstrs/gpu"]
+cuda = ["bellperson/cuda", "blstrs/gpu"]
+opencl = ["bellperson/opencl", "blstrs/gpu"]
 groth16 = ["bellperson/groth16"]

@@ -36,7 +36,7 @@ impl<E: Engine> Circuit<E> for DummyDemo {
     }
 }
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 #[test]
 pub fn test_parallel_prover() {
     use bellperson::groth16::{

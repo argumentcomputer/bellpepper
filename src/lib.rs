@@ -148,8 +148,10 @@ pub mod gpu;
 pub mod groth16;
 pub mod multicore;
 pub mod multiexp;
-
+#[cfg(test)]
+pub mod test_utils;
 pub mod util_cs;
+
 use ff::Field;
 
 use pairing::Engine;

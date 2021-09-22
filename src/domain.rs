@@ -567,7 +567,7 @@ where
     }
 }
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 #[cfg(test)]
 mod tests {
     use crate::domain::{gpu_fft, parallel_fft, serial_fft, EvaluationDomain, Scalar};

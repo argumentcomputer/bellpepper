@@ -17,7 +17,7 @@ use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 const MODULUS_R: Wrapping<u32> = Wrapping(64513);
 const R: u32 = 1;
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 const R2: u32 = 1;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -358,13 +358,13 @@ impl Engine for DummyEngine {
     }
 }
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 impl ec_gpu::GpuEngine for DummyEngine {
     type Scalar = Fr;
     type Fp = Fr;
 }
 
-#[cfg(feature = "gpu")]
+#[cfg(any(feature = "cuda", feature = "opencl"))]
 impl ec_gpu::GpuField for Fr {
     fn one() -> Vec<u32> {
         vec![R]
