@@ -41,8 +41,9 @@ pub struct LinearCombination<E: Engine> {
 
 #[derive(Clone)]
 struct Indexer<T> {
+    /// Stores a list of `T` indexed by the number in the first slot of the tuple.
     values: Vec<(usize, T)>,
-    // (index, key) of the last insertion operation
+    /// `(index, key)` of the last insertion operation. Used to optimize consecutive operations
     last_inserted: Option<(usize, usize)>,
 }
 
@@ -77,6 +78,8 @@ impl<T> Indexer<T> {
         G: FnOnce(&mut T),
     {
         if let Some((last_index, last_key)) = self.last_inserted {
+            // Optimization to avoid doing binary search on inserts & updates that are linear, meaning
+            // they are adding a consecutive values.
             if last_key == key {
                 // update the same key again
                 update(&mut self.values[last_index].1);
