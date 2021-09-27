@@ -134,10 +134,10 @@ impl<E: Engine> ConstraintSystem<E> for KeypairAssembly<E> {
             aux: &mut [Vec<(E::Fr, usize)>],
             this_constraint: usize,
         ) {
-            for (index, coeff) in l.0 {
+            for (index, coeff) in l.iter() {
                 match index {
-                    Variable(Index::Input(id)) => inputs[id].push((coeff, this_constraint)),
-                    Variable(Index::Aux(id)) => aux[id].push((coeff, this_constraint)),
+                    Variable(Index::Input(id)) => inputs[id].push((*coeff, this_constraint)),
+                    Variable(Index::Aux(id)) => aux[id].push((*coeff, this_constraint)),
                 }
             }
         }

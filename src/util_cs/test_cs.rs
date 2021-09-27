@@ -62,7 +62,7 @@ impl Ord for OrderedVariable {
 
 fn proc_lc<E: Engine>(terms: &LinearCombination<E>) -> BTreeMap<OrderedVariable, E::Fr> {
     let mut map = BTreeMap::new();
-    for (&var, &coeff) in terms.iter() {
+    for (var, &coeff) in terms.iter() {
         map.entry(OrderedVariable(var))
             .or_insert_with(E::Fr::zero)
             .add_assign(&coeff);
@@ -114,7 +114,7 @@ fn hash_lc<E: Engine>(terms: &LinearCombination<E>, h: &mut Blake2s) {
 fn _eval_lc2<E: Engine>(terms: &LinearCombination<E>, inputs: &[E::Fr], aux: &[E::Fr]) -> E::Fr {
     let mut acc = E::Fr::zero();
 
-    for (&var, coeff) in terms.iter() {
+    for (var, coeff) in terms.iter() {
         let mut tmp = match var.get_unchecked() {
             Index::Input(index) => inputs[index],
             Index::Aux(index) => aux[index],
@@ -134,7 +134,7 @@ fn eval_lc<E: Engine>(
 ) -> E::Fr {
     let mut acc = E::Fr::zero();
 
-    for (&var, coeff) in terms.iter() {
+    for (var, coeff) in terms.iter() {
         let mut tmp = match var.get_unchecked() {
             Index::Input(index) => inputs[index].0,
             Index::Aux(index) => aux[index].0,
