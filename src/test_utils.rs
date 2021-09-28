@@ -8,6 +8,8 @@ lazy_static! {
     static ref SERIAL_TEST: Mutex<()> = Default::default();
 }
 
+/// Based on
+/// https://stackoverflow.com/questions/35858323/how-can-i-test-rust-methods-that-depend-on-environment-variables/67433684#67433684
 /// Sets environment variables to the given value for the duration of the closure.
 /// Restores the previous values when the closure completes or panics, before unwinding the panic.
 pub fn with_env_vars<F>(kvs: Vec<(&str, Option<&str>)>, closure: F)
