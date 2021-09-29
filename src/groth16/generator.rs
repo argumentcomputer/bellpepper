@@ -2,7 +2,7 @@ use std::ops::{AddAssign, Mul, MulAssign};
 
 use std::sync::Arc;
 
-use ff::Field;
+use ff::{Field, PrimeField};
 use group::{
     prime::{PrimeCurve, PrimeCurveAffine},
     Curve, Group, Wnaf, WnafGroup,
@@ -27,7 +27,7 @@ where
     E: gpu::GpuEngine + MultiMillerLoop,
     <E as Engine>::G1: WnafGroup,
     <E as Engine>::G2: WnafGroup,
-    C: Circuit<E>,
+    C: Circuit<E::Fr>,
     R: RngCore,
 {
     let g1 = E::G1::random(&mut *rng);
@@ -43,19 +43,19 @@ where
 
 /// This is our assembly structure that we'll use to synthesize the
 /// circuit into a QAP.
-struct KeypairAssembly<E: Engine> {
+struct KeypairAssembly<Scalar: PrimeField> {
     num_inputs: usize,
     num_aux: usize,
     num_constraints: usize,
-    at_inputs: Vec<Vec<(E::Fr, usize)>>,
-    bt_inputs: Vec<Vec<(E::Fr, usize)>>,
-    ct_inputs: Vec<Vec<(E::Fr, usize)>>,
-    at_aux: Vec<Vec<(E::Fr, usize)>>,
-    bt_aux: Vec<Vec<(E::Fr, usize)>>,
-    ct_aux: Vec<Vec<(E::Fr, usize)>>,
+    at_inputs: Vec<Vec<(Scalar, usize)>>,
+    bt_inputs: Vec<Vec<(Scalar, usize)>>,
+    ct_inputs: Vec<Vec<(Scalar, usize)>>,
+    at_aux: Vec<Vec<(Scalar, usize)>>,
+    bt_aux: Vec<Vec<(Scalar, usize)>>,
+    ct_aux: Vec<Vec<(Scalar, usize)>>,
 }
 
-impl<E: Engine> ConstraintSystem<E> for KeypairAssembly<E> {
+impl<Scalar: PrimeField> ConstraintSystem<Scalar> for KeypairAssembly<Scalar> {
     type Root = Self;
 
     fn new() -> Self {
@@ -84,7 +84,7 @@ impl<E: Engine> ConstraintSystem<E> for KeypairAssembly<E> {
 
     fn alloc<F, A, AR>(&mut self, _: A, _: F) -> Result<Variable, SynthesisError>
     where
-        F: FnOnce() -> Result<E::Fr, SynthesisError>,
+        F: FnOnce() -> Result<Scalar, SynthesisError>,
         A: FnOnce() -> AR,
         AR: Into<String>,
     {
@@ -103,7 +103,7 @@ impl<E: Engine> ConstraintSystem<E> for KeypairAssembly<E> {
 
     fn alloc_input<F, A, AR>(&mut self, _: A, _: F) -> Result<Variable, SynthesisError>
     where
-        F: FnOnce() -> Result<E::Fr, SynthesisError>,
+        F: FnOnce() -> Result<Scalar, SynthesisError>,
         A: FnOnce() -> AR,
         AR: Into<String>,
     {
@@ -124,14 +124,14 @@ impl<E: Engine> ConstraintSystem<E> for KeypairAssembly<E> {
     where
         A: FnOnce() -> AR,
         AR: Into<String>,
-        LA: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
-        LB: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
-        LC: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
+        LA: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
+        LB: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
+        LC: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
     {
-        fn eval<E: Engine>(
-            l: LinearCombination<E>,
-            inputs: &mut [Vec<(E::Fr, usize)>],
-            aux: &mut [Vec<(E::Fr, usize)>],
+        fn eval<Scalar: PrimeField>(
+            l: LinearCombination<Scalar>,
+            inputs: &mut [Vec<(Scalar, usize)>],
+            aux: &mut [Vec<(Scalar, usize)>],
             this_constraint: usize,
         ) {
             for (index, coeff) in l.iter() {
@@ -197,7 +197,7 @@ where
     E: gpu::GpuEngine + MultiMillerLoop,
     <E as Engine>::G1: WnafGroup,
     <E as Engine>::G2: WnafGroup,
-    C: Circuit<E>,
+    C: Circuit<E::Fr>,
 {
     let mut assembly = KeypairAssembly::new();
 
@@ -375,11 +375,11 @@ where
                         .zip(bt.iter())
                         .zip(ct.iter())
                     {
-                        fn eval_at_tau<E: Engine>(
-                            powers_of_tau: &[E::Fr],
-                            p: &[(E::Fr, usize)],
-                        ) -> E::Fr {
-                            let mut acc = E::Fr::zero();
+                        fn eval_at_tau<Scalar: PrimeField>(
+                            powers_of_tau: &[Scalar],
+                            p: &[(Scalar, usize)],
+                        ) -> Scalar {
+                            let mut acc = Scalar::zero();
 
                             for &(ref coeff, index) in p {
                                 let mut n = powers_of_tau[index];
@@ -391,9 +391,9 @@ where
                         }
 
                         // Evaluate QAP polynomials at tau
-                        let mut at = eval_at_tau::<E>(powers_of_tau, at);
-                        let mut bt = eval_at_tau::<E>(powers_of_tau, bt);
-                        let ct = eval_at_tau::<E>(powers_of_tau, ct);
+                        let mut at = eval_at_tau::<E::Fr>(powers_of_tau, at);
+                        let mut bt = eval_at_tau::<E::Fr>(powers_of_tau, bt);
+                        let ct = eval_at_tau::<E::Fr>(powers_of_tau, ct);
 
                         // Compute A query (in G1)
                         if !bool::from(at.is_zero()) {

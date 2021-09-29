@@ -4,15 +4,15 @@ use rand::thread_rng;
 // For benchmarking
 use std::time::{Duration, Instant};
 
-use std::ops::{AddAssign, MulAssign};
+use std::ops::AddAssign;
 
 // Bring in some tools for using pairing-friendly curves
-use ff::Field;
+use ff::{Field, PrimeField};
 use group::Group;
 use pairing::Engine;
 
 // We're going to use the BLS12-381 pairing-friendly elliptic curve.
-use blstrs::Bls12;
+use blstrs::{Bls12, Scalar as Fr};
 
 // We'll use these interfaces to construct our circuit.
 use bellperson::{Circuit, ConstraintSystem, SynthesisError};
@@ -38,7 +38,7 @@ const MIMC_ROUNDS: usize = 322;
 ///     return xL
 /// }
 /// ```
-fn mimc<E: Engine>(mut xl: E::Fr, mut xr: E::Fr, constants: &[E::Fr]) -> E::Fr {
+fn mimc<Scalar: PrimeField>(mut xl: Scalar, mut xr: Scalar, constants: &[Scalar]) -> Scalar {
     assert_eq!(constants.len(), MIMC_ROUNDS);
 
     for constant in constants {
@@ -58,17 +58,17 @@ fn mimc<E: Engine>(mut xl: E::Fr, mut xr: E::Fr, constants: &[E::Fr]) -> E::Fr {
 /// This is our demo circuit for proving knowledge of the
 /// preimage of a MiMC hash invocation.
 #[derive(Clone)]
-struct MimcDemo<'a, E: Engine> {
-    xl: Option<E::Fr>,
-    xr: Option<E::Fr>,
-    constants: &'a [E::Fr],
+struct MimcDemo<'a, Scalar: PrimeField> {
+    xl: Option<Scalar>,
+    xr: Option<Scalar>,
+    constants: &'a [Scalar],
 }
 
 /// Our demo circuit implements this `Circuit` trait which
 /// is used during paramgen and proving in order to
 /// synthesize the constraint system.
-impl<'a, E: Engine> Circuit<E> for MimcDemo<'a, E> {
-    fn synthesize<CS: ConstraintSystem<E>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
+impl<'a, Scalar: PrimeField> Circuit<Scalar> for MimcDemo<'a, Scalar> {
+    fn synthesize<CS: ConstraintSystem<Scalar>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
         assert_eq!(self.constants.len(), MIMC_ROUNDS);
 
         // Allocate the first component of the preimage.
@@ -158,14 +158,14 @@ fn test_mimc() {
 
     // Generate the MiMC round constants
     let constants = (0..MIMC_ROUNDS)
-        .map(|_| <Bls12 as Engine>::Fr::random(&mut *rng))
+        .map(|_| Fr::random(&mut *rng))
         .collect::<Vec<_>>();
 
     println!("Creating parameters...");
 
     // Create parameters for our circuit
     let params = {
-        let c = MimcDemo::<Bls12> {
+        let c = MimcDemo::<Fr> {
             xl: None,
             xr: None,
             constants: &constants,
@@ -192,9 +192,9 @@ fn test_mimc() {
 
     for _ in 0..SAMPLES {
         // Generate a random preimage and compute the image
-        let xl = <Bls12 as Engine>::Fr::random(&mut *rng);
-        let xr = <Bls12 as Engine>::Fr::random(&mut *rng);
-        let image = mimc::<Bls12>(xl, xr, &constants);
+        let xl = Fr::random(&mut *rng);
+        let xr = Fr::random(&mut *rng);
+        let image = mimc::<Fr>(xl, xr, &constants);
 
         proof_vec.truncate(0);
 
@@ -283,7 +283,7 @@ fn test_mimc() {
         let mut bad_proofs = proofs
             .iter()
             .map(|p| (*p).clone())
-            .collect::<Vec<Proof<_>>>();
+            .collect::<Vec<Proof<Bls12>>>();
 
         for mut bad_proof in bad_proofs.iter_mut() {
             use group::Curve;

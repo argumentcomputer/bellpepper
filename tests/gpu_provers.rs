@@ -1,15 +1,14 @@
 use bellperson::{Circuit, ConstraintSystem, SynthesisError};
-use ff::Field;
-use pairing::Engine;
+use ff::PrimeField;
 
 #[derive(Clone)]
 pub struct DummyDemo {
     pub interations: u64,
 }
 
-impl<E: Engine> Circuit<E> for DummyDemo {
-    fn synthesize<CS: ConstraintSystem<E>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
-        let mut x_val = E::Fr::from(2u64);
+impl<Scalar: PrimeField> Circuit<Scalar> for DummyDemo {
+    fn synthesize<CS: ConstraintSystem<Scalar>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
+        let mut x_val = Scalar::from(2u64);
         let mut x = cs.alloc(|| "", || Ok(x_val))?;
 
         for _ in 0..self.interations {

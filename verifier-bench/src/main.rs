@@ -16,7 +16,7 @@ use bellperson::groth16::{
 };
 use bellperson::{Circuit, ConstraintSystem, SynthesisError};
 use blstrs::{Bls12, Scalar as Fr};
-use ff::Field;
+use ff::{Field, PrimeField};
 use group::{Curve, Group};
 use pairing::{Engine, MultiMillerLoop};
 use rand::RngCore;
@@ -39,10 +39,10 @@ pub struct DummyDemo {
     pub private: usize,
 }
 
-impl<E: Engine> Circuit<E> for DummyDemo {
-    fn synthesize<CS: ConstraintSystem<E>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
+impl<Scalar: PrimeField> Circuit<Scalar> for DummyDemo {
+    fn synthesize<CS: ConstraintSystem<Scalar>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
         assert!(self.public >= 1);
-        let mut x_val = E::Fr::from(2);
+        let mut x_val = Scalar::from(2);
         let mut x = cs.alloc_input(|| "", || Ok(x_val))?;
         let mut pubs = 1;
 

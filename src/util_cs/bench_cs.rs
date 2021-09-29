@@ -1,20 +1,21 @@
 use std::marker::PhantomData;
 
+use ff::PrimeField;
+
 use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
-use pairing::Engine;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]
-pub struct BenchCS<E: Engine> {
+pub struct BenchCS<Scalar: PrimeField> {
     inputs: usize,
     aux: usize,
     a: usize,
     b: usize,
     c: usize,
-    _e: PhantomData<E>,
+    _e: PhantomData<Scalar>,
 }
 
-impl<E: Engine> BenchCS<E> {
+impl<Scalar: PrimeField> BenchCS<Scalar> {
     pub fn new() -> Self {
         BenchCS::default()
     }
@@ -28,7 +29,7 @@ impl<E: Engine> BenchCS<E> {
     }
 }
 
-impl<E: Engine> Default for BenchCS<E> {
+impl<Scalar: PrimeField> Default for BenchCS<Scalar> {
     fn default() -> Self {
         BenchCS {
             inputs: 1,
@@ -41,7 +42,7 @@ impl<E: Engine> Default for BenchCS<E> {
     }
 }
 
-impl<E: Engine> ConstraintSystem<E> for BenchCS<E> {
+impl<Scalar: PrimeField> ConstraintSystem<Scalar> for BenchCS<Scalar> {
     type Root = Self;
 
     fn new() -> Self {
@@ -50,7 +51,7 @@ impl<E: Engine> ConstraintSystem<E> for BenchCS<E> {
 
     fn alloc<F, A, AR>(&mut self, _: A, _f: F) -> Result<Variable, SynthesisError>
     where
-        F: FnOnce() -> Result<E::Fr, SynthesisError>,
+        F: FnOnce() -> Result<Scalar, SynthesisError>,
         A: FnOnce() -> AR,
         AR: Into<String>,
     {
@@ -62,7 +63,7 @@ impl<E: Engine> ConstraintSystem<E> for BenchCS<E> {
 
     fn alloc_input<F, A, AR>(&mut self, _: A, _f: F) -> Result<Variable, SynthesisError>
     where
-        F: FnOnce() -> Result<E::Fr, SynthesisError>,
+        F: FnOnce() -> Result<Scalar, SynthesisError>,
         A: FnOnce() -> AR,
         AR: Into<String>,
     {
@@ -76,9 +77,9 @@ impl<E: Engine> ConstraintSystem<E> for BenchCS<E> {
     where
         A: FnOnce() -> AR,
         AR: Into<String>,
-        LA: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
-        LB: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
-        LC: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
+        LA: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
+        LB: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
+        LC: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
     {
         self.a += 1;
         self.b += 1;

@@ -1,7 +1,6 @@
 use std::ops::{Add, Sub};
 
-use ff::Field;
-use pairing::Engine;
+use ff::PrimeField;
 
 use crate::multiexp::DensityTracker;
 
@@ -34,9 +33,9 @@ pub enum Index {
 /// This represents a linear combination of some variables, with coefficients
 /// in the scalar field of a pairing-friendly elliptic curve group.
 #[derive(Clone)]
-pub struct LinearCombination<E: Engine> {
-    inputs: Indexer<E::Fr>,
-    aux: Indexer<E::Fr>,
+pub struct LinearCombination<Scalar: PrimeField> {
+    inputs: Indexer<Scalar>,
+    aux: Indexer<Scalar>,
 }
 
 #[derive(Clone)]
@@ -122,21 +121,21 @@ impl<T> Indexer<T> {
     }
 }
 
-impl<E: Engine> Default for LinearCombination<E> {
+impl<Scalar: PrimeField> Default for LinearCombination<Scalar> {
     fn default() -> Self {
         Self::zero()
     }
 }
 
-impl<E: Engine> LinearCombination<E> {
-    pub fn zero() -> LinearCombination<E> {
+impl<Scalar: PrimeField> LinearCombination<Scalar> {
+    pub fn zero() -> LinearCombination<Scalar> {
         LinearCombination {
             inputs: Default::default(),
             aux: Default::default(),
         }
     }
 
-    pub fn from_coeff(var: Variable, coeff: E::Fr) -> Self {
+    pub fn from_coeff(var: Variable, coeff: Scalar) -> Self {
         match var {
             Variable(Index::Input(i)) => Self {
                 inputs: Indexer::from_value(i, coeff),
@@ -150,10 +149,10 @@ impl<E: Engine> LinearCombination<E> {
     }
 
     pub fn from_variable(var: Variable) -> Self {
-        Self::from_coeff(var, E::Fr::one())
+        Self::from_coeff(var, Scalar::one())
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (Variable, &E::Fr)> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = (Variable, &Scalar)> + '_ {
         self.inputs
             .iter()
             .map(|(k, v)| (Variable(Index::Input(*k)), v))
@@ -161,16 +160,16 @@ impl<E: Engine> LinearCombination<E> {
     }
 
     #[inline]
-    pub(crate) fn iter_inputs(&self) -> impl Iterator<Item = (&usize, &E::Fr)> + '_ {
+    pub(crate) fn iter_inputs(&self) -> impl Iterator<Item = (&usize, &Scalar)> + '_ {
         self.inputs.iter()
     }
 
     #[inline]
-    pub(crate) fn iter_aux(&self) -> impl Iterator<Item = (&usize, &E::Fr)> + '_ {
+    pub(crate) fn iter_aux(&self) -> impl Iterator<Item = (&usize, &Scalar)> + '_ {
         self.aux.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Variable, &mut E::Fr)> + '_ {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Variable, &mut Scalar)> + '_ {
         self.inputs
             .iter_mut()
             .map(|(k, v)| (Variable(Index::Input(*k)), v))
@@ -182,18 +181,21 @@ impl<E: Engine> LinearCombination<E> {
     }
 
     #[inline]
-    fn add_assign_unsimplified_input(&mut self, new_var: usize, coeff: E::Fr) {
+    fn add_assign_unsimplified_input(&mut self, new_var: usize, coeff: Scalar) {
         self.inputs
             .insert_or_update(new_var, || coeff, |val| *val += coeff);
     }
 
     #[inline]
-    fn add_assign_unsimplified_aux(&mut self, new_var: usize, coeff: E::Fr) {
+    fn add_assign_unsimplified_aux(&mut self, new_var: usize, coeff: Scalar) {
         self.aux
             .insert_or_update(new_var, || coeff, |val| *val += coeff);
     }
 
-    pub fn add_unsimplified(mut self, (coeff, var): (E::Fr, Variable)) -> LinearCombination<E> {
+    pub fn add_unsimplified(
+        mut self,
+        (coeff, var): (Scalar, Variable),
+    ) -> LinearCombination<Scalar> {
         match var.0 {
             Index::Input(new_var) => {
                 self.add_assign_unsimplified_input(new_var, coeff);
@@ -207,16 +209,19 @@ impl<E: Engine> LinearCombination<E> {
     }
 
     #[inline]
-    fn sub_assign_unsimplified_input(&mut self, new_var: usize, coeff: E::Fr) {
+    fn sub_assign_unsimplified_input(&mut self, new_var: usize, coeff: Scalar) {
         self.add_assign_unsimplified_input(new_var, -coeff);
     }
 
     #[inline]
-    fn sub_assign_unsimplified_aux(&mut self, new_var: usize, coeff: E::Fr) {
+    fn sub_assign_unsimplified_aux(&mut self, new_var: usize, coeff: Scalar) {
         self.add_assign_unsimplified_aux(new_var, -coeff);
     }
 
-    pub fn sub_unsimplified(mut self, (coeff, var): (E::Fr, Variable)) -> LinearCombination<E> {
+    pub fn sub_unsimplified(
+        mut self,
+        (coeff, var): (Scalar, Variable),
+    ) -> LinearCombination<Scalar> {
         match var.0 {
             Index::Input(new_var) => {
                 self.sub_assign_unsimplified_input(new_var, coeff);
@@ -241,12 +246,12 @@ impl<E: Engine> LinearCombination<E> {
         &self,
         mut input_density: Option<&mut DensityTracker>,
         mut aux_density: Option<&mut DensityTracker>,
-        input_assignment: &[E::Fr],
-        aux_assignment: &[E::Fr],
-    ) -> E::Fr {
-        let mut acc = E::Fr::zero();
+        input_assignment: &[Scalar],
+        aux_assignment: &[Scalar],
+    ) -> Scalar {
+        let mut acc = Scalar::zero();
 
-        let one = E::Fr::one();
+        let one = Scalar::one();
 
         for (index, coeff) in self.iter_inputs() {
             let mut tmp = input_assignment[*index];
@@ -280,43 +285,43 @@ impl<E: Engine> LinearCombination<E> {
     }
 }
 
-impl<E: Engine> Add<(E::Fr, Variable)> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
+impl<Scalar: PrimeField> Add<(Scalar, Variable)> for LinearCombination<Scalar> {
+    type Output = LinearCombination<Scalar>;
 
-    fn add(self, (coeff, var): (E::Fr, Variable)) -> LinearCombination<E> {
+    fn add(self, (coeff, var): (Scalar, Variable)) -> LinearCombination<Scalar> {
         self.add_unsimplified((coeff, var))
     }
 }
 
-impl<E: Engine> Sub<(E::Fr, Variable)> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
+impl<Scalar: PrimeField> Sub<(Scalar, Variable)> for LinearCombination<Scalar> {
+    type Output = LinearCombination<Scalar>;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn sub(self, (coeff, var): (E::Fr, Variable)) -> LinearCombination<E> {
+    fn sub(self, (coeff, var): (Scalar, Variable)) -> LinearCombination<Scalar> {
         self.sub_unsimplified((coeff, var))
     }
 }
 
-impl<E: Engine> Add<Variable> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
+impl<Scalar: PrimeField> Add<Variable> for LinearCombination<Scalar> {
+    type Output = LinearCombination<Scalar>;
 
-    fn add(self, other: Variable) -> LinearCombination<E> {
-        self + (E::Fr::one(), other)
+    fn add(self, other: Variable) -> LinearCombination<Scalar> {
+        self + (Scalar::one(), other)
     }
 }
 
-impl<E: Engine> Sub<Variable> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
+impl<Scalar: PrimeField> Sub<Variable> for LinearCombination<Scalar> {
+    type Output = LinearCombination<Scalar>;
 
-    fn sub(self, other: Variable) -> LinearCombination<E> {
-        self - (E::Fr::one(), other)
+    fn sub(self, other: Variable) -> LinearCombination<Scalar> {
+        self - (Scalar::one(), other)
     }
 }
 
-impl<'a, E: Engine> Add<&'a LinearCombination<E>> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
+impl<'a, Scalar: PrimeField> Add<&'a LinearCombination<Scalar>> for LinearCombination<Scalar> {
+    type Output = LinearCombination<Scalar>;
 
-    fn add(mut self, other: &'a LinearCombination<E>) -> LinearCombination<E> {
+    fn add(mut self, other: &'a LinearCombination<Scalar>) -> LinearCombination<Scalar> {
         for (var, val) in other.inputs.iter() {
             self.add_assign_unsimplified_input(*var, *val);
         }
@@ -329,10 +334,10 @@ impl<'a, E: Engine> Add<&'a LinearCombination<E>> for LinearCombination<E> {
     }
 }
 
-impl<'a, E: Engine> Sub<&'a LinearCombination<E>> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
+impl<'a, Scalar: PrimeField> Sub<&'a LinearCombination<Scalar>> for LinearCombination<Scalar> {
+    type Output = LinearCombination<Scalar>;
 
-    fn sub(mut self, other: &'a LinearCombination<E>) -> LinearCombination<E> {
+    fn sub(mut self, other: &'a LinearCombination<Scalar>) -> LinearCombination<Scalar> {
         for (var, val) in other.inputs.iter() {
             self.sub_assign_unsimplified_input(*var, *val);
         }
@@ -345,10 +350,15 @@ impl<'a, E: Engine> Sub<&'a LinearCombination<E>> for LinearCombination<E> {
     }
 }
 
-impl<'a, E: Engine> Add<(E::Fr, &'a LinearCombination<E>)> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
+impl<'a, Scalar: PrimeField> Add<(Scalar, &'a LinearCombination<Scalar>)>
+    for LinearCombination<Scalar>
+{
+    type Output = LinearCombination<Scalar>;
 
-    fn add(mut self, (coeff, other): (E::Fr, &'a LinearCombination<E>)) -> LinearCombination<E> {
+    fn add(
+        mut self,
+        (coeff, other): (Scalar, &'a LinearCombination<Scalar>),
+    ) -> LinearCombination<Scalar> {
         for (var, val) in other.inputs.iter() {
             self.add_assign_unsimplified_input(*var, *val * coeff);
         }
@@ -361,10 +371,15 @@ impl<'a, E: Engine> Add<(E::Fr, &'a LinearCombination<E>)> for LinearCombination
     }
 }
 
-impl<'a, E: Engine> Sub<(E::Fr, &'a LinearCombination<E>)> for LinearCombination<E> {
-    type Output = LinearCombination<E>;
+impl<'a, Scalar: PrimeField> Sub<(Scalar, &'a LinearCombination<Scalar>)>
+    for LinearCombination<Scalar>
+{
+    type Output = LinearCombination<Scalar>;
 
-    fn sub(mut self, (coeff, other): (E::Fr, &'a LinearCombination<E>)) -> LinearCombination<E> {
+    fn sub(
+        mut self,
+        (coeff, other): (Scalar, &'a LinearCombination<Scalar>),
+    ) -> LinearCombination<Scalar> {
         for (var, val) in other.inputs.iter() {
             self.sub_assign_unsimplified_input(*var, *val * coeff);
         }
@@ -380,19 +395,20 @@ impl<'a, E: Engine> Sub<(E::Fr, &'a LinearCombination<E>)> for LinearCombination
 #[cfg(all(test, feature = "groth16"))]
 mod tests {
     use super::*;
-    use blstrs::Bls12;
+    use blstrs::Scalar;
+    use ff::Field;
 
     #[test]
     fn test_add_simplify() {
         let n = 5;
 
-        let mut lc = LinearCombination::<Bls12>::zero();
+        let mut lc = LinearCombination::<Scalar>::zero();
 
-        let mut expected_sums = vec![<Bls12 as Engine>::Fr::zero(); n];
+        let mut expected_sums = vec![Scalar::zero(); n];
         let mut total_additions = 0;
         for (i, expected_sum) in expected_sums.iter_mut().enumerate() {
             for _ in 0..i + 1 {
-                let coeff = <Bls12 as Engine>::Fr::one();
+                let coeff = Scalar::one();
                 lc = lc + (coeff, Variable::new_unchecked(Index::Aux(i)));
                 *expected_sum += coeff;
                 total_additions += 1;
@@ -413,7 +429,7 @@ mod tests {
     #[test]
     fn test_insert_or_update() {
         let mut indexer = Indexer::default();
-        let one = <Bls12 as Engine>::Fr::one();
+        let one = Scalar::one();
         let mut two = one;
         two += one;
 

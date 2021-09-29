@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use ff::{Field, PrimeField};
 use group::{prime::PrimeCurveAffine, Curve};
-use pairing::{Engine, MultiMillerLoop};
+use pairing::MultiMillerLoop;
 use rand_core::RngCore;
 use rayon::prelude::*;
 
@@ -23,24 +23,24 @@ use log::{debug, info};
 #[cfg(any(feature = "cuda", feature = "opencl"))]
 use crate::gpu::PriorityLock;
 
-struct ProvingAssignment<E: Engine> {
+struct ProvingAssignment<Scalar: PrimeField> {
     // Density of queries
     a_aux_density: DensityTracker,
     b_input_density: DensityTracker,
     b_aux_density: DensityTracker,
 
     // Evaluations of A, B, C polynomials
-    a: Vec<E::Fr>,
-    b: Vec<E::Fr>,
-    c: Vec<E::Fr>,
+    a: Vec<Scalar>,
+    b: Vec<Scalar>,
+    c: Vec<Scalar>,
 
     // Assignments of variables
-    input_assignment: Vec<E::Fr>,
-    aux_assignment: Vec<E::Fr>,
+    input_assignment: Vec<Scalar>,
+    aux_assignment: Vec<Scalar>,
 }
 use std::fmt;
 
-impl<E: Engine> fmt::Debug for ProvingAssignment<E> {
+impl<Scalar: PrimeField> fmt::Debug for ProvingAssignment<Scalar> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("ProvingAssignment")
             .field("a_aux_density", &self.a_aux_density)
@@ -76,8 +76,8 @@ impl<E: Engine> fmt::Debug for ProvingAssignment<E> {
     }
 }
 
-impl<E: Engine> PartialEq for ProvingAssignment<E> {
-    fn eq(&self, other: &ProvingAssignment<E>) -> bool {
+impl<Scalar: PrimeField> PartialEq for ProvingAssignment<Scalar> {
+    fn eq(&self, other: &ProvingAssignment<Scalar>) -> bool {
         self.a_aux_density == other.a_aux_density
             && self.b_input_density == other.b_input_density
             && self.b_aux_density == other.b_aux_density
@@ -89,7 +89,7 @@ impl<E: Engine> PartialEq for ProvingAssignment<E> {
     }
 }
 
-impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
+impl<Scalar: PrimeField> ConstraintSystem<Scalar> for ProvingAssignment<Scalar> {
     type Root = Self;
 
     fn new() -> Self {
@@ -107,7 +107,7 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
 
     fn alloc<F, A, AR>(&mut self, _: A, f: F) -> Result<Variable, SynthesisError>
     where
-        F: FnOnce() -> Result<E::Fr, SynthesisError>,
+        F: FnOnce() -> Result<Scalar, SynthesisError>,
         A: FnOnce() -> AR,
         AR: Into<String>,
     {
@@ -120,7 +120,7 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
 
     fn alloc_input<F, A, AR>(&mut self, _: A, f: F) -> Result<Variable, SynthesisError>
     where
-        F: FnOnce() -> Result<E::Fr, SynthesisError>,
+        F: FnOnce() -> Result<Scalar, SynthesisError>,
         A: FnOnce() -> AR,
         AR: Into<String>,
     {
@@ -134,9 +134,9 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
     where
         A: FnOnce() -> AR,
         AR: Into<String>,
-        LA: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
-        LB: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
-        LC: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
+        LA: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
+        LB: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
+        LC: FnOnce(LinearCombination<Scalar>) -> LinearCombination<Scalar>,
     {
         let a = a(LinearCombination::zero());
         let b = b(LinearCombination::zero());
@@ -225,7 +225,7 @@ pub fn create_random_proof_batch_priority<E, C, R, P: ParameterSource<E>>(
 ) -> Result<Vec<Proof<E>>, SynthesisError>
 where
     E: gpu::GpuEngine + MultiMillerLoop,
-    C: Circuit<E> + Send,
+    C: Circuit<E::Fr> + Send,
     R: RngCore,
 {
     let r_s = (0..circuits.len())
@@ -248,7 +248,7 @@ pub fn create_proof_batch_priority<E, C, P: ParameterSource<E>>(
 ) -> Result<Vec<Proof<E>>, SynthesisError>
 where
     E: gpu::GpuEngine + MultiMillerLoop,
-    C: Circuit<E> + Send,
+    C: Circuit<E::Fr> + Send,
 {
     info!("Bellperson {} is being used!", BELLMAN_VERSION);
 
@@ -530,7 +530,7 @@ where
 
 fn execute_fft<E>(
     worker: &Worker,
-    prover: &mut ProvingAssignment<E>,
+    prover: &mut ProvingAssignment<E::Fr>,
     fft_kern: &mut Option<LockedFFTKernel<E>>,
 ) -> Result<Arc<Vec<<E::Fr as PrimeField>::Repr>>, SynthesisError>
 where
@@ -562,20 +562,20 @@ where
 }
 
 #[allow(clippy::type_complexity)]
-fn create_proof_batch_priority_inner<E, C>(
+fn create_proof_batch_priority_inner<Scalar, C>(
     circuits: Vec<C>,
 ) -> Result<
     (
         Instant,
-        std::vec::Vec<ProvingAssignment<E>>,
-        std::vec::Vec<std::sync::Arc<std::vec::Vec<<E::Fr as PrimeField>::Repr>>>,
-        std::vec::Vec<std::sync::Arc<std::vec::Vec<<E::Fr as PrimeField>::Repr>>>,
+        std::vec::Vec<ProvingAssignment<Scalar>>,
+        std::vec::Vec<std::sync::Arc<std::vec::Vec<<Scalar as PrimeField>::Repr>>>,
+        std::vec::Vec<std::sync::Arc<std::vec::Vec<<Scalar as PrimeField>::Repr>>>,
     ),
     SynthesisError,
 >
 where
-    E: Engine,
-    C: Circuit<E> + Send,
+    Scalar: PrimeField,
+    C: Circuit<Scalar> + Send,
 {
     let start = Instant::now();
     let mut provers = circuits
@@ -583,7 +583,7 @@ where
         .map(|circuit| -> Result<_, SynthesisError> {
             let mut prover = ProvingAssignment::new();
 
-            prover.alloc_input(|| "", || Ok(E::Fr::one()))?;
+            prover.alloc_input(|| "", || Ok(Scalar::one()))?;
 
             circuit.synthesize(&mut prover)?;
 
@@ -634,7 +634,7 @@ where
 mod tests {
     use super::*;
 
-    use blstrs::{Bls12, Scalar as Fr};
+    use blstrs::Scalar as Fr;
     use rand::Rng;
     use rand_core::SeedableRng;
     use rand_xorshift::XorShiftRng;
@@ -650,7 +650,7 @@ mod tests {
             for j in &[10, 20, 50] {
                 let count: usize = k * j;
 
-                let mut full_assignment = ProvingAssignment::<Bls12>::new();
+                let mut full_assignment = ProvingAssignment::<Fr>::new();
                 full_assignment
                     .alloc_input(|| "one", || Ok(Fr::one()))
                     .unwrap();

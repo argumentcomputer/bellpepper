@@ -1,24 +1,22 @@
 //! Helpers for packing vectors of bits into scalar field elements.
 
-use std::ops::AddAssign;
+use ff::PrimeField;
 
 use super::boolean::Boolean;
 use super::num::{AllocatedNum, Num};
 use super::Assignment;
 use crate::{ConstraintSystem, SynthesisError};
-use ff::{Field, PrimeField};
-use pairing::Engine;
 
 /// Takes a sequence of booleans and exposes them as compact
 /// public inputs
-pub fn pack_into_inputs<E, CS>(mut cs: CS, bits: &[Boolean]) -> Result<(), SynthesisError>
+pub fn pack_into_inputs<Scalar, CS>(mut cs: CS, bits: &[Boolean]) -> Result<(), SynthesisError>
 where
-    E: Engine,
-    CS: ConstraintSystem<E>,
+    Scalar: PrimeField,
+    CS: ConstraintSystem<Scalar>,
 {
-    for (i, bits) in bits.chunks(E::Fr::CAPACITY as usize).enumerate() {
-        let mut num = Num::<E>::zero();
-        let mut coeff = E::Fr::one();
+    for (i, bits) in bits.chunks(Scalar::CAPACITY as usize).enumerate() {
+        let mut num = Num::<Scalar>::zero();
+        let mut coeff = Scalar::one();
         for bit in bits {
             num = num.add_bool_with_coeff(CS::one(), bit, coeff);
 
@@ -30,7 +28,7 @@ where
         // num * 1 = input
         cs.enforce(
             || format!("packing constraint {}", i),
-            |_| num.lc(E::Fr::one()),
+            |_| num.lc(Scalar::one()),
             |lc| lc + CS::one(),
             |lc| lc + input,
         );
@@ -53,12 +51,12 @@ pub fn bytes_to_bits_le(bytes: &[u8]) -> Vec<bool> {
         .collect()
 }
 
-pub fn compute_multipacking<E: Engine>(bits: &[bool]) -> Vec<E::Fr> {
+pub fn compute_multipacking<Scalar: PrimeField>(bits: &[bool]) -> Vec<Scalar> {
     let mut result = vec![];
 
-    for bits in bits.chunks(E::Fr::CAPACITY as usize) {
-        let mut cur = E::Fr::zero();
-        let mut coeff = E::Fr::one();
+    for bits in bits.chunks(Scalar::CAPACITY as usize) {
+        let mut cur = Scalar::zero();
+        let mut coeff = Scalar::one();
 
         for bit in bits {
             if *bit {
@@ -75,14 +73,17 @@ pub fn compute_multipacking<E: Engine>(bits: &[bool]) -> Vec<E::Fr> {
 }
 
 /// Takes a sequence of booleans and exposes them as a single compact Num.
-pub fn pack_bits<E, CS>(mut cs: CS, bits: &[Boolean]) -> Result<AllocatedNum<E>, SynthesisError>
+pub fn pack_bits<Scalar, CS>(
+    mut cs: CS,
+    bits: &[Boolean],
+) -> Result<AllocatedNum<Scalar>, SynthesisError>
 where
-    E: Engine,
-    CS: ConstraintSystem<E>,
+    Scalar: PrimeField,
+    CS: ConstraintSystem<Scalar>,
 {
-    let mut num = Num::<E>::zero();
-    let mut coeff = E::Fr::one();
-    for bit in bits.iter().take(E::Fr::CAPACITY as usize) {
+    let mut num = Num::<Scalar>::zero();
+    let mut coeff = Scalar::one();
+    for bit in bits.iter().take(Scalar::CAPACITY as usize) {
         num = num.add_bool_with_coeff(CS::one(), &bit, coeff);
 
         coeff = coeff.double();
@@ -95,7 +96,7 @@ where
     // num * 1 = input
     cs.enforce(
         || "packing constraint",
-        |_| num.lc(E::Fr::one()),
+        |_| num.lc(Scalar::one()),
         |lc| lc + CS::one(),
         |lc| lc + alloc_num.get_variable(),
     );
@@ -106,7 +107,7 @@ where
 #[test]
 fn test_multipacking() {
     use crate::ConstraintSystem;
-    use blstrs::Bls12;
+    use blstrs::Scalar as Fr;
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;
 
@@ -119,7 +120,7 @@ fn test_multipacking() {
     ]);
 
     for num_bits in 0..1500 {
-        let mut cs = TestConstraintSystem::<Bls12>::new();
+        let mut cs = TestConstraintSystem::<Fr>::new();
 
         let bits: Vec<bool> = (0..num_bits).map(|_| rng.next_u32() % 2 != 0).collect();
 
@@ -133,7 +134,7 @@ fn test_multipacking() {
             })
             .collect::<Vec<_>>();
 
-        let expected_inputs = compute_multipacking::<Bls12>(&bits);
+        let expected_inputs = compute_multipacking::<Fr>(&bits);
 
         pack_into_inputs(cs.namespace(|| "pack"), &circuit_bits).unwrap();
 

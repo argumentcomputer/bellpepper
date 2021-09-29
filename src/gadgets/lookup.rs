@@ -1,9 +1,6 @@
 //! Window table lookup gadgets.
 
-use std::ops::AddAssign;
-
-use ff::Field;
-use pairing::Engine;
+use ff::PrimeField;
 
 use super::boolean::Boolean;
 use super::num::{AllocatedNum, Num};
@@ -11,9 +8,9 @@ use super::*;
 use crate::ConstraintSystem;
 
 // Synthesize the constants for each base pattern.
-fn synth<'a, E: Engine, I>(window_size: usize, constants: I, assignment: &mut [E::Fr])
+fn synth<'a, Scalar: PrimeField, I>(window_size: usize, constants: I, assignment: &mut [Scalar])
 where
-    I: IntoIterator<Item = &'a E::Fr>,
+    I: IntoIterator<Item = &'a Scalar>,
 {
     assert_eq!(assignment.len(), 1 << window_size);
 
@@ -32,13 +29,13 @@ where
 
 /// Performs a 3-bit window table lookup. `bits` is in
 /// little-endian order.
-pub fn lookup3_xy<E: Engine, CS>(
+pub fn lookup3_xy<Scalar: PrimeField, CS>(
     mut cs: CS,
     bits: &[Boolean],
-    coords: &[(E::Fr, E::Fr)],
-) -> Result<(AllocatedNum<E>, AllocatedNum<E>), SynthesisError>
+    coords: &[(Scalar, Scalar)],
+) -> Result<(AllocatedNum<Scalar>, AllocatedNum<Scalar>), SynthesisError>
 where
-    CS: ConstraintSystem<E>,
+    CS: ConstraintSystem<Scalar>,
 {
     assert_eq!(bits.len(), 3);
     assert_eq!(coords.len(), 8);
@@ -72,10 +69,10 @@ where
     let res_y = AllocatedNum::alloc(cs.namespace(|| "y"), || Ok(coords[*i.get()?].1))?;
 
     // Compute the coefficients for the lookup constraints
-    let mut x_coeffs = [E::Fr::zero(); 8];
-    let mut y_coeffs = [E::Fr::zero(); 8];
-    synth::<E, _>(3, coords.iter().map(|c| &c.0), &mut x_coeffs);
-    synth::<E, _>(3, coords.iter().map(|c| &c.1), &mut y_coeffs);
+    let mut x_coeffs = [Scalar::zero(); 8];
+    let mut y_coeffs = [Scalar::zero(); 8];
+    synth::<Scalar, _>(3, coords.iter().map(|c| &c.0), &mut x_coeffs);
+    synth::<Scalar, _>(3, coords.iter().map(|c| &c.1), &mut y_coeffs);
 
     let precomp = Boolean::and(cs.namespace(|| "precomp"), &bits[1], &bits[2])?;
 
@@ -85,17 +82,17 @@ where
         || "x-coordinate lookup",
         |lc| {
             lc + (x_coeffs[0b001], one)
-                + &bits[1].lc::<E>(one, x_coeffs[0b011])
-                + &bits[2].lc::<E>(one, x_coeffs[0b101])
-                + &precomp.lc::<E>(one, x_coeffs[0b111])
+                + &bits[1].lc::<Scalar>(one, x_coeffs[0b011])
+                + &bits[2].lc::<Scalar>(one, x_coeffs[0b101])
+                + &precomp.lc::<Scalar>(one, x_coeffs[0b111])
         },
-        |lc| lc + &bits[0].lc::<E>(one, E::Fr::one()),
+        |lc| lc + &bits[0].lc::<Scalar>(one, Scalar::one()),
         |lc| {
             lc + res_x.get_variable()
                 - (x_coeffs[0b000], one)
-                - &bits[1].lc::<E>(one, x_coeffs[0b010])
-                - &bits[2].lc::<E>(one, x_coeffs[0b100])
-                - &precomp.lc::<E>(one, x_coeffs[0b110])
+                - &bits[1].lc::<Scalar>(one, x_coeffs[0b010])
+                - &bits[2].lc::<Scalar>(one, x_coeffs[0b100])
+                - &precomp.lc::<Scalar>(one, x_coeffs[0b110])
         },
     );
 
@@ -103,17 +100,17 @@ where
         || "y-coordinate lookup",
         |lc| {
             lc + (y_coeffs[0b001], one)
-                + &bits[1].lc::<E>(one, y_coeffs[0b011])
-                + &bits[2].lc::<E>(one, y_coeffs[0b101])
-                + &precomp.lc::<E>(one, y_coeffs[0b111])
+                + &bits[1].lc::<Scalar>(one, y_coeffs[0b011])
+                + &bits[2].lc::<Scalar>(one, y_coeffs[0b101])
+                + &precomp.lc::<Scalar>(one, y_coeffs[0b111])
         },
-        |lc| lc + &bits[0].lc::<E>(one, E::Fr::one()),
+        |lc| lc + &bits[0].lc::<Scalar>(one, Scalar::one()),
         |lc| {
             lc + res_y.get_variable()
                 - (y_coeffs[0b000], one)
-                - &bits[1].lc::<E>(one, y_coeffs[0b010])
-                - &bits[2].lc::<E>(one, y_coeffs[0b100])
-                - &precomp.lc::<E>(one, y_coeffs[0b110])
+                - &bits[1].lc::<Scalar>(one, y_coeffs[0b010])
+                - &bits[2].lc::<Scalar>(one, y_coeffs[0b100])
+                - &precomp.lc::<Scalar>(one, y_coeffs[0b110])
         },
     );
 
@@ -122,13 +119,13 @@ where
 
 /// Performs a 3-bit window table lookup, where
 /// one of the bits is a sign bit.
-pub fn lookup3_xy_with_conditional_negation<E: Engine, CS>(
+pub fn lookup3_xy_with_conditional_negation<Scalar: PrimeField, CS>(
     mut cs: CS,
     bits: &[Boolean],
-    coords: &[(E::Fr, E::Fr)],
-) -> Result<(Num<E>, Num<E>), SynthesisError>
+    coords: &[(Scalar, Scalar)],
+) -> Result<(Num<Scalar>, Num<Scalar>), SynthesisError>
 where
-    CS: ConstraintSystem<E>,
+    CS: ConstraintSystem<Scalar>,
 {
     assert_eq!(bits.len(), 3);
     assert_eq!(coords.len(), 4);
@@ -161,10 +158,10 @@ where
     let one = CS::one();
 
     // Compute the coefficients for the lookup constraints
-    let mut x_coeffs = [E::Fr::zero(); 4];
-    let mut y_coeffs = [E::Fr::zero(); 4];
-    synth::<E, _>(2, coords.iter().map(|c| &c.0), &mut x_coeffs);
-    synth::<E, _>(2, coords.iter().map(|c| &c.1), &mut y_coeffs);
+    let mut x_coeffs = [Scalar::zero(); 4];
+    let mut y_coeffs = [Scalar::zero(); 4];
+    synth::<Scalar, _>(2, coords.iter().map(|c| &c.0), &mut x_coeffs);
+    synth::<Scalar, _>(2, coords.iter().map(|c| &c.1), &mut y_coeffs);
 
     let precomp = Boolean::and(cs.namespace(|| "precomp"), &bits[0], &bits[1])?;
 
@@ -174,15 +171,15 @@ where
         .add_bool_with_coeff(one, &bits[1], x_coeffs[0b10])
         .add_bool_with_coeff(one, &precomp, x_coeffs[0b11]);
 
-    let y_lc = precomp.lc::<E>(one, y_coeffs[0b11])
-        + &bits[1].lc::<E>(one, y_coeffs[0b10])
-        + &bits[0].lc::<E>(one, y_coeffs[0b01])
+    let y_lc = precomp.lc::<Scalar>(one, y_coeffs[0b11])
+        + &bits[1].lc::<Scalar>(one, y_coeffs[0b10])
+        + &bits[0].lc::<Scalar>(one, y_coeffs[0b01])
         + (y_coeffs[0b00], one);
 
     cs.enforce(
         || "y-coordinate lookup",
         |lc| lc + &y_lc + &y_lc,
-        |lc| lc + &bits[2].lc::<E>(one, E::Fr::one()),
+        |lc| lc + &bits[2].lc::<Scalar>(one, Scalar::one()),
         |lc| lc + &y_lc - y.get_variable(),
     );
 
@@ -194,7 +191,8 @@ mod test {
     use super::*;
     use crate::gadgets::boolean::{AllocatedBit, Boolean};
     use crate::gadgets::test::*;
-    use blstrs::{Bls12, Scalar as Fr};
+    use blstrs::Scalar as Fr;
+    use ff::Field;
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;
 
@@ -206,7 +204,7 @@ mod test {
         ]);
 
         for _ in 0..100 {
-            let mut cs = TestConstraintSystem::<Bls12>::new();
+            let mut cs = TestConstraintSystem::<Fr>::new();
 
             let a_val = rng.next_u32() % 2 != 0;
             let a = Boolean::from(AllocatedBit::alloc(cs.namespace(|| "a"), Some(a_val)).unwrap());
@@ -251,7 +249,7 @@ mod test {
         ]);
 
         for _ in 0..100 {
-            let mut cs = TestConstraintSystem::<Bls12>::new();
+            let mut cs = TestConstraintSystem::<Fr>::new();
 
             let a_val = rng.next_u32() % 2 != 0;
             let a = Boolean::from(AllocatedBit::alloc(cs.namespace(|| "a"), Some(a_val)).unwrap());
@@ -304,14 +302,14 @@ mod test {
             .map(|_| Fr::random(&mut rng))
             .collect();
 
-        synth::<Bls12, _>(window_size, &constants, &mut assignment);
+        synth::<Fr, _>(window_size, &constants, &mut assignment);
 
         for b in 0..(1 << window_size) {
             let mut acc = Fr::zero();
 
             for j in 0..(1 << window_size) {
                 if j & b == j {
-                    acc.add_assign(&assignment[j]);
+                    acc += &assignment[j];
                 }
             }
 

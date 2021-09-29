@@ -1,5 +1,3 @@
-use pairing::Engine;
-
 use ff::{Field, PrimeField};
 use group::{Curve, Group};
 use rand_core::SeedableRng;
@@ -17,22 +15,22 @@ use super::{
 use crate::{Circuit, ConstraintSystem, SynthesisError};
 
 #[derive(Clone)]
-struct XorDemo<E: Engine> {
+struct XorDemo<Scalar: PrimeField> {
     a: Option<bool>,
     b: Option<bool>,
-    _marker: PhantomData<E>,
+    _marker: PhantomData<Scalar>,
 }
 
-impl<E: Engine> Circuit<E> for XorDemo<E> {
-    fn synthesize<CS: ConstraintSystem<E>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
+impl<Scalar: PrimeField> Circuit<Scalar> for XorDemo<Scalar> {
+    fn synthesize<CS: ConstraintSystem<Scalar>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
         let a_var = cs.alloc(
             || "a",
             || {
                 if self.a.is_some() {
                     if self.a.unwrap() {
-                        Ok(E::Fr::one())
+                        Ok(Scalar::one())
                     } else {
-                        Ok(E::Fr::zero())
+                        Ok(Scalar::zero())
                     }
                 } else {
                     Err(SynthesisError::AssignmentMissing)
@@ -52,9 +50,9 @@ impl<E: Engine> Circuit<E> for XorDemo<E> {
             || {
                 if self.b.is_some() {
                     if self.b.unwrap() {
-                        Ok(E::Fr::one())
+                        Ok(Scalar::one())
                     } else {
-                        Ok(E::Fr::zero())
+                        Ok(Scalar::zero())
                     }
                 } else {
                     Err(SynthesisError::AssignmentMissing)
@@ -74,9 +72,9 @@ impl<E: Engine> Circuit<E> for XorDemo<E> {
             || {
                 if self.a.is_some() && self.b.is_some() {
                     if self.a.unwrap() ^ self.b.unwrap() {
-                        Ok(E::Fr::one())
+                        Ok(Scalar::one())
                     } else {
-                        Ok(E::Fr::zero())
+                        Ok(Scalar::zero())
                     }
                 } else {
                     Err(SynthesisError::AssignmentMissing)
@@ -106,7 +104,7 @@ fn test_xordemo() {
     let tau = Fr::from(3673u64);
 
     let params = {
-        let c = XorDemo::<DummyEngine> {
+        let c = XorDemo::<Fr> {
             a: None,
             b: None,
             _marker: PhantomData,
@@ -296,7 +294,7 @@ fn test_xordemo() {
             _marker: PhantomData,
         };
 
-        create_proof(c, &params, r, s).unwrap()
+        create_proof::<DummyEngine, _, _>(c, &params, r, s).unwrap()
     };
 
     // A(x) =
@@ -399,13 +397,13 @@ fn test_create_batch_single() {
     let tau = Fr::from(3673u64);
 
     let params = {
-        let c = XorDemo::<DummyEngine> {
+        let c = XorDemo::<Fr> {
             a: None,
             b: None,
             _marker: PhantomData,
         };
 
-        generate_parameters(c, g1, g2, alpha, beta, gamma, delta, tau).unwrap()
+        generate_parameters::<DummyEngine, _>(c, g1, g2, alpha, beta, gamma, delta, tau).unwrap()
     };
 
     let pvk = prepare_verifying_key(&params.vk);
@@ -448,7 +446,7 @@ fn test_verify_random_single() {
     ]);
 
     let params = {
-        let c = XorDemo::<Bls12> {
+        let c = XorDemo::<Fr> {
             a: None,
             b: None,
             _marker: PhantomData,
@@ -528,7 +526,7 @@ fn test_verify_random_batch() {
     ]);
 
     let params = {
-        let c = XorDemo::<Bls12> {
+        let c = XorDemo::<Fr> {
             a: None,
             b: None,
             _marker: PhantomData,

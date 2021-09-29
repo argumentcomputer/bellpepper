@@ -5,11 +5,12 @@
 
 #![allow(clippy::many_single_char_names)]
 
+use ff::PrimeField;
+
 use super::boolean::Boolean;
 use super::multieq::MultiEq;
 use super::uint32::UInt32;
 use crate::{ConstraintSystem, SynthesisError};
-use pairing::Engine;
 
 #[allow(clippy::unreadable_literal)]
 const ROUND_CONSTANTS: [u32; 64] = [
@@ -28,13 +29,13 @@ const IV: [u32; 8] = [
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
 ];
 
-pub fn sha256_block_no_padding<E, CS>(
+pub fn sha256_block_no_padding<Scalar, CS>(
     mut cs: CS,
     input: &[Boolean],
 ) -> Result<Vec<Boolean>, SynthesisError>
 where
-    E: Engine,
-    CS: ConstraintSystem<E>,
+    Scalar: PrimeField,
+    CS: ConstraintSystem<Scalar>,
 {
     assert_eq!(input.len(), 512);
 
@@ -46,10 +47,10 @@ where
     )
 }
 
-pub fn sha256<E, CS>(mut cs: CS, input: &[Boolean]) -> Result<Vec<Boolean>, SynthesisError>
+pub fn sha256<Scalar, CS>(mut cs: CS, input: &[Boolean]) -> Result<Vec<Boolean>, SynthesisError>
 where
-    E: Engine,
-    CS: ConstraintSystem<E>,
+    Scalar: PrimeField,
+    CS: ConstraintSystem<Scalar>,
 {
     assert!(input.len() % 8 == 0);
 
@@ -79,14 +80,14 @@ fn get_sha256_iv() -> Vec<UInt32> {
     IV.iter().map(|&v| UInt32::constant(v)).collect()
 }
 
-fn sha256_compression_function<E, CS>(
+fn sha256_compression_function<Scalar, CS>(
     cs: CS,
     input: &[Boolean],
     current_hash_value: &[UInt32],
 ) -> Result<Vec<UInt32>, SynthesisError>
 where
-    E: Engine,
-    CS: ConstraintSystem<E>,
+    Scalar: PrimeField,
+    CS: ConstraintSystem<Scalar>,
 {
     assert_eq!(input.len(), 512);
     assert_eq!(current_hash_value.len(), 8);
@@ -130,11 +131,11 @@ where
     }
 
     impl Maybe {
-        fn compute<E, CS, M>(self, cs: M, others: &[UInt32]) -> Result<UInt32, SynthesisError>
+        fn compute<Scalar, CS, M>(self, cs: M, others: &[UInt32]) -> Result<UInt32, SynthesisError>
         where
-            E: Engine,
-            CS: ConstraintSystem<E>,
-            M: ConstraintSystem<E, Root = MultiEq<E, CS>>,
+            Scalar: PrimeField,
+            CS: ConstraintSystem<Scalar>,
+            M: ConstraintSystem<Scalar, Root = MultiEq<Scalar, CS>>,
         {
             Ok(match self {
                 Maybe::Concrete(ref v) => return Ok(v.clone()),
@@ -275,7 +276,7 @@ mod test {
     use super::*;
     use crate::gadgets::boolean::AllocatedBit;
     use crate::gadgets::test::TestConstraintSystem;
-    use blstrs::Bls12;
+    use blstrs::Scalar as Fr;
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;
 
@@ -283,7 +284,7 @@ mod test {
     fn test_blank_hash() {
         let iv = get_sha256_iv();
 
-        let mut cs = TestConstraintSystem::<Bls12>::new();
+        let mut cs = TestConstraintSystem::<Fr>::new();
         let mut input_bits: Vec<_> = (0..512).map(|_| Boolean::Constant(false)).collect();
         input_bits[0] = Boolean::Constant(true);
         let out = sha256_compression_function(&mut cs, &input_bits, &iv).unwrap();
@@ -313,7 +314,7 @@ mod test {
 
         let iv = get_sha256_iv();
 
-        let mut cs = TestConstraintSystem::<Bls12>::new();
+        let mut cs = TestConstraintSystem::<Fr>::new();
         let input_bits: Vec<_> = (0..512)
             .map(|i| {
                 Boolean::from(
@@ -339,7 +340,7 @@ mod test {
             0xbc, 0xe5,
         ]);
 
-        let mut cs = TestConstraintSystem::<Bls12>::new();
+        let mut cs = TestConstraintSystem::<Fr>::new();
         let input_bits: Vec<_> = (0..512)
             .map(|i| {
                 Boolean::from(
@@ -373,7 +374,7 @@ mod test {
             h.update(&data);
             let hash_result = h.finalize();
 
-            let mut cs = TestConstraintSystem::<Bls12>::new();
+            let mut cs = TestConstraintSystem::<Fr>::new();
             let mut input_bits = vec![];
 
             for (byte_i, input_byte) in data.into_iter().enumerate() {
