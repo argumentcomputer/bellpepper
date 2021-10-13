@@ -154,8 +154,6 @@ impl<'a> QueryDensity for &'a DensityTracker {
             .filter_map(|(&e, d)| if *d { Some(e) } else { None })
             .collect();
 
-        debug_assert_eq!(exps.len(), exponents.len());
-
         Arc::new(exps)
     }
 }
