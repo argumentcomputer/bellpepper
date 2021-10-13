@@ -160,12 +160,12 @@ impl<Scalar: PrimeField> LinearCombination<Scalar> {
     }
 
     #[inline]
-    pub(crate) fn iter_inputs(&self) -> impl Iterator<Item = (&usize, &Scalar)> + '_ {
+    pub fn iter_inputs(&self) -> impl Iterator<Item = (&usize, &Scalar)> + '_ {
         self.inputs.iter()
     }
 
     #[inline]
-    pub(crate) fn iter_aux(&self) -> impl Iterator<Item = (&usize, &Scalar)> + '_ {
+    pub fn iter_aux(&self) -> impl Iterator<Item = (&usize, &Scalar)> + '_ {
         self.aux.iter()
     }
 
@@ -242,7 +242,7 @@ impl<Scalar: PrimeField> LinearCombination<Scalar> {
         self.inputs.is_empty() && self.aux.is_empty()
     }
 
-    pub(crate) fn eval(
+    pub fn eval(
         &self,
         mut input_density: Option<&mut DensityTracker>,
         mut aux_density: Option<&mut DensityTracker>,

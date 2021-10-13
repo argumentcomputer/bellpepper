@@ -78,6 +78,11 @@ name = "mimc"
 path = "tests/mimc.rs"
 required-features = ["groth16"]
 
+[[test]]
+name = "groth16_aggregation"
+path = "tests/groth16_aggregation.rs"
+required-features = ["groth16"]
+
 [badges]
 maintenance = { status = "actively-developed" }
 
