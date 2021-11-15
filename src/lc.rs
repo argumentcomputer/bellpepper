@@ -2,7 +2,7 @@ use std::ops::{Add, Sub};
 
 use ff::PrimeField;
 
-use crate::multiexp::DensityTracker;
+use ec_gpu_gen::multiexp_cpu::DensityTracker;
 
 /// Represents a variable in our constraint system.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]

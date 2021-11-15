@@ -1,36 +1,9 @@
-use super::error::{GPUError, GPUResult};
-use crate::multicore::Worker;
+use super::error::{GpuError, GpuResult};
+use ec_gpu_gen::threadpool::Worker;
 use ff::PrimeField;
 use group::prime::PrimeCurveAffine;
 use std::marker::PhantomData;
 use std::sync::Arc;
-
-// This module is compiled instead of `fft.rs` and `multiexp.rs` if `gpu` feature is disabled.
-#[allow(clippy::upper_case_acronyms)]
-pub struct FFTKernel<E>(PhantomData<E>)
-where
-    E: Engine;
-
-impl<E> FFTKernel<E>
-where
-    E: Engine,
-{
-    pub fn create(_: bool) -> GPUResult<FFTKernel<E>> {
-        Err(GPUError::GPUDisabled)
-    }
-
-    pub fn radix_fft(&mut self, _: &mut [E::Fr], _: &E::Fr, _: u32) -> GPUResult<()> {
-        Err(GPUError::GPUDisabled)
-    }
-    pub fn radix_fft_many(
-        &mut self,
-        _: &mut [&mut [E::Fr]],
-        _: &[E::Fr],
-        _: &[u32],
-    ) -> GPUResult<()> {
-        Err(GPUError::GPUDisabled)
-    }
-}
 
 pub struct MultiexpKernel<E>(PhantomData<E>)
 where
@@ -40,8 +13,8 @@ impl<E> MultiexpKernel<E>
 where
     E: Engine,
 {
-    pub fn create(_: bool) -> GPUResult<MultiexpKernel<E>> {
-        Err(GPUError::GPUDisabled)
+    pub fn create(_: bool) -> GpuResult<Self> {
+        Err(GpuError::GpuDisabled)
     }
 
     pub fn multiexp<G>(
@@ -51,11 +24,11 @@ where
         _: Arc<Vec<<G::Scalar as PrimeField>::Repr>>,
         _: usize,
         _: usize,
-    ) -> GPUResult<<G as PrimeCurveAffine>::Curve>
+    ) -> GpuResult<<G as PrimeCurveAffine>::Curve>
     where
         G: PrimeCurveAffine,
     {
-        Err(GPUError::GPUDisabled)
+        Err(GpuError::GpuDisabled)
     }
 }
 
@@ -74,11 +47,11 @@ macro_rules! locked_kernel {
                 $class::<E>(PhantomData)
             }
 
-            pub fn with<F, R, K>(&mut self, _: F) -> GPUResult<R>
+            pub fn with<F, R, K>(&mut self, _: F) -> GpuResult<R>
             where
-                F: FnMut(&mut K) -> GPUResult<R>,
+                F: FnMut(&mut K) -> GpuResult<R>,
             {
-                return Err(GPUError::GPUDisabled);
+                return Err(GpuError::GpuDisabled);
             }
         }
     };

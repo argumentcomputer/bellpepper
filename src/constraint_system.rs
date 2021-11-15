@@ -1,6 +1,7 @@
 use std::io;
 use std::marker::PhantomData;
 
+use ec_gpu_gen::EcError;
 use ff::PrimeField;
 
 use crate::{gpu, Index, LinearCombination, Variable};
@@ -45,7 +46,7 @@ pub enum SynthesisError {
     UnconstrainedVariable,
     /// During GPU multiexp/fft, some GPU related error happened
     #[error("encountered a GPU error: {0}")]
-    GPUError(#[from] gpu::GPUError),
+    GpuError(#[from] gpu::GpuError),
     #[error("attempted to aggregate malformed proofs: {0}")]
     MalformedProofs(String),
     #[error("malformed SRS")]
@@ -56,6 +57,13 @@ pub enum SynthesisError {
     IncompatibleLengthVector(String),
     #[error("invalid pairing")]
     InvalidPairing,
+}
+
+// Don't create a separate "EC GPU error", but convert it into a `GpuError` first.
+impl From<EcError> for SynthesisError {
+    fn from(source: EcError) -> Self {
+        gpu::GpuError::from(source).into()
+    }
 }
 
 /// Represents a constraint system which can have new variables

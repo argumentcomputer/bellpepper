@@ -96,7 +96,7 @@ jobs:
       RUST_LOG: debug
       # Build the kernel only for the single architecture that is used on CI. This should reduce
       # the overall compile-time significantly.
-      BELLMAN_CUDA_NVCC_ARGS: --fatbin --gpu-architecture=sm_75 --generate-code=arch=compute_75,code=sm_75
+      RUST_GPU_TOOLS_CUDA_NVCC_ARGS: --fatbin --gpu-architecture=sm_75 --generate-code=arch=compute_75,code=sm_75
     steps:
       - set-env-path
       - install-gpu-deps
@@ -138,7 +138,7 @@ jobs:
       RUST_LOG: debug
       # Build the kernel only for the single architecture that is used on CI. This should reduce
       # the overall compile-time significantly.
-      BELLMAN_CUDA_NVCC_ARGS: --fatbin --gpu-architecture=sm_75 --generate-code=arch=compute_75,code=sm_75
+      RUST_GPU_TOOLS_CUDA_NVCC_ARGS: --fatbin --gpu-architecture=sm_75 --generate-code=arch=compute_75,code=sm_75
     steps:
       - *restore-workspace
       - *restore-cache

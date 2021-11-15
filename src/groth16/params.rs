@@ -1,8 +1,8 @@
 use group::{prime::PrimeCurveAffine, UncompressedEncoding};
 use pairing::MultiMillerLoop;
 
-use crate::multiexp::SourceBuilder;
 use crate::SynthesisError;
+use ec_gpu_gen::multiexp_cpu::SourceBuilder;
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use memmap::{Mmap, MmapOptions};

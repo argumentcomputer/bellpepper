@@ -1,33 +1,19 @@
-#![allow(clippy::upper_case_acronyms)]
-
-#[cfg(any(feature = "cuda", feature = "opencl"))]
-use rust_gpu_tools::GPUError as GpuToolsError;
+use ec_gpu_gen::EcError;
 
 #[derive(thiserror::Error, Debug)]
-pub enum GPUError {
+pub enum GpuError {
     #[error("GPUError: {0}")]
     Simple(&'static str),
     #[cfg(any(feature = "cuda", feature = "opencl"))]
-    #[error("GPU tools error: {0}")]
-    GpuTools(#[from] GpuToolsError),
-    #[cfg(any(feature = "cuda", feature = "opencl"))]
     #[error("GPU taken by a high priority process!")]
-    GPUTaken,
+    GpuTaken,
     #[cfg(any(feature = "cuda", feature = "opencl"))]
     #[error("No kernel is initialized!")]
     KernelUninitialized,
+    #[error("EC GPU error: {0}")]
+    EcGpu(#[from] EcError),
     #[error("GPU accelerator is disabled!")]
-    GPUDisabled,
+    GpuDisabled,
 }
 
-pub type GPUResult<T> = std::result::Result<T, GPUError>;
-
-#[cfg(any(feature = "cuda", feature = "opencl"))]
-impl From<std::boxed::Box<dyn std::any::Any + std::marker::Send>> for GPUError {
-    fn from(e: std::boxed::Box<dyn std::any::Any + std::marker::Send>) -> Self {
-        match e.downcast::<Self>() {
-            Ok(err) => *err,
-            Err(_) => GPUError::Simple("An unknown GPU error happened!"),
-        }
-    }
-}
+pub type GpuResult<T> = std::result::Result<T, GpuError>;

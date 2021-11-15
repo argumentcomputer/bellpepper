@@ -10,12 +10,13 @@ use rayon::prelude::*;
 
 use super::{ParameterSource, Proof};
 use crate::domain::EvaluationDomain;
-use crate::gpu::{self, LockedFFTKernel, LockedMultiexpKernel};
-use crate::multicore::{Worker, THREAD_POOL};
-use crate::multiexp::{multiexp, DensityTracker, FullDensity};
+use crate::gpu::{GpuEngine, LockedFFTKernel, LockedMultiexpKernel};
+use crate::multiexp::multiexp;
 use crate::{
     Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable, BELLMAN_VERSION,
 };
+use ec_gpu_gen::multiexp_cpu::{DensityTracker, FullDensity};
+use ec_gpu_gen::threadpool::{Worker, THREAD_POOL};
 #[cfg(any(feature = "cuda", feature = "opencl"))]
 use log::trace;
 use log::{debug, info};
@@ -224,7 +225,7 @@ pub fn create_random_proof_batch_priority<E, C, R, P: ParameterSource<E>>(
     priority: bool,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
     R: RngCore,
 {
@@ -246,7 +247,7 @@ pub fn create_proof_batch_priority_nonzk<E, C, P: ParameterSource<E>>(
     priority: bool,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
 {
     create_proof_batch_priority_inner(circuits, params, None, priority)
@@ -262,7 +263,7 @@ pub fn create_proof_batch_priority<E, C, P: ParameterSource<E>>(
     priority: bool,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
 {
     create_proof_batch_priority_inner(circuits, params, Some((r_s, s_s)), priority)
@@ -277,7 +278,7 @@ fn create_proof_batch_priority_inner<E, C, P: ParameterSource<E>>(
     priority: bool,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
 {
     info!("Bellperson {} is being used!", BELLMAN_VERSION);
@@ -353,7 +354,7 @@ where
         Ok(())
     })?;
 
-    let mut multiexp_kern = Some(LockedMultiexpKernel::<E>::new(priority));
+    let mut multiexp_kern = LockedMultiexpKernel::<E>::new(priority);
     let params_h = params_h.unwrap()?;
 
     let mut h_s = Vec::with_capacity(num_circuits);
@@ -561,7 +562,7 @@ fn execute_fft<E>(
     fft_kern: &mut Option<LockedFFTKernel<E>>,
 ) -> Result<Arc<Vec<<E::Fr as PrimeField>::Repr>>, SynthesisError>
 where
-    E: gpu::GpuEngine + MultiMillerLoop,
+    E: GpuEngine + MultiMillerLoop,
 {
     let mut a = EvaluationDomain::from_coeffs(std::mem::take(&mut prover.a))?;
     let mut b = EvaluationDomain::from_coeffs(std::mem::take(&mut prover.b))?;
