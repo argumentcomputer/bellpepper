@@ -265,6 +265,8 @@ where
     let aux_assignment_len = provers[0].aux_assignment.len();
     let num_circuits = provers.len();
 
+    let non_zk = r_s.iter().all(E::Fr::is_zero_vartime);
+
     // Make sure all circuits have the same input len.
     for prover in &provers {
         assert_eq!(
@@ -359,7 +361,9 @@ where
         s.execute(move || {
             debug!("get_a b_g1 b_g2");
             *params_a = Some(params.get_a(input_len, a_aux_density_total));
-            *params_b_g1 = Some(params.get_b_g1(b_input_density_total, b_aux_density_total));
+            if !non_zk {
+                *params_b_g1 = Some(params.get_b_g1(b_input_density_total, b_aux_density_total));
+            }
             *params_b_g2 = Some(params.get_b_g2(b_input_density_total, b_aux_density_total));
         });
 
@@ -377,8 +381,8 @@ where
 
     debug!("get_a b_g1 b_g2");
     let (a_inputs_source, a_aux_source) = params_a.unwrap()?;
-    let (b_g1_inputs_source, b_g1_aux_source) = params_b_g1.unwrap()?;
     let (b_g2_inputs_source, b_g2_aux_source) = params_b_g2.unwrap()?;
+    let params_b_g1_nores = params_b_g1.transpose()?;
 
     debug!("multiexp a b_g1 b_g2");
     let inputs = provers
@@ -401,25 +405,28 @@ where
                 aux_assignment.clone(),
                 &mut multiexp_kern,
             );
-
             let b_input_density = Arc::new(prover.b_input_density);
             let b_aux_density = Arc::new(prover.b_aux_density);
 
-            let b_g1_inputs = multiexp(
-                worker,
-                b_g1_inputs_source.clone(),
-                b_input_density.clone(),
-                input_assignment.clone(),
-                &mut multiexp_kern,
-            );
-
-            let b_g1_aux = multiexp(
-                worker,
-                b_g1_aux_source.clone(),
-                b_aux_density.clone(),
-                aux_assignment.clone(),
-                &mut multiexp_kern,
-            );
+            let b_g1_inputs_aux = params_b_g1_nores.as_ref().map(|params_b_g1_nores| {
+                let (b_g1_inputs_source, b_g1_aux_source) = params_b_g1_nores;
+                (
+                    multiexp(
+                        worker,
+                        b_g1_inputs_source.clone(),
+                        b_input_density.clone(),
+                        input_assignment.clone(),
+                        &mut multiexp_kern,
+                    ),
+                    multiexp(
+                        worker,
+                        b_g1_aux_source.clone(),
+                        b_aux_density.clone(),
+                        aux_assignment.clone(),
+                        &mut multiexp_kern,
+                    ),
+                )
+            });
 
             let b_g2_inputs = multiexp(
                 worker,
@@ -436,21 +443,13 @@ where
                 &mut multiexp_kern,
             );
 
-            (
-                a_inputs,
-                a_aux,
-                b_g1_inputs,
-                b_g1_aux,
-                b_g2_inputs,
-                b_g2_aux,
-            )
+            (a_inputs, a_aux, b_g1_inputs_aux, b_g2_inputs, b_g2_aux)
         })
         .collect::<Vec<_>>();
     drop(multiexp_kern);
     drop(a_inputs_source);
     drop(a_aux_source);
-    drop(b_g1_inputs_source);
-    drop(b_g1_aux_source);
+    drop(params_b_g1_nores);
     drop(b_g2_inputs_source);
     drop(b_g2_aux_source);
 
@@ -462,10 +461,7 @@ where
         .zip(r_s.into_iter())
         .zip(s_s.into_iter())
         .map(
-            |(
-                (((h, l), (a_inputs, a_aux, b_g1_inputs, b_g1_aux, b_g2_inputs, b_g2_aux)), r),
-                s,
-            )| {
+            |((((h, l), (a_inputs, a_aux, b_g1_inputs_aux, b_g2_inputs, b_g2_aux)), r), s)| {
                 if (vk.delta_g1.is_identity() | vk.delta_g2.is_identity()).into() {
                     // If this element is zero, someone is trying to perform a
                     // subversion-CRS attack.
@@ -491,14 +487,18 @@ where
                 a_answer.mul_assign(s);
                 g_c.add_assign(&a_answer);
 
-                let mut b1_answer = b_g1_inputs.wait()?;
-                b1_answer.add_assign(&b_g1_aux.wait()?);
                 let mut b2_answer = b_g2_inputs.wait()?;
                 b2_answer.add_assign(&b_g2_aux.wait()?);
 
                 g_b.add_assign(&b2_answer);
-                b1_answer.mul_assign(r);
-                g_c.add_assign(&b1_answer);
+
+                if let Some((b_g1_inputs, b_g1_aux)) = b_g1_inputs_aux {
+                    let mut b1_answer = b_g1_inputs.wait()?;
+                    b1_answer.add_assign(&b_g1_aux.wait()?);
+                    b1_answer.mul_assign(r);
+                    g_c.add_assign(&b1_answer);
+                }
+
                 g_c.add_assign(&h.wait()?);
                 g_c.add_assign(&l.wait()?);
 
