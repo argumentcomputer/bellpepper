@@ -238,6 +238,10 @@ where
     create_proof_batch_priority::<E, C, P>(circuits, params, r_s, s_s, priority)
 }
 
+/// creates a batch of proofs where the randomization vector is already
+/// predefined. This methods allows to get a non randomized version of the
+/// proofs, i.e. WITHOUT zero knowledge property, if `r_s` and `s_s` are all
+/// zeros
 #[allow(clippy::needless_collect)]
 pub fn create_proof_batch_priority<E, C, P: ParameterSource<E>>(
     circuits: Vec<C>,
@@ -265,8 +269,12 @@ where
     let aux_assignment_len = provers[0].aux_assignment.len();
     let num_circuits = provers.len();
 
-    let non_zk = r_s.iter().all(E::Fr::is_zero_vartime);
-
+    let r_s_zero = r_s.iter().all(E::Fr::is_zero_vartime);
+    let s_s_zero = s_s.iter().all(E::Fr::is_zero_vartime);
+    if r_s_zero ^ s_s_zero {
+        return Err(SynthesisError::InvalidZeroKnowledge);
+    }
+    let non_zk = r_s_zero;
     // Make sure all circuits have the same input len.
     for prover in &provers {
         assert_eq!(
@@ -472,20 +480,11 @@ where
                 g_a.add_assign(&vk.alpha_g1);
                 let mut g_b = vk.delta_g2.mul(s);
                 g_b.add_assign(&vk.beta_g2);
-                let mut g_c;
-                {
-                    let mut rs = r;
-                    rs.mul_assign(&s);
-
-                    g_c = vk.delta_g1.mul(rs);
-                    g_c.add_assign(&vk.alpha_g1.mul(s));
-                    g_c.add_assign(&vk.beta_g1.mul(r));
-                }
                 let mut a_answer = a_inputs.wait()?;
                 a_answer.add_assign(&a_aux.wait()?);
                 g_a.add_assign(&a_answer);
                 a_answer.mul_assign(s);
-                g_c.add_assign(&a_answer);
+                let mut g_c = a_answer.clone();
 
                 let mut b2_answer = b_g2_inputs.wait()?;
                 b2_answer.add_assign(&b_g2_aux.wait()?);
@@ -497,6 +496,11 @@ where
                     b1_answer.add_assign(&b_g1_aux.wait()?);
                     b1_answer.mul_assign(r);
                     g_c.add_assign(&b1_answer);
+                    let mut rs = r;
+                    rs.mul_assign(&s);
+                    g_c = vk.delta_g1.mul(rs);
+                    g_c.add_assign(&vk.alpha_g1.mul(s));
+                    g_c.add_assign(&vk.beta_g1.mul(r));
                 }
 
                 g_c.add_assign(&h.wait()?);
