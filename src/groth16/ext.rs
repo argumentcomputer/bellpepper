@@ -1,7 +1,6 @@
 use super::{create_proof_batch_priority, create_random_proof_batch_priority};
 use super::{ParameterSource, Proof};
 use crate::{gpu, Circuit, SynthesisError};
-use ff::Field;
 use pairing::MultiMillerLoop;
 use rand_core::RngCore;
 
@@ -32,21 +31,6 @@ where
 {
     let proofs =
         create_random_proof_batch_priority::<E, C, R, P>(vec![circuit], params, rng, false)?;
-    Ok(proofs.into_iter().next().unwrap())
-}
-
-pub fn create_random_proof_nozk<E, C, P: ParameterSource<E>>(
-    circuit: C,
-    params: P,
-) -> Result<Proof<E>, SynthesisError>
-where
-    E: gpu::GpuEngine + MultiMillerLoop,
-    C: Circuit<E::Fr> + Send,
-{
-    let r = E::Fr::zero();
-    let s = E::Fr::zero();
-    let proofs =
-        create_proof_batch_priority::<E, C, P>(vec![circuit], params, vec![r], vec![s], true)?;
     Ok(proofs.into_iter().next().unwrap())
 }
 
