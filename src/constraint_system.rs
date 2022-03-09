@@ -56,8 +56,6 @@ pub enum SynthesisError {
     IncompatibleLengthVector(String),
     #[error("invalid pairing")]
     InvalidPairing,
-    #[error("invalid proving with and without zero knowledge")]
-    InvalidZeroKnowledge,
 }
 
 /// Represents a constraint system which can have new variables
