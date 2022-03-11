@@ -51,7 +51,7 @@ where
         ));
     }
 
-    let table = precompute_fixed_window::<G>(&left, WINDOW_SIZE);
+    let table = precompute_fixed_window::<G>(left, WINDOW_SIZE);
     let getter = |i: usize| -> <G::Scalar as PrimeField>::Repr { right[i].to_repr() };
     Ok(par_multiscalar::<_, G>(
         &ScalarList::Getter(getter, right.len()),

@@ -104,9 +104,9 @@ where
     let refr_vec = &r_vec;
     try_par! {
         // compute A * B^r for the verifier
-        let ip_ab = inner_product::pairing::<E>(&refa, &refb_r),
+        let ip_ab = inner_product::pairing::<E>(refa, refb_r),
         // compute C^r for the verifier
-        let agg_c = inner_product::multiexponentiation::<E::G1Affine>(&refc, &refr_vec)
+        let agg_c = inner_product::multiexponentiation::<E::G1Affine>(refc, refr_vec)
     };
 
     // w^{r^{-1}}
@@ -114,7 +114,7 @@ where
 
     // we prove tipp and mipp using the same recursive loop
     let tmipp = prove_tipp_mipp::<E>(
-        &srs,
+        srs,
         &a,
         &b_r,
         &c,
@@ -168,7 +168,7 @@ where
     let r_shift = r_vec[1];
     // Run GIPA
     let (proof, mut challenges, mut challenges_inv) =
-        gipa_tipp_mipp::<E>(a, b, c, &srs.vkey, &wkey, r_vec, ip_ab, agg_c, hcom)?;
+        gipa_tipp_mipp::<E>(a, b, c, &srs.vkey, wkey, r_vec, ip_ab, agg_c, hcom)?;
 
     // Prove final commitment keys are wellformed
     // we reverse the transcript so the polynomial in kzg opening is constructed
@@ -293,11 +293,11 @@ where
         // See section 3.3 for paper version with equivalent names
         try_par! {
             // TIPP part
-            let tab_l = commit::pair::<E>(&rvk_left, &rwk_right, &ra_right, &rb_left),
-            let tab_r = commit::pair::<E>(&rvk_right, &rwk_left, &ra_left, &rb_right),
+            let tab_l = commit::pair::<E>(rvk_left, rwk_right, ra_right, rb_left),
+            let tab_r = commit::pair::<E>(rvk_right, rwk_left, ra_left, rb_right),
             // \prod e(A_right,B_left)
-            let zab_l = inner_product::pairing::<E>(&ra_right, &rb_left),
-            let zab_r = inner_product::pairing::<E>(&ra_left, &rb_right),
+            let zab_l = inner_product::pairing::<E>(ra_right, rb_left),
+            let zab_r = inner_product::pairing::<E>(ra_left, rb_right),
 
             // MIPP part
             // z_l = c[n':] ^ r[:n']
@@ -305,9 +305,9 @@ where
             // Z_r = c[:n'] ^ r[n':]
             let zc_r = inner_product::multiexponentiation::<E::G1Affine>(rc_left, rr_right),
             // u_l = c[n':] * v[:n']
-            let tuc_l = commit::single_g1::<E>(&rvk_left, rc_right),
+            let tuc_l = commit::single_g1::<E>(rvk_left, rc_right),
             // u_r = c[:n'] * v[n':]
-            let tuc_r = commit::single_g1::<E>(&rvk_right, rc_left)
+            let tuc_r = commit::single_g1::<E>(rvk_right, rc_left)
         };
 
         // Fiat-Shamir challenge
@@ -415,7 +415,7 @@ where
 
     // f_v(z)
     let vkey_poly_z = polynomial_evaluation_product_form_from_transcript(
-        &transcript,
+        transcript,
         kzg_challenge,
         &G::Scalar::one(),
     );
@@ -451,7 +451,7 @@ where
 
     par! {
         // this computes f(z)
-        let fz = polynomial_evaluation_product_form_from_transcript(&transcript, kzg_challenge, &r_shift),
+        let fz = polynomial_evaluation_product_form_from_transcript(transcript, kzg_challenge, r_shift),
         // this computes the "shift" z^n
         let zn = kzg_challenge.pow_vartime(&[n as u64])
     };

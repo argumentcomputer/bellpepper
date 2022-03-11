@@ -238,7 +238,7 @@ where
     create_proof_batch_priority::<E, C, P>(circuits, params, r_s, s_s, priority)
 }
 
-#[allow(clippy::clippy::needless_collect)]
+#[allow(clippy::needless_collect)]
 pub fn create_proof_batch_priority<E, C, P: ParameterSource<E>>(
     circuits: Vec<C>,
     params: P,
@@ -333,7 +333,7 @@ where
         debug!("multiexp h");
         for a in a_s.into_iter() {
             h_s.push(multiexp(
-                &worker,
+                worker,
                 params_h.clone(),
                 FullDensity,
                 a,
@@ -366,7 +366,7 @@ where
         debug!("multiexp l");
         for aux in aux_assignments.iter() {
             l_s.push(multiexp(
-                &worker,
+                worker,
                 params_l.clone(),
                 FullDensity,
                 aux.clone(),
@@ -387,7 +387,7 @@ where
         .zip(aux_assignments.iter())
         .map(|((prover, input_assignment), aux_assignment)| {
             let a_inputs = multiexp(
-                &worker,
+                worker,
                 a_inputs_source.clone(),
                 FullDensity,
                 input_assignment.clone(),
@@ -395,7 +395,7 @@ where
             );
 
             let a_aux = multiexp(
-                &worker,
+                worker,
                 a_aux_source.clone(),
                 Arc::new(prover.a_aux_density),
                 aux_assignment.clone(),
@@ -406,7 +406,7 @@ where
             let b_aux_density = Arc::new(prover.b_aux_density);
 
             let b_g1_inputs = multiexp(
-                &worker,
+                worker,
                 b_g1_inputs_source.clone(),
                 b_input_density.clone(),
                 input_assignment.clone(),
@@ -414,7 +414,7 @@ where
             );
 
             let b_g1_aux = multiexp(
-                &worker,
+                worker,
                 b_g1_aux_source.clone(),
                 b_aux_density.clone(),
                 aux_assignment.clone(),
@@ -422,14 +422,14 @@ where
             );
 
             let b_g2_inputs = multiexp(
-                &worker,
+                worker,
                 b_g2_inputs_source.clone(),
                 b_input_density,
                 input_assignment.clone(),
                 &mut multiexp_kern,
             );
             let b_g2_aux = multiexp(
-                &worker,
+                worker,
                 b_g2_aux_source.clone(),
                 b_aux_density,
                 aux_assignment.clone(),
@@ -531,20 +531,20 @@ fn execute_fft<E>(
 where
     E: gpu::GpuEngine + MultiMillerLoop,
 {
-    let mut a = EvaluationDomain::from_coeffs(std::mem::replace(&mut prover.a, Vec::new()))?;
-    let mut b = EvaluationDomain::from_coeffs(std::mem::replace(&mut prover.b, Vec::new()))?;
-    let mut c = EvaluationDomain::from_coeffs(std::mem::replace(&mut prover.c, Vec::new()))?;
+    let mut a = EvaluationDomain::from_coeffs(std::mem::take(&mut prover.a))?;
+    let mut b = EvaluationDomain::from_coeffs(std::mem::take(&mut prover.b))?;
+    let mut c = EvaluationDomain::from_coeffs(std::mem::take(&mut prover.c))?;
 
-    EvaluationDomain::ifft_many(&mut [&mut a, &mut b, &mut c], &worker, fft_kern)?;
-    EvaluationDomain::coset_fft_many(&mut [&mut a, &mut b, &mut c], &worker, fft_kern)?;
+    EvaluationDomain::ifft_many(&mut [&mut a, &mut b, &mut c], worker, fft_kern)?;
+    EvaluationDomain::coset_fft_many(&mut [&mut a, &mut b, &mut c], worker, fft_kern)?;
 
-    a.mul_assign(&worker, &b);
+    a.mul_assign(worker, &b);
     drop(b);
-    a.sub_assign(&worker, &c);
+    a.sub_assign(worker, &c);
     drop(c);
 
-    a.divide_by_z_on_coset(&worker);
-    a.icoset_fft(&worker, fft_kern)?;
+    a.divide_by_z_on_coset(worker);
+    a.icoset_fft(worker, fft_kern)?;
 
     let a = a.into_coeffs();
     let a_len = a.len() - 1;
@@ -599,7 +599,7 @@ where
     let input_assignments = provers
         .par_iter_mut()
         .map(|prover| {
-            let input_assignment = std::mem::replace(&mut prover.input_assignment, Vec::new());
+            let input_assignment = std::mem::take(&mut prover.input_assignment);
             Arc::new(
                 input_assignment
                     .into_iter()
@@ -612,7 +612,7 @@ where
     let aux_assignments = provers
         .par_iter_mut()
         .map(|prover| {
-            let aux_assignment = std::mem::replace(&mut prover.aux_assignment, Vec::new());
+            let aux_assignment = std::mem::take(&mut prover.aux_assignment);
             Arc::new(
                 aux_assignment
                     .into_iter()

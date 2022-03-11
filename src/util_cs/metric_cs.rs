@@ -141,7 +141,7 @@ impl<Scalar: PrimeField> MetricCS<Scalar> {
         let pp = |s: &mut String, lc: &LinearCombination<Scalar>| {
             s.push('(');
             let mut is_first = true;
-            for (var, coeff) in proc_lc::<Scalar>(&lc) {
+            for (var, coeff) in proc_lc::<Scalar>(lc) {
                 if coeff == negone {
                     s.push_str(" - ")
                 } else if !is_first {

@@ -255,12 +255,10 @@ impl<Scalar: PrimeField> LinearCombination<Scalar> {
 
         for (index, coeff) in self.iter_inputs() {
             let mut tmp = input_assignment[*index];
-            if coeff == &one {
-                acc += tmp;
-            } else {
+            if coeff != &one {
                 tmp *= coeff;
-                acc += tmp;
             }
+            acc += tmp;
 
             if let Some(ref mut v) = input_density {
                 v.inc(*index);
@@ -269,12 +267,10 @@ impl<Scalar: PrimeField> LinearCombination<Scalar> {
 
         for (index, coeff) in self.iter_aux() {
             let mut tmp = aux_assignment[*index];
-            if coeff == &one {
-                acc += tmp;
-            } else {
+            if coeff != &one {
                 tmp *= coeff;
-                acc += tmp;
             }
+            acc += tmp;
 
             if let Some(ref mut v) = aux_density {
                 v.inc(*index);

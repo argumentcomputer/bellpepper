@@ -145,7 +145,7 @@ where
         let t: u128 = rng.gen();
 
         let mut repr = E::Fr::zero().to_repr();
-        let mut repr_u64s = le_bytes_to_u64s(&repr.as_ref());
+        let mut repr_u64s = le_bytes_to_u64s(repr.as_ref());
         assert!(repr_u64s.len() > 1);
 
         repr_u64s[0] = (t & (-1i64 as u128) >> 64) as u64;
@@ -226,7 +226,7 @@ where
             let acc_d: E::G1 = {
                 let pre = multiscalar::precompute_fixed_window::<E::G1Affine>(&points, 1);
                 multiscalar::multiscalar::<E::G1Affine>(
-                    &rand_z_repr,
+                    rand_z_repr,
                     &pre,
                     std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
                 )

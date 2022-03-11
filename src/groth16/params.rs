@@ -122,7 +122,7 @@ where
                            param: &mut Vec<Range<usize>>,
                            range_len: usize|
          -> Result<(), std::io::Error> {
-            let len = read_length(&params, &mut *offset)?;
+            let len = read_length(params, &mut *offset)?;
             for _ in 0..len {
                 (*param).push(Range {
                     start: *offset,
@@ -186,9 +186,9 @@ where
 
             let affine: E::G1Affine = {
                 let affine_opt = if checked {
-                    E::G1Affine::from_uncompressed(&repr)
+                    E::G1Affine::from_uncompressed(repr)
                 } else {
-                    E::G1Affine::from_uncompressed_unchecked(&repr)
+                    E::G1Affine::from_uncompressed_unchecked(repr)
                 };
                 Option::from(affine_opt)
                     .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "not on curve"))
@@ -216,9 +216,9 @@ where
 
             let affine: E::G2Affine = {
                 let affine_opt = if checked {
-                    E::G2Affine::from_uncompressed(&repr)
+                    E::G2Affine::from_uncompressed(repr)
                 } else {
-                    E::G2Affine::from_uncompressed_unchecked(&repr)
+                    E::G2Affine::from_uncompressed_unchecked(repr)
                 };
                 Option::from(affine_opt)
                     .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "not on curve"))
@@ -248,9 +248,9 @@ where
                        offset: &mut usize,
                        param: &mut Vec<E::G1Affine>|
          -> Result<(), std::io::Error> {
-            let len = read_length(&mmap, &mut *offset)?;
+            let len = read_length(mmap, &mut *offset)?;
             for _ in 0..len {
-                (*param).push(read_g1(&mmap, &mut *offset)?);
+                (*param).push(read_g1(mmap, &mut *offset)?);
             }
 
             Ok(())
@@ -260,16 +260,16 @@ where
                        offset: &mut usize,
                        param: &mut Vec<E::G2Affine>|
          -> Result<(), std::io::Error> {
-            let len = read_length(&mmap, &mut *offset)?;
+            let len = read_length(mmap, &mut *offset)?;
             for _ in 0..len {
-                (*param).push(read_g2(&mmap, &mut *offset)?);
+                (*param).push(read_g2(mmap, &mut *offset)?);
             }
 
             Ok(())
         };
 
         let mut offset: usize = 0;
-        let vk = VerifyingKey::<E>::read_mmap(&mmap, &mut offset)?;
+        let vk = VerifyingKey::<E>::read_mmap(mmap, &mut offset)?;
 
         let mut h = vec![];
         let mut l = vec![];
@@ -277,11 +277,11 @@ where
         let mut b_g1 = vec![];
         let mut b_g2 = vec![];
 
-        get_g1s(&mmap, &mut offset, &mut h)?;
-        get_g1s(&mmap, &mut offset, &mut l)?;
-        get_g1s(&mmap, &mut offset, &mut a)?;
-        get_g1s(&mmap, &mut offset, &mut b_g1)?;
-        get_g2s(&mmap, &mut offset, &mut b_g2)?;
+        get_g1s(mmap, &mut offset, &mut h)?;
+        get_g1s(mmap, &mut offset, &mut l)?;
+        get_g1s(mmap, &mut offset, &mut a)?;
+        get_g1s(mmap, &mut offset, &mut b_g1)?;
+        get_g2s(mmap, &mut offset, &mut b_g2)?;
 
         Ok(Parameters {
             vk,

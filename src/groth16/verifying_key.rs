@@ -153,12 +153,12 @@ impl<E: Engine + MultiMillerLoop> VerifyingKey<E> {
             read_uncompressed_point(g2_repr)
         };
 
-        let alpha_g1 = read_g1(&mmap, &mut *offset)?;
-        let beta_g1 = read_g1(&mmap, &mut *offset)?;
-        let beta_g2 = read_g2(&mmap, &mut *offset)?;
-        let gamma_g2 = read_g2(&mmap, &mut *offset)?;
-        let delta_g1 = read_g1(&mmap, &mut *offset)?;
-        let delta_g2 = read_g2(&mmap, &mut *offset)?;
+        let alpha_g1 = read_g1(mmap, &mut *offset)?;
+        let beta_g1 = read_g1(mmap, &mut *offset)?;
+        let beta_g2 = read_g2(mmap, &mut *offset)?;
+        let gamma_g2 = read_g2(mmap, &mut *offset)?;
+        let delta_g1 = read_g1(mmap, &mut *offset)?;
+        let delta_g2 = read_g2(mmap, &mut *offset)?;
 
         let mut raw_ic_len = &mmap[*offset..*offset + u32_len];
         let ic_len = raw_ic_len.read_u32::<BigEndian>()? as usize;
@@ -167,7 +167,7 @@ impl<E: Engine + MultiMillerLoop> VerifyingKey<E> {
         let mut ic = vec![];
 
         for _ in 0..ic_len {
-            let g1_repr = read_g1(&mmap, &mut *offset);
+            let g1_repr = read_g1(mmap, &mut *offset);
             let g1 = g1_repr.and_then(|e| {
                 if e.is_identity().into() {
                     Err(io::Error::new(

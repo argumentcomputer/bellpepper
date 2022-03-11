@@ -552,14 +552,14 @@ impl Boolean {
                 // (a and b) xor ((not a) and c)
                 // equals
                 // ((not a) and c)
-                return Boolean::and(cs, &a.not(), &c);
+                return Boolean::and(cs, &a.not(), c);
             }
             (a, b, &Boolean::Constant(false)) => {
                 // If c is false
                 // (a and b) xor ((not a) and c)
                 // equals
                 // (a and b)
-                return Boolean::and(cs, &a, &b);
+                return Boolean::and(cs, a, b);
             }
             (a, b, &Boolean::Constant(true)) => {
                 // If c is true
@@ -568,7 +568,7 @@ impl Boolean {
                 // (a and b) xor (not a)
                 // equals
                 // not (a and (not b))
-                return Ok(Boolean::and(cs, &a, &b.not())?.not());
+                return Ok(Boolean::and(cs, a, &b.not())?.not());
             }
             (a, &Boolean::Constant(true), c) => {
                 // If b is true
@@ -1536,15 +1536,15 @@ mod test {
 
         assert_eq!(bits.len(), 64);
 
-        assert_eq!(bits[63 - 0].get_value().unwrap(), true);
-        assert_eq!(bits[63 - 1].get_value().unwrap(), true);
-        assert_eq!(bits[63 - 2].get_value().unwrap(), true);
-        assert_eq!(bits[63 - 3].get_value().unwrap(), false);
-        assert_eq!(bits[63 - 4].get_value().unwrap(), true);
-        assert_eq!(bits[63 - 5].get_value().unwrap(), true);
-        assert_eq!(bits[63 - 20].get_value().unwrap(), true);
-        assert_eq!(bits[63 - 21].get_value().unwrap(), false);
-        assert_eq!(bits[63 - 22].get_value().unwrap(), false);
+        assert!(bits[63 - 0].get_value().unwrap());
+        assert!(bits[63 - 1].get_value().unwrap());
+        assert!(bits[63 - 2].get_value().unwrap());
+        assert!(!bits[63 - 3].get_value().unwrap());
+        assert!(bits[63 - 4].get_value().unwrap());
+        assert!(bits[63 - 5].get_value().unwrap());
+        assert!(bits[63 - 20].get_value().unwrap());
+        assert!(!bits[63 - 21].get_value().unwrap());
+        assert!(!bits[63 - 22].get_value().unwrap());
     }
 
     #[allow(clippy::identity_op)]
@@ -1563,14 +1563,14 @@ mod test {
 
         assert_eq!(bits.len(), 255);
 
-        assert_eq!(bits[254 - 0].value.unwrap(), false);
-        assert_eq!(bits[254 - 1].value.unwrap(), false);
-        assert_eq!(bits[254 - 2].value.unwrap(), true);
-        assert_eq!(bits[254 - 3].value.unwrap(), false);
-        assert_eq!(bits[254 - 4].value.unwrap(), true);
-        assert_eq!(bits[254 - 5].value.unwrap(), false);
-        assert_eq!(bits[254 - 20].value.unwrap(), true);
-        assert_eq!(bits[254 - 23].value.unwrap(), true);
+        assert!(!bits[254 - 0].value.unwrap());
+        assert!(!bits[254 - 1].value.unwrap());
+        assert!(bits[254 - 2].value.unwrap());
+        assert!(!bits[254 - 3].value.unwrap());
+        assert!(bits[254 - 4].value.unwrap());
+        assert!(!bits[254 - 5].value.unwrap());
+        assert!(bits[254 - 20].value.unwrap());
+        assert!(bits[254 - 23].value.unwrap());
     }
 
     #[test]
@@ -1786,7 +1786,7 @@ mod test {
             )
             .unwrap();
 
-            assert_eq!(allocated_value.get_value().unwrap(), true);
+            assert!(allocated_value.get_value().unwrap());
             assert!(cs.is_satisfied());
         }
 

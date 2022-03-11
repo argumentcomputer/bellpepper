@@ -155,9 +155,9 @@ pub fn read_g1<E: MultiMillerLoop>(
 
     let affine: E::G1Affine = {
         let affine_opt = if checked {
-            E::G1Affine::from_uncompressed(&repr)
+            E::G1Affine::from_uncompressed(repr)
         } else {
-            E::G1Affine::from_uncompressed_unchecked(&repr)
+            E::G1Affine::from_uncompressed_unchecked(repr)
         };
 
         Option::from(affine_opt)
@@ -192,9 +192,9 @@ pub fn read_g2<E: MultiMillerLoop>(
 
     let affine: E::G2Affine = {
         let affine_opt = if checked {
-            E::G2Affine::from_uncompressed(&repr)
+            E::G2Affine::from_uncompressed(repr)
         } else {
-            E::G2Affine::from_uncompressed_unchecked(&repr)
+            E::G2Affine::from_uncompressed_unchecked(repr)
         };
 
         Option::from(affine_opt)

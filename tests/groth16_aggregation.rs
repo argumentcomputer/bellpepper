@@ -515,18 +515,15 @@ fn test_groth16_aggregation() {
     assert!(result);
 
     // Invalid transcript inclusion
-    assert_eq!(
-        verify_aggregate_proof(
-            &vk,
-            &pvk,
-            &mut rng,
-            &statements,
-            &aggregate_proof,
-            &[4, 5, 6],
-        )
-        .unwrap(),
-        false
-    );
+    assert!(!verify_aggregate_proof(
+        &vk,
+        &pvk,
+        &mut rng,
+        &statements,
+        &aggregate_proof,
+        &[4, 5, 6],
+    )
+    .unwrap(),);
 
     // 2. Non power of two
     let err = aggregate_proofs::<Bls12>(&pk, &to_include, &proofs[0..NUM_PROOFS - 1]).unwrap_err();
@@ -539,7 +536,7 @@ fn test_groth16_aggregation() {
         .expect("I should be able to aggregate");
     let res = verify_aggregate_proof(&vk, &pvk, &mut rng, &statements, &invalid_agg, &to_include)
         .expect("no synthesis");
-    assert_eq!(res, false);
+    assert!(!res);
     proofs[0].a = old_a;
 
     let old_b = proofs[0].b;
@@ -548,7 +545,7 @@ fn test_groth16_aggregation() {
         .expect("I should be able to aggregate");
     let res = verify_aggregate_proof(&vk, &pvk, &mut rng, &statements, &invalid_agg, &to_include)
         .expect("no synthesis");
-    assert_eq!(res, false);
+    assert!(!res);
     proofs[0].b = old_b;
 
     let old_c = proofs[0].c;
@@ -557,7 +554,7 @@ fn test_groth16_aggregation() {
         .expect("I should be able to aggregate");
     let res = verify_aggregate_proof(&vk, &pvk, &mut rng, &statements, &invalid_agg, &to_include)
         .expect("no synthesis");
-    assert_eq!(res, false);
+    assert!(!res);
     proofs[0].c = old_c;
 
     // 4. verify with invalid aggregate proof
@@ -573,7 +570,7 @@ fn test_groth16_aggregation() {
         &to_include,
     )
     .expect("no synthesis");
-    assert_eq!(res, false);
+    assert!(!res);
     aggregate_proof.agg_c = old_aggc;
 
     // 5. invalid gipa element
@@ -588,7 +585,7 @@ fn test_groth16_aggregation() {
         &to_include,
     )
     .expect("no synthesis");
-    assert_eq!(res, false);
+    assert!(!res);
     aggregate_proof.tmipp.gipa.final_a = old_finala;
 }
 

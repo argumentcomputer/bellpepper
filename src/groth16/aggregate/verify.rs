@@ -221,7 +221,7 @@ fn verify_tipp_mipp<E, R>(
     let now = Instant::now();
     // (T,U), Z for TIPP and MIPP  and all challenges
     let (final_res, final_r, challenges, challenges_inv) =
-        gipa_verify_tipp_mipp(&proof, r_shift, hcom);
+        gipa_verify_tipp_mipp(proof, r_shift, hcom);
     debug!(
         "TIPP verify: gipa verify tipp {}ms",
         now.elapsed().as_millis()

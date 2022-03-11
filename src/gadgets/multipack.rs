@@ -84,7 +84,7 @@ where
     let mut num = Num::<Scalar>::zero();
     let mut coeff = Scalar::one();
     for bit in bits.iter().take(Scalar::CAPACITY as usize) {
-        num = num.add_bool_with_coeff(CS::one(), &bit, coeff);
+        num = num.add_bool_with_coeff(CS::one(), bit, coeff);
 
         coeff = coeff.double();
     }

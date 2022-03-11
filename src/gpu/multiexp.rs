@@ -321,7 +321,7 @@ where
             }
 
             cpu_multiexp::<_, _, _, E, _>(
-                &pool,
+                pool,
                 (Arc::new(cpu_bases.to_vec()), 0),
                 FullDensity,
                 Arc::new(cpu_exps.to_vec()),

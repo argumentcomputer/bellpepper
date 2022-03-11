@@ -109,7 +109,7 @@ fn hash_lc<Scalar: PrimeField>(terms: &LinearCombination<Scalar>, h: &mut Blake2
         // Write as big-endian bytes.
         let mut bytes = coeff.to_repr();
         bytes.as_mut().reverse();
-        buf[9..].copy_from_slice(&bytes.as_ref());
+        buf[9..].copy_from_slice(bytes.as_ref());
 
         h.update(&buf);
     }
@@ -148,7 +148,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
         let pp = |s: &mut String, lc: &LinearCombination<Scalar>| {
             write!(s, "(").unwrap();
             let mut is_first = true;
-            for (var, coeff) in proc_lc::<Scalar>(&lc) {
+            for (var, coeff) in proc_lc::<Scalar>(lc) {
                 if coeff == negone {
                     write!(s, " - ").unwrap();
                 } else if !is_first {

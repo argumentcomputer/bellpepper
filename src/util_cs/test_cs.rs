@@ -106,7 +106,7 @@ fn hash_lc<Scalar: PrimeField>(terms: &LinearCombination<Scalar>, h: &mut Blake2
         // Write big-endian bytes.
         let mut bytes = coeff.to_repr();
         bytes.as_mut().reverse();
-        buf[9..].copy_from_slice(&bytes.as_ref());
+        buf[9..].copy_from_slice(bytes.as_ref());
 
         h.update(&buf[..]);
     }

@@ -246,7 +246,7 @@ where
                     // Safety: this operation is safe because it's a read on
                     // a buffer that's already allocated and being iterated on.
                     let g1_repr = unsafe { &*(ptr as *const [u8] as *const G::Repr) };
-                    let opt: Option<G> = G::from_bytes(&g1_repr).into();
+                    let opt: Option<G> = G::from_bytes(g1_repr).into();
                     opt.ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "not on curve"))
                 })
                 .collect::<io::Result<Vec<_>>>()?;
@@ -255,10 +255,10 @@ where
         }
 
         let mut offset: usize = 0;
-        let g_alpha_powers = mmap_read_vec::<E::G1Affine>(&reader, &mut offset, max_len)?;
-        let g_beta_powers = mmap_read_vec::<E::G1Affine>(&reader, &mut offset, max_len)?;
-        let h_alpha_powers = mmap_read_vec::<E::G2Affine>(&reader, &mut offset, max_len)?;
-        let h_beta_powers = mmap_read_vec::<E::G2Affine>(&reader, &mut offset, max_len)?;
+        let g_alpha_powers = mmap_read_vec::<E::G1Affine>(reader, &mut offset, max_len)?;
+        let g_beta_powers = mmap_read_vec::<E::G1Affine>(reader, &mut offset, max_len)?;
+        let h_alpha_powers = mmap_read_vec::<E::G2Affine>(reader, &mut offset, max_len)?;
+        let h_beta_powers = mmap_read_vec::<E::G2Affine>(reader, &mut offset, max_len)?;
         Ok(Self {
             g_alpha_powers,
             g_beta_powers,

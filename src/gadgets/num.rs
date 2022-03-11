@@ -205,7 +205,7 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
                 let a_bit = AllocatedBit::alloc_conditionally(
                     cs.namespace(|| format!("bit {}", i)),
                     a_bit,
-                    &last_run.as_ref().expect("char always starts with a one"),
+                    last_run.as_ref().expect("char always starts with a one"),
                 )?;
                 result.push(a_bit);
             }
@@ -644,7 +644,7 @@ mod test {
                 match bits.get(i) {
                     Some(Boolean::Is(a)) => assert_eq!(b, a.get_value().unwrap()),
                     Some(_) => unreachable!(),
-                    None => assert_eq!(b, false),
+                    None => assert!(!b),
                 };
             }
 

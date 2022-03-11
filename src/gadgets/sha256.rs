@@ -40,7 +40,7 @@ where
     assert_eq!(input.len(), 512);
 
     Ok(
-        sha256_compression_function(&mut cs, &input, &get_sha256_iv())?
+        sha256_compression_function(&mut cs, input, &get_sha256_iv())?
             .into_iter()
             .flat_map(|e| e.into_bits_be())
             .collect(),
@@ -281,6 +281,7 @@ mod test {
     use rand_xorshift::XorShiftRng;
 
     #[test]
+    #[allow(clippy::needless_collect)]
     fn test_blank_hash() {
         let iv = get_sha256_iv();
 

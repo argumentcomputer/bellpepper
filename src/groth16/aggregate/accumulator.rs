@@ -358,7 +358,7 @@ mod test {
         let final_tuple = tuples
             .iter()
             .fold(PairingCheck::<Bls12>::new(), |mut acc, tu| {
-                acc.merge(&tu);
+                acc.merge(tu);
                 acc
             });
         assert!(final_tuple.verify());

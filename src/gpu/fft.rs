@@ -28,7 +28,7 @@ where
 
 impl<E: Engine + GpuEngine> SingleFftKernel<E> {
     pub fn create(device: &Device, priority: bool) -> GPUResult<Self> {
-        let program = program::program::<E>(&device)?;
+        let program = program::program::<E>(device)?;
 
         Ok(SingleFftKernel {
             program,
