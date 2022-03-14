@@ -238,7 +238,22 @@ where
     create_proof_batch_priority::<E, C, P>(circuits, params, r_s, s_s, priority)
 }
 
-#[allow(clippy::needless_collect)]
+/// creates a batch of proofs where the randomization vector is set to zero.
+/// This allows for optimization of proving.
+pub fn create_proof_batch_priority_nonzk<E, C, P: ParameterSource<E>>(
+    circuits: Vec<C>,
+    params: P,
+    priority: bool,
+) -> Result<Vec<Proof<E>>, SynthesisError>
+where
+    E: gpu::GpuEngine + MultiMillerLoop,
+    C: Circuit<E::Fr> + Send,
+{
+    create_proof_batch_priority_inner(circuits, params, None, priority)
+}
+
+/// creates a batch of proofs where the randomization vector is already
+/// predefined
 pub fn create_proof_batch_priority<E, C, P: ParameterSource<E>>(
     circuits: Vec<C>,
     params: P,
@@ -250,10 +265,25 @@ where
     E: gpu::GpuEngine + MultiMillerLoop,
     C: Circuit<E::Fr> + Send,
 {
+    create_proof_batch_priority_inner(circuits, params, Some((r_s, s_s)), priority)
+}
+
+#[allow(clippy::type_complexity)]
+#[allow(clippy::needless_collect)]
+fn create_proof_batch_priority_inner<E, C, P: ParameterSource<E>>(
+    circuits: Vec<C>,
+    params: P,
+    randomization: Option<(Vec<E::Fr>, Vec<E::Fr>)>,
+    priority: bool,
+) -> Result<Vec<Proof<E>>, SynthesisError>
+where
+    E: gpu::GpuEngine + MultiMillerLoop,
+    C: Circuit<E::Fr> + Send,
+{
     info!("Bellperson {} is being used!", BELLMAN_VERSION);
 
     let (start, mut provers, input_assignments, aux_assignments) =
-        create_proof_batch_priority_inner(circuits)?;
+        synthesize_circuits_batch(circuits)?;
 
     let worker = Worker::new();
     let input_len = input_assignments[0].len();
@@ -264,6 +294,12 @@ where
     let b_aux_density_total = provers[0].b_aux_density.get_total_density();
     let aux_assignment_len = provers[0].aux_assignment.len();
     let num_circuits = provers.len();
+
+    let zk = randomization.is_some();
+    let (r_s, s_s) = randomization.unwrap_or((
+        vec![E::Fr::zero(); num_circuits],
+        vec![E::Fr::zero(); num_circuits],
+    ));
 
     // Make sure all circuits have the same input len.
     for prover in &provers {
@@ -359,7 +395,9 @@ where
         s.execute(move || {
             debug!("get_a b_g1 b_g2");
             *params_a = Some(params.get_a(input_len, a_aux_density_total));
-            *params_b_g1 = Some(params.get_b_g1(b_input_density_total, b_aux_density_total));
+            if zk {
+                *params_b_g1 = Some(params.get_b_g1(b_input_density_total, b_aux_density_total));
+            }
             *params_b_g2 = Some(params.get_b_g2(b_input_density_total, b_aux_density_total));
         });
 
@@ -377,8 +415,8 @@ where
 
     debug!("get_a b_g1 b_g2");
     let (a_inputs_source, a_aux_source) = params_a.unwrap()?;
-    let (b_g1_inputs_source, b_g1_aux_source) = params_b_g1.unwrap()?;
     let (b_g2_inputs_source, b_g2_aux_source) = params_b_g2.unwrap()?;
+    let params_b_g1_opt = params_b_g1.transpose()?;
 
     debug!("multiexp a b_g1 b_g2");
     let inputs = provers
@@ -401,25 +439,30 @@ where
                 aux_assignment.clone(),
                 &mut multiexp_kern,
             );
-
             let b_input_density = Arc::new(prover.b_input_density);
             let b_aux_density = Arc::new(prover.b_aux_density);
 
-            let b_g1_inputs = multiexp(
-                worker,
-                b_g1_inputs_source.clone(),
-                b_input_density.clone(),
-                input_assignment.clone(),
-                &mut multiexp_kern,
-            );
-
-            let b_g1_aux = multiexp(
-                worker,
-                b_g1_aux_source.clone(),
-                b_aux_density.clone(),
-                aux_assignment.clone(),
-                &mut multiexp_kern,
-            );
+            let b_g1_inputs_aux_opt =
+                params_b_g1_opt
+                    .as_ref()
+                    .map(|(b_g1_inputs_source, b_g1_aux_source)| {
+                        (
+                            multiexp(
+                                worker,
+                                b_g1_inputs_source.clone(),
+                                b_input_density.clone(),
+                                input_assignment.clone(),
+                                &mut multiexp_kern,
+                            ),
+                            multiexp(
+                                worker,
+                                b_g1_aux_source.clone(),
+                                b_aux_density.clone(),
+                                aux_assignment.clone(),
+                                &mut multiexp_kern,
+                            ),
+                        )
+                    });
 
             let b_g2_inputs = multiexp(
                 worker,
@@ -436,21 +479,13 @@ where
                 &mut multiexp_kern,
             );
 
-            (
-                a_inputs,
-                a_aux,
-                b_g1_inputs,
-                b_g1_aux,
-                b_g2_inputs,
-                b_g2_aux,
-            )
+            (a_inputs, a_aux, b_g1_inputs_aux_opt, b_g2_inputs, b_g2_aux)
         })
         .collect::<Vec<_>>();
     drop(multiexp_kern);
     drop(a_inputs_source);
     drop(a_aux_source);
-    drop(b_g1_inputs_source);
-    drop(b_g1_aux_source);
+    drop(params_b_g1_opt);
     drop(b_g2_inputs_source);
     drop(b_g2_aux_source);
 
@@ -462,10 +497,7 @@ where
         .zip(r_s.into_iter())
         .zip(s_s.into_iter())
         .map(
-            |(
-                (((h, l), (a_inputs, a_aux, b_g1_inputs, b_g1_aux, b_g2_inputs, b_g2_aux)), r),
-                s,
-            )| {
+            |((((h, l), (a_inputs, a_aux, b_g1_inputs_aux_opt, b_g2_inputs, b_g2_aux)), r), s)| {
                 if (vk.delta_g1.is_identity() | vk.delta_g2.is_identity()).into() {
                     // If this element is zero, someone is trying to perform a
                     // subversion-CRS attack.
@@ -476,29 +508,29 @@ where
                 g_a.add_assign(&vk.alpha_g1);
                 let mut g_b = vk.delta_g2.mul(s);
                 g_b.add_assign(&vk.beta_g2);
-                let mut g_c;
-                {
-                    let mut rs = r;
-                    rs.mul_assign(&s);
-
-                    g_c = vk.delta_g1.mul(rs);
-                    g_c.add_assign(&vk.alpha_g1.mul(s));
-                    g_c.add_assign(&vk.beta_g1.mul(r));
-                }
                 let mut a_answer = a_inputs.wait()?;
                 a_answer.add_assign(&a_aux.wait()?);
                 g_a.add_assign(&a_answer);
                 a_answer.mul_assign(s);
-                g_c.add_assign(&a_answer);
+                let mut g_c = a_answer;
 
-                let mut b1_answer = b_g1_inputs.wait()?;
-                b1_answer.add_assign(&b_g1_aux.wait()?);
                 let mut b2_answer = b_g2_inputs.wait()?;
                 b2_answer.add_assign(&b_g2_aux.wait()?);
 
                 g_b.add_assign(&b2_answer);
-                b1_answer.mul_assign(r);
-                g_c.add_assign(&b1_answer);
+
+                if let Some((b_g1_inputs, b_g1_aux)) = b_g1_inputs_aux_opt {
+                    let mut b1_answer = b_g1_inputs.wait()?;
+                    b1_answer.add_assign(&b_g1_aux.wait()?);
+                    b1_answer.mul_assign(r);
+                    g_c.add_assign(&b1_answer);
+                    let mut rs = r;
+                    rs.mul_assign(&s);
+                    g_c.add_assign(vk.delta_g1.mul(rs));
+                    g_c.add_assign(&vk.alpha_g1.mul(s));
+                    g_c.add_assign(&vk.beta_g1.mul(r));
+                }
+
                 g_c.add_assign(&h.wait()?);
                 g_c.add_assign(&l.wait()?);
 
@@ -557,7 +589,7 @@ where
 }
 
 #[allow(clippy::type_complexity)]
-fn create_proof_batch_priority_inner<Scalar, C>(
+fn synthesize_circuits_batch<Scalar, C>(
     circuits: Vec<C>,
 ) -> Result<
     (

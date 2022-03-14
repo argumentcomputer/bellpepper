@@ -22,6 +22,7 @@ use bellperson::groth16::{
     create_random_proof, create_random_proof_batch, generate_random_parameters,
     prepare_verifying_key, verify_proof, verify_proofs_batch, Proof,
 };
+use std::iter;
 
 const MIMC_ROUNDS: usize = 322;
 
@@ -229,24 +230,27 @@ fn test_mimc() {
     println!("Creating batch proofs...");
     let proving_batch = Instant::now();
     {
-        // Create an instance of our circuit (with the
-        // witness)
-        let xl = <Bls12 as Engine>::Fr::random(&mut *rng);
-        let xr = <Bls12 as Engine>::Fr::random(&mut *rng);
+        let circuits = iter::repeat_with(|| {
+            // Create an instance of our circuit (with the
+            // witness)
+            let xl = <Bls12 as Engine>::Fr::random(&mut *rng);
+            let xr = <Bls12 as Engine>::Fr::random(&mut *rng);
 
-        let c = MimcDemo {
-            xl: Some(xl),
-            xr: Some(xr),
-            constants: &constants,
-        };
+            MimcDemo {
+                xl: Some(xl),
+                xr: Some(xr),
+                constants: &constants,
+            }
+        })
+        .take(SAMPLES as usize)
+        .collect();
 
         // Create a groth16 proof with our parameters.
-        let proofs =
-            create_random_proof_batch(vec![c; SAMPLES as usize], &params, &mut *rng).unwrap();
+        let proofs = create_random_proof_batch(circuits, &params, &mut *rng).unwrap();
         assert_eq!(proofs.len(), 50);
     }
 
-    let proving_batch = proving_batch.elapsed().subsec_nanos() as f64 / 1_000_000_000f64;
+    let proving_batch = proving_batch.elapsed().as_secs_f64();
     println!(
         "Proving time batch: {:04}s ({:04}s / proof)",
         proving_batch,
@@ -254,12 +258,10 @@ fn test_mimc() {
     );
 
     let proving_avg = total_proving / SAMPLES;
-    let proving_avg =
-        proving_avg.subsec_nanos() as f64 / 1_000_000_000f64 + (proving_avg.as_secs() as f64);
+    let proving_avg = proving_avg.as_secs_f64();
 
     let verifying_avg = total_verifying / SAMPLES;
-    let verifying_avg =
-        verifying_avg.subsec_nanos() as f64 / 1_000_000_000f64 + (verifying_avg.as_secs() as f64);
+    let verifying_avg = verifying_avg.as_secs_f64();
 
     println!("Average proving time: {:08}s", proving_avg);
     println!("Average verifying time: {:08}s", verifying_avg);
@@ -274,8 +276,8 @@ fn test_mimc() {
         println!(
             "Batch verification of {} proofs: {:04}s ({:04}s/proof)",
             proofs.len(),
-            (start.elapsed().subsec_nanos() as f64) / 1_000_000_000f64,
-            ((start.elapsed().subsec_nanos() as f64) / 1_000_000_000f64) / proofs.len() as f64,
+            start.elapsed().as_secs_f64(),
+            start.elapsed().as_secs_f64() / (proofs.len() as f64),
         );
         assert!(valid, "failed batch verification");
 
