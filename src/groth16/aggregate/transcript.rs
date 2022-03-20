@@ -69,6 +69,10 @@ impl<E: Engine> Transcript<E> {
         self
     }
 
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.hasher.finalize().to_vec()
+    }
+
     /// Generate a challenge from the transcript.
     pub fn into_challenge(mut self) -> Challenge<E> {
         let repr_bits = <<E as Engine>::Fr as PrimeField>::Repr::default()

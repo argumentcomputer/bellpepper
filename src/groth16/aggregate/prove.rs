@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::ops::{AddAssign, MulAssign};
 
 use blstrs::Compress;
@@ -13,7 +14,8 @@ use super::{
     poly::DensePolynomial,
     structured_scalar_power,
     transcript::Transcript,
-    AggregateProof, GipaProof, KZGOpening, ProverSRS, TippMippProof,
+    AggregateProof, AggregateProofAndInstance, GipaProof, KZGOpening, ProverSRS,
+    ProverSRSInputAggregation, TippMippProof,
 };
 use crate::groth16::{multiscalar::*, Proof};
 use crate::SynthesisError;
@@ -135,6 +137,131 @@ where
         ip_ab,
         agg_c,
         tmipp,
+    })
+}
+
+pub fn aggregate_proofs_and_instances<E: Engine + std::fmt::Debug>(
+    srs: &ProverSRSInputAggregation<E>,
+    transcript_include: &[u8],
+    statements: &[Vec<E::Fr>],
+    proofs: &[Proof<E>],
+) -> Result<AggregateProofAndInstance<E>, SynthesisError>
+where
+    E: MultiMillerLoop + std::fmt::Debug,
+    E::Fr: Serialize,
+    <E::Fr as PrimeField>::Repr: Send + Sync,
+    <E as Engine>::Gt: Compress + Serialize,
+    E::G1: Serialize,
+    E::G1Affine: Serialize,
+    E::G2Affine: Serialize,
+{
+    if statements.len() < 2 {
+        return Err(SynthesisError::MalformedProofs(
+            "aggregating less than 2 proofs is not allowed".to_string(),
+        ));
+    }
+    assert!(statements.len() > 1);
+    let n = statements[0].len();
+    for s in statements {
+        if s.len() != n {
+            return Err(SynthesisError::MalformedProofs(
+                "all statements must be equally sized".to_string(),
+            ));
+        }
+    }
+    let mut com_f: Vec<E::G1> = Vec::new();
+    let mut com_w0: Vec<E::G1> = Vec::new();
+    let mut com_wd: Vec<E::G1> = Vec::new();
+    let mut f_eval: Vec<E::Fr> = Vec::new();
+    let mut f_eval_proof: Vec<E::G1> = Vec::new();
+
+    let mut poly_f: Vec<Vec<E::Fr>> = Vec::new();
+
+    for j in 0..n / 2 {
+        let mut poly_f_j: Vec<E::Fr> = Vec::new();
+        let mut poly_w0: Vec<E::Fr> = Vec::new();
+        for i in 0..proofs.len() {
+            poly_f_j.push(statements[i][j]);
+            if i < (proofs.len() - 1) {
+                poly_w0.push(statements[i + 1][j]);
+            }
+        }
+
+        let poly_f_cp = poly_f_j.clone();
+        let poly_f_cp_2 = poly_f_j.clone();
+
+        let calc_multiscalar = |left: &[E::Fr], table, len: usize| {
+            let getter = |i: usize| -> <E::Fr as PrimeField>::Repr { left[i].to_repr() };
+            par_multiscalar::<_, E::G1Affine>(
+                &ScalarList::Getter(getter, len),
+                table,
+                std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
+            )
+        };
+
+        // compute F
+        let com_f_j = calc_multiscalar(&poly_f_j, &srs.g_alpha_powers_table, proofs.len());
+
+        // check that a0 is the zero coefficient of F
+        let com_w0_j = calc_multiscalar(&poly_w0, &srs.g_alpha_powers_table, proofs.len() - 1);
+
+        // Check F^x^(n - d) exists i.e. that F is bounded
+        let com_wd_j = calc_multiscalar(&poly_f_cp, &srs.g_alpha_powers_end_table, proofs.len());
+
+        com_f.push(com_f_j);
+        com_w0.push(-com_w0_j);
+        com_wd.push(-com_wd_j);
+        poly_f.push(poly_f_cp_2);
+    }
+
+    let transcript_new = Transcript::<E>::new("transcript-with-coms")
+        .write(&com_f)
+        .write(&com_w0)
+        .write(&com_wd)
+        .write(&transcript_include)
+        .into_bytes();
+
+    let pi_agg = aggregate_proofs(srs, &transcript_new, proofs).unwrap();
+
+    let hcom = Transcript::<E>::new("hcom")
+        .write(&pi_agg.com_ab)
+        .write(&pi_agg.com_c)
+        .into_challenge();
+
+    // Random linear combination of proofs
+    let r = Transcript::<E>::new("random-r")
+        .write(&hcom)
+        .write(&transcript_new)
+        .into_challenge();
+
+    for poly_f_j in poly_f {
+        let mut poly_eval = E::Fr::zero();
+        let mut r_pow = E::Fr::one();
+        for poly_f_j_i in &poly_f_j {
+            poly_eval += *poly_f_j_i * r_pow;
+            r_pow *= &*r;
+        }
+        f_eval.push(poly_eval);
+
+        f_eval_proof.push(
+            create_kzg_opening_for_instance::<E>(
+                &srs.g_alpha_powers_table,
+                DensePolynomial::from_coeffs(poly_f_j.clone()),
+                poly_eval,
+                &*r,
+            )
+            .unwrap(),
+        );
+    }
+
+    Ok(AggregateProofAndInstance {
+        num_inputs: u32::try_from(n).expect("too many statements"),
+        pi_agg,
+        com_f,
+        com_w0,
+        com_wd,
+        f_eval,
+        f_eval_proof,
     })
 }
 
@@ -467,6 +594,35 @@ where
         fwz,
         kzg_challenge,
     )
+}
+
+fn create_kzg_opening_for_instance<E: Engine>(
+    srs_powers_alpha_table: &dyn MultiscalarPrecomp<E::G1Affine>, // h^alpha^i
+    poly: DensePolynomial<E::Fr>,
+    eval_poly: E::Fr,
+    kzg_challenge: &E::Fr,
+) -> Result<E::G1, SynthesisError> {
+    let neg_kzg_challenge = -*kzg_challenge;
+
+    // f_v(X) - f_v(z) / (X - z)
+    let quotient_polynomial = &(&poly - &DensePolynomial::from_coeffs(vec![eval_poly]))
+        / &(DensePolynomial::from_coeffs(vec![neg_kzg_challenge, E::Fr::one()]));
+
+    let quotient_polynomial_coeffs = quotient_polynomial.into_coeffs();
+
+    //// Compute the proof that F opens to f_v(z) at z as g^{quotient_polynomial(alpha)}.
+    let pi_open = {
+        let getter =
+            |i: usize| -> <E::Fr as PrimeField>::Repr { quotient_polynomial_coeffs[i].to_repr() };
+
+        par_multiscalar::<_, E::G1Affine>(
+            &ScalarList::Getter(getter, quotient_polynomial_coeffs.len()),
+            srs_powers_alpha_table,
+            std::mem::size_of::<<E::Fr as PrimeField>::Repr>() * 8,
+        )
+    };
+
+    Ok(pi_open)
 }
 
 /// Returns the KZG opening proof for the given commitment key. Specifically, it
