@@ -3,6 +3,7 @@ use pairing::MultiMillerLoop;
 
 use crate::SynthesisError;
 
+#[cfg(feature = "memmap")]
 use memmap::Mmap;
 use rayon::prelude::*;
 

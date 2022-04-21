@@ -10,6 +10,7 @@ mod tests;
 pub mod aggregate;
 mod ext;
 mod generator;
+#[cfg(feature = "memmap")]
 mod mapped_params;
 mod params;
 mod proof;
@@ -21,6 +22,7 @@ mod multiscalar;
 
 pub use self::ext::*;
 pub use self::generator::*;
+#[cfg(feature = "memmap")]
 pub use self::mapped_params::*;
 pub use self::params::*;
 pub use self::proof::*;
