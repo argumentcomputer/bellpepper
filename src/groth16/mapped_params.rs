@@ -4,7 +4,7 @@ use pairing::MultiMillerLoop;
 use crate::SynthesisError;
 
 #[cfg(not(target_arch = "wasm32"))]
-use memmap::Mmap;
+use memmap2::Mmap;
 use rayon::prelude::*;
 
 use std::fs::File;

@@ -189,7 +189,7 @@ impl<Scalar: PrimeField> Circuit<Scalar> for TestCircuit<Scalar> {
 
 #[test]
 fn test_groth16_srs_io() {
-    use memmap::MmapOptions;
+    use memmap2::MmapOptions;
     use std::fs::File;
     use std::io::{Seek, SeekFrom, Write};
     use tempfile::NamedTempFile;

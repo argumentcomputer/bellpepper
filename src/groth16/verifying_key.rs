@@ -3,7 +3,7 @@ use pairing::{Engine, MultiMillerLoop};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 #[cfg(not(target_arch = "wasm32"))]
-use memmap::Mmap;
+use memmap2::Mmap;
 use std::io::{self, Read, Write};
 #[cfg(not(target_arch = "wasm32"))]
 use std::mem;

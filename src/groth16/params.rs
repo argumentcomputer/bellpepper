@@ -9,7 +9,7 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 #[cfg(not(target_arch = "wasm32"))]
 mod memmap_uses {
     pub use crate::groth16::MappedParameters;
-    pub use memmap::{Mmap, MmapOptions};
+    pub use memmap2::{Mmap, MmapOptions};
     pub use std::fs::File;
     pub use std::mem;
     pub use std::ops::Range;
