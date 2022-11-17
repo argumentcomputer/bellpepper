@@ -14,9 +14,8 @@ license = "MIT/Apache-2.0"
 repository = "https://github.com/filecoin-project/bellman"
 version = "0.23.0"
 readme = "README.md"
-edition = "2018"
+edition = "2021"
 rust-version = "1.57.0"
-resolver = "2"
 
 [dependencies]
 blake2s_simd = "1.0.0"
