@@ -147,8 +147,6 @@ pub mod gpu;
 #[cfg(feature = "groth16")]
 pub mod groth16;
 pub mod multiexp;
-#[cfg(test)]
-pub mod test_utils;
 pub mod util_cs;
 
 mod lc;
