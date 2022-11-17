@@ -147,8 +147,6 @@ pub mod gpu;
 #[cfg(feature = "groth16")]
 pub mod groth16;
 pub mod multiexp;
-#[cfg(test)]
-pub mod test_utils;
 pub mod util_cs;
 
 mod lc;
@@ -160,8 +158,6 @@ pub const BELLMAN_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg(feature = "groth16")]
 pub(crate) fn le_bytes_to_u64s(le_bytes: &[u8]) -> Vec<u64> {
-    use std::convert::TryInto;
-
     assert_eq!(
         le_bytes.len() % 8,
         0,

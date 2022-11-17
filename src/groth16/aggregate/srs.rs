@@ -9,7 +9,7 @@ use group::{
     Curve, Group, GroupEncoding,
 };
 #[cfg(not(target_arch = "wasm32"))]
-use memmap::Mmap;
+use memmap2::Mmap;
 use pairing::Engine;
 use rayon::prelude::*;
 use sha2::Sha256;
