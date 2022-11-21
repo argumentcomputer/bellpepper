@@ -1,11 +1,12 @@
 use std::ops::{Add, Sub};
 
 use ff::PrimeField;
+use serde::{Deserialize, Serialize};
 
 use ec_gpu_gen::multiexp_cpu::DensityTracker;
 
 /// Represents a variable in our constraint system.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Variable(pub Index);
 
 impl Variable {
@@ -24,7 +25,7 @@ impl Variable {
 
 /// Represents the index of either an input variable or
 /// auxiliary variable.
-#[derive(Copy, Clone, PartialEq, Debug, Eq, Hash)]
+#[derive(Copy, Clone, PartialEq, Debug, Eq, Hash, Serialize, Deserialize)]
 pub enum Index {
     Input(usize),
     Aux(usize),
