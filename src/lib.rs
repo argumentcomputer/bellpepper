@@ -141,12 +141,7 @@
 #[macro_use]
 extern crate hex_literal;
 
-pub mod domain;
 pub mod gadgets;
-pub mod gpu;
-#[cfg(feature = "groth16")]
-pub mod groth16;
-pub mod multiexp;
 pub mod util_cs;
 
 mod lc;
@@ -154,7 +149,7 @@ pub use lc::{Index, LinearCombination, Variable};
 mod constraint_system;
 pub use constraint_system::{Circuit, ConstraintSystem, Namespace, SynthesisError};
 
-pub const BELLMAN_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const BELLPEPPER_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg(feature = "groth16")]
 pub(crate) fn le_bytes_to_u64s(le_bytes: &[u8]) -> Vec<u64> {

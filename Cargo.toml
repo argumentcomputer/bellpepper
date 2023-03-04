@@ -2,17 +2,18 @@
 # https://github.com/zkcrypto/group/pull/29 is fixed. Then we won't need the exports of `Fp` and
 # `Fp2` any more.
 [package]
-name = "bellperson"
+name = "bellpepper"
 authors = [
+  "porcuquine <porcuquine@gmail.com>",
   "dignifiedquire <me@dignifiedquire.com>",
   "Sean Bowe <ewillbefull@gmail.com>",
 ]
-description = "zk-SNARK library"
-documentation = "https://docs.rs/bellperson"
-homepage = "https://github.com/filecoin-project/bellman"
+description = "SNARK Circuit library"
+documentation = "https://docs.rs/bellpepper"
+homepage = "https://github.com/lurk-lab/bellpepper"
 license = "MIT/Apache-2.0"
-repository = "https://github.com/filecoin-project/bellman"
-version = "0.25.0"
+repository = "https://github.com/lurk-lab/bellpepper"
+version = "0.1.0"
 readme = "README.md"
 edition = "2021"
 rust-version = "1.62.1"
@@ -34,10 +35,7 @@ serde = { version = "1.0", features = ["derive"] }
 sha2 = "0.10.6"
 pairing = "0.23"
 blstrs = { version = "0.7.0", features = ["__private_bench"] }
-ec-gpu = { version = "0.2.0" }
 ec-gpu-gen = { version = "0.7.0" }
-
-
 fs2 = { version = "0.4.3", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -57,24 +55,10 @@ rand = { version = "0.8", default-features = false, features = ["std", "std_rng"
 itertools = "0.10.0"
 
 [features]
-default = ["groth16"]
-cuda = ["ec-gpu-gen/cuda", "fs2", "blstrs/gpu"]
-opencl = ["ec-gpu-gen/opencl", "fs2", "blstrs/gpu"]
-groth16 = []
-
+default = []
 # This feature disables/modifies long running tests to make the suitable for code coverage
 # reporting
 _coverage = []
-
-[[test]]
-name = "mimc"
-path = "tests/mimc.rs"
-required-features = ["groth16"]
-
-[[test]]
-name = "groth16_aggregation"
-path = "tests/groth16_aggregation.rs"
-required-features = ["groth16"]
 
 [badges]
 maintenance = { status = "actively-developed" }
@@ -84,9 +68,6 @@ name = "lc"
 harness = false
 
 [workspace]
-members = [
-  "verifier-bench"
-]
 
 [build-dependencies]
 blstrs = { version = "0.7.0", features = ["__private_bench"] }
