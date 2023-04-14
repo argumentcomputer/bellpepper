@@ -151,7 +151,7 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         // We want to ensure that the bit representation of a is
         // less than or equal to r - 1.
         let a = self.value.map(|e| e.to_le_bits());
-        let b = (-Scalar::one()).to_le_bits();
+        let b = (-Scalar::ONE).to_le_bits();
 
         // Get the bits of `a` in big-endian order.
         let mut a = a.as_ref().map(|e| e.into_iter().rev());
@@ -223,7 +223,7 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         // However, now we have to unpack self!
 
         let mut lc = LinearCombination::zero();
-        let mut coeff = Scalar::one();
+        let mut coeff = Scalar::ONE;
 
         for bit in result.iter().rev() {
             lc = lc + (coeff, bit.get_variable());
@@ -250,7 +250,7 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         let bits = boolean::field_into_allocated_bits_le(&mut cs, self.value)?;
 
         let mut lc = LinearCombination::zero();
-        let mut coeff = Scalar::one();
+        let mut coeff = Scalar::ONE;
 
         for bit in bits.iter() {
             lc = lc + (coeff, bit.get_variable());
@@ -382,7 +382,7 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         cs.enforce(
             || "first conditional reversal",
             |lc| lc + a.variable - b.variable,
-            |_| condition.lc(CS::one(), Scalar::one()),
+            |_| condition.lc(CS::one(), Scalar::ONE),
             |lc| lc + a.variable - c.variable,
         );
 
@@ -397,7 +397,7 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         cs.enforce(
             || "second conditional reversal",
             |lc| lc + b.variable - a.variable,
-            |_| condition.lc(CS::one(), Scalar::one()),
+            |_| condition.lc(CS::one(), Scalar::ONE),
             |lc| lc + b.variable - d.variable,
         );
 
@@ -431,7 +431,7 @@ impl<Scalar: PrimeField> From<AllocatedNum<Scalar>> for Num<Scalar> {
 impl<Scalar: PrimeField> Num<Scalar> {
     pub fn zero() -> Self {
         Num {
-            value: Some(Scalar::zero()),
+            value: Some(Scalar::ZERO),
             lc: LinearCombination::zero(),
         }
     }
@@ -508,9 +508,9 @@ mod test {
     fn test_allocated_num() {
         let mut cs = TestConstraintSystem::<Fr>::new();
 
-        AllocatedNum::alloc(&mut cs, || Ok(Fr::one())).unwrap();
+        AllocatedNum::alloc(&mut cs, || Ok(Fr::ONE)).unwrap();
 
-        assert!(cs.get("num") == Fr::one());
+        assert!(cs.get("num") == Fr::ONE);
     }
 
     #[test]
@@ -592,14 +592,14 @@ mod test {
         {
             let mut cs = TestConstraintSystem::<Fr>::new();
 
-            let n = AllocatedNum::alloc(&mut cs, || Ok(Fr::zero())).unwrap();
+            let n = AllocatedNum::alloc(&mut cs, || Ok(Fr::ZERO)).unwrap();
             assert!(n.assert_nonzero(&mut cs).is_err());
         }
     }
 
     #[test]
     fn test_into_bits_strict() {
-        let negone = -Fr::one();
+        let negone = -Fr::ONE;
 
         let mut cs = TestConstraintSystem::<Fr>::new();
 
@@ -609,7 +609,7 @@ mod test {
         assert!(cs.is_satisfied());
 
         // make the bit representation the characteristic
-        cs.set("bit 254/boolean", Fr::one());
+        cs.set("bit 254/boolean", Fr::ONE);
 
         // this makes the conditional boolean constraint fail
         assert_eq!(
@@ -658,7 +658,7 @@ mod test {
             for i in 0..Fr::NUM_BITS {
                 let name = format!("bit {}/boolean", i);
                 let cur = cs.get(&name);
-                let mut tmp = Fr::one();
+                let mut tmp = Fr::ONE;
                 tmp.sub_assign(&cur);
                 cs.set(&name, tmp);
                 assert!(!cs.is_satisfied());
@@ -681,8 +681,8 @@ mod test {
 
         let mut lc = LinearCombination::<Fr>::zero();
 
-        let mut expected_sums = vec![Fr::zero(); n];
-        let mut value = Fr::zero();
+        let mut expected_sums = vec![Fr::ZERO; n];
+        let mut value = Fr::ZERO;
         for (i, expected_sum) in expected_sums.iter_mut().enumerate() {
             let coeff = Fr::random(&mut rng);
             lc = lc + (coeff, Variable::new_unchecked(Index::Aux(i)));

@@ -240,8 +240,8 @@ where
         .into_challenge();
 
     for poly_f_j in poly_f {
-        let mut poly_eval = E::Fr::zero();
-        let mut r_pow = E::Fr::one();
+        let mut poly_eval = E::Fr::ZERO;
+        let mut r_pow = E::Fr::ONE;
         for poly_f_j_i in &poly_f_j {
             poly_eval += *poly_f_j_i * r_pow;
             r_pow *= &*r;
@@ -529,7 +529,7 @@ where
                 r_l.add_assign(*r_r);
             });
         let len = r_left.len();
-        m_r.resize(len, E::Fr::zero()); // shrink to new size
+        m_r.resize(len, E::Fr::ZERO); // shrink to new size
 
         // v_left + v_right^x^-1
         vkey = vk_left.compress(&vk_right, &c_inv)?;
@@ -611,14 +611,14 @@ where
     // f_v
     let vkey_poly = DensePolynomial::from_coeffs(polynomial_coefficients_from_transcript(
         transcript,
-        &G::Scalar::one(),
+        &G::Scalar::ONE,
     ));
 
     // f_v(z)
     let vkey_poly_z = polynomial_evaluation_product_form_from_transcript(
         transcript,
         kzg_challenge,
-        &G::Scalar::one(),
+        &G::Scalar::ONE,
     );
 
     create_kzg_opening(
@@ -646,7 +646,7 @@ where
     // this computes f(X) = \prod (1 + x (rX)^{2^j})
     let mut fcoeffs = polynomial_coefficients_from_transcript(transcript, r_shift);
     // this computes f_w(X) = X^n * f(X) - it simply shifts all coefficients to by n
-    let mut fwcoeffs = vec![G::Scalar::zero(); n];
+    let mut fwcoeffs = vec![G::Scalar::ZERO; n];
     fwcoeffs.append(&mut fcoeffs);
     let fw = DensePolynomial::from_coeffs(fwcoeffs);
 
@@ -680,7 +680,7 @@ fn create_kzg_opening_for_instance<E: Engine>(
 
     // f_v(X) - f_v(z) / (X - z)
     let quotient_polynomial = &(&poly - &DensePolynomial::from_coeffs(vec![eval_poly]))
-        / &(DensePolynomial::from_coeffs(vec![neg_kzg_challenge, E::Fr::one()]));
+        / &(DensePolynomial::from_coeffs(vec![neg_kzg_challenge, E::Fr::ONE]));
 
     let quotient_polynomial_coeffs = quotient_polynomial.into_coeffs();
 
@@ -721,7 +721,7 @@ where
 
     // f_v(X) - f_v(z) / (X - z)
     let quotient_polynomial = &(&poly - &DensePolynomial::from_coeffs(vec![eval_poly]))
-        / &(DensePolynomial::from_coeffs(vec![neg_kzg_challenge, G::Scalar::one()]));
+        / &(DensePolynomial::from_coeffs(vec![neg_kzg_challenge, G::Scalar::ONE]));
 
     let quotient_polynomial_coeffs = quotient_polynomial.into_coeffs();
 
@@ -729,7 +729,7 @@ where
     let quotient_polynomial_coeffs_len = quotient_polynomial_coeffs.len();
     let getter = |i: usize| -> <G::Scalar as PrimeField>::Repr {
         if i >= quotient_polynomial_coeffs_len {
-            return G::Scalar::zero().to_repr();
+            return G::Scalar::ZERO.to_repr();
         }
         quotient_polynomial_coeffs[i].to_repr()
     };
@@ -772,7 +772,7 @@ pub(super) fn polynomial_evaluation_product_form_from_transcript<F: Field>(
     let mut power_zr = *z;
     power_zr.mul_assign(r_shift);
 
-    let one = F::one();
+    let one = F::ONE;
 
     let mut res = one + (transcript[0] * power_zr);
     for x in &transcript[1..] {
@@ -797,7 +797,7 @@ pub(super) fn polynomial_evaluation_product_form_from_transcript<F: Field>(
 // x_{l-j}.
 // f(Y) = Y^n * \prod (1 + x_{l-j-1} (r_shiftY^{2^j}))
 fn polynomial_coefficients_from_transcript<F: Field>(transcript: &[F], r_shift: &F) -> Vec<F> {
-    let mut coefficients = vec![F::one()];
+    let mut coefficients = vec![F::ONE];
     let mut power_2_r = *r_shift;
 
     for (i, x) in transcript.iter().enumerate() {

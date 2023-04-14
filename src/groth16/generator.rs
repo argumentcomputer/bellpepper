@@ -203,7 +203,7 @@ where
     let mut assembly = KeypairAssembly::new();
 
     // Allocate the "one" input variable
-    assembly.alloc_input(|| "", || Ok(<E::Fr as Field>::one()))?;
+    assembly.alloc_input(|| "", || Ok(<E::Fr as Field>::ONE))?;
 
     // Synthesize the circuit.
     circuit.synthesize(&mut assembly)?;
@@ -215,7 +215,7 @@ where
     }
 
     // Create bases for blind evaluation of polynomials at tau
-    let powers_of_tau = vec![E::Fr::zero(); assembly.num_constraints];
+    let powers_of_tau = vec![E::Fr::ZERO; assembly.num_constraints];
     let mut powers_of_tau = EvaluationDomain::from_coeffs(powers_of_tau)?;
 
     // Compute G1 window table
@@ -380,7 +380,7 @@ where
                             powers_of_tau: &[Scalar],
                             p: &[(Scalar, usize)],
                         ) -> Scalar {
-                            let mut acc = Scalar::zero();
+                            let mut acc = Scalar::ZERO;
 
                             for &(ref coeff, index) in p {
                                 let mut n = powers_of_tau[index];

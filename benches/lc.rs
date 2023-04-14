@@ -8,7 +8,7 @@ fn lc_benchmark(c: &mut Criterion) {
         b.iter(|| {
             let mut lc = LinearCombination::<Fr>::zero();
             for i in 0..100 {
-                let coeff = Fr::one();
+                let coeff = Fr::ONE;
                 lc = lc + (coeff, Variable::new_unchecked(Index::Aux(i)));
             }
             black_box(lc);
@@ -18,10 +18,10 @@ fn lc_benchmark(c: &mut Criterion) {
         let mut lc1 = LinearCombination::<Fr>::zero();
         let mut lc2 = LinearCombination::<Fr>::zero();
         for i in 0..10 {
-            let coeff = Fr::one();
+            let coeff = Fr::ONE;
             lc1 = lc1 + (coeff, Variable::new_unchecked(Index::Aux(i)));
 
-            let coeff = Fr::one();
+            let coeff = Fr::ONE;
             lc2 = lc2 + (coeff, Variable::new_unchecked(Index::Aux(i * 2)));
         }
 

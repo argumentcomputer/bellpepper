@@ -312,8 +312,8 @@ where
 
     let zk = randomization.is_some();
     let (r_s, s_s) = randomization.unwrap_or((
-        vec![E::Fr::zero(); num_circuits],
-        vec![E::Fr::zero(); num_circuits],
+        vec![E::Fr::ZERO; num_circuits],
+        vec![E::Fr::ZERO; num_circuits],
     ));
 
     // Make sure all circuits have the same input len.
@@ -667,7 +667,7 @@ where
         .map(|circuit| -> Result<_, SynthesisError> {
             let mut prover = ProvingAssignment::new();
 
-            prover.alloc_input(|| "", || Ok(Scalar::one()))?;
+            prover.alloc_input(|| "", || Ok(Scalar::ONE))?;
 
             circuit.synthesize(&mut prover)?;
 
@@ -736,15 +736,14 @@ mod tests {
 
                 let mut full_assignment = ProvingAssignment::<Fr>::new();
                 full_assignment
-                    .alloc_input(|| "one", || Ok(<Fr as Field>::one()))
+                    .alloc_input(|| "one", || Ok(<Fr as Field>::ONE))
                     .unwrap();
 
                 let mut partial_assignments = Vec::with_capacity(count / k);
                 for i in 0..count {
                     if i % k == 0 {
                         let mut p = ProvingAssignment::new();
-                        p.alloc_input(|| "one", || Ok(<Fr as Field>::one()))
-                            .unwrap();
+                        p.alloc_input(|| "one", || Ok(<Fr as Field>::ONE)).unwrap();
                         partial_assignments.push(p)
                     }
 
@@ -776,7 +775,7 @@ mod tests {
 
                 let mut combined = ProvingAssignment::new();
                 combined
-                    .alloc_input(|| "one", || Ok(<Fr as Field>::one()))
+                    .alloc_input(|| "one", || Ok(<Fr as Field>::ONE))
                     .unwrap();
 
                 for assignment in partial_assignments.into_iter() {

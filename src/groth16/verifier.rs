@@ -137,14 +137,14 @@ where
     // Choose random coefficients for combining the proofs.
     let mut rand_z_repr: Vec<_> = Vec::with_capacity(proof_num);
     let mut rand_z: Vec<_> = Vec::with_capacity(proof_num);
-    let mut accum_y = E::Fr::zero();
+    let mut accum_y = E::Fr::ZERO;
 
     for _ in 0..proof_num {
         use rand::Rng;
 
         let t: u128 = rng.gen();
 
-        let mut repr = E::Fr::zero().to_repr();
+        let mut repr = E::Fr::ZERO.to_repr();
         let mut repr_u64s = le_bytes_to_u64s(repr.as_ref());
         assert!(repr_u64s.len() > 1);
 

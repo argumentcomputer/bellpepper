@@ -411,7 +411,7 @@ fn generate_proof<R: SeedableRng + RngCore>(
     // Generate random inputs to product together
     let mut public_inputs = Vec::new();
     let mut statement = Vec::new();
-    let mut prod = Fr::one();
+    let mut prod = Fr::ONE;
     for _i in 0..publics {
         let x = Fr::from(4u64);
         public_inputs.push(Some(x));
@@ -479,7 +479,7 @@ fn test_groth16_aggregation_inner(version: AggregateVersion) {
         // Generate random inputs to product together
         let mut public_inputs = Vec::new();
         let mut statement = Vec::new();
-        let mut prod = Fr::one();
+        let mut prod = Fr::ONE;
         for _i in 0..NUM_PUBLIC_INPUTS {
             let x = Fr::from(4u64);
             public_inputs.push(Some(x));
@@ -783,7 +783,7 @@ fn test_groth16_aggregate_versions() {
         // Generate random inputs to product together
         let mut public_inputs = Vec::new();
         let mut statement = Vec::new();
-        let mut prod = Fr::one();
+        let mut prod = Fr::ONE;
         for _i in 0..NUM_PUBLIC_INPUTS {
             let x = Fr::from(4u64);
             public_inputs.push(Some(x));

@@ -231,7 +231,7 @@ fn main() {
             (pis, proofs, agg_proof)
         } else {
             let mut inputs = Vec::new();
-            let mut num = Fr::one();
+            let mut num = Fr::ONE;
             num = num.double();
             for _ in 0..opts.public {
                 inputs.push(num);

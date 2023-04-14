@@ -61,20 +61,20 @@ impl<F: PrimeField + gpu::GpuName> EvaluationDomain<F> {
             }
         }
         // Compute omega, the 2^exp primitive root of unity
-        let mut omega = F::root_of_unity();
+        let mut omega = F::ROOT_OF_UNITY;
         for _ in exp..F::S {
             omega = omega.square();
         }
 
         // Extend the coeffs vector with zeroes if necessary
-        coeffs.resize(m, F::zero());
+        coeffs.resize(m, F::ZERO);
 
         Ok(EvaluationDomain {
             coeffs,
             exp,
             omega,
             omegainv: omega.invert().unwrap(),
-            geninv: F::multiplicative_generator().invert().unwrap(),
+            geninv: F::MULTIPLICATIVE_GENERATOR.invert().unwrap(),
             minv: F::from(m as u64).invert().unwrap(),
         })
     }
@@ -178,7 +178,7 @@ impl<F: PrimeField + gpu::GpuName> EvaluationDomain<F> {
         kern: &mut Option<gpu::LockedFftKernel<F>>,
     ) -> gpu::GpuResult<()> {
         for domain in domains.iter_mut() {
-            domain.distribute_powers(worker, F::multiplicative_generator());
+            domain.distribute_powers(worker, F::MULTIPLICATIVE_GENERATOR);
         }
 
         Self::fft_many(domains, worker, kern)?;
@@ -201,14 +201,14 @@ impl<F: PrimeField + gpu::GpuName> EvaluationDomain<F> {
     /// tau^m - 1 for these radix-2 domains.
     pub fn z(&self, tau: &F) -> F {
         let tmp = tau.pow_vartime(&[self.coeffs.len() as u64]);
-        tmp - <F as Field>::one()
+        tmp - <F as Field>::ONE
     }
 
     /// The target polynomial is the zero polynomial in our
     /// evaluation domain, so we must perform division over
     /// a coset.
     pub fn divide_by_z_on_coset(&mut self, worker: &Worker) {
-        let i = self.z(&F::multiplicative_generator()).invert().unwrap();
+        let i = self.z(&F::MULTIPLICATIVE_GENERATOR).invert().unwrap();
 
         worker.scope(self.coeffs.len(), |scope, chunk| {
             for v in self.coeffs.chunks_mut(chunk) {
@@ -318,15 +318,15 @@ mod tests {
                     let mut b: Vec<_> = (0..coeffs_b).map(|_| F::random(&mut *rng)).collect();
 
                     // naive evaluation
-                    let mut naive = vec![F::zero(); coeffs_a + coeffs_b];
+                    let mut naive = vec![F::ZERO; coeffs_a + coeffs_b];
                     for (i1, a) in a.iter().enumerate() {
                         for (i2, b) in b.iter().enumerate() {
                             naive[i1 + i2] += *a * b;
                         }
                     }
 
-                    a.resize(coeffs_a + coeffs_b, F::zero());
-                    b.resize(coeffs_a + coeffs_b, F::zero());
+                    a.resize(coeffs_a + coeffs_b, F::ZERO);
+                    b.resize(coeffs_a + coeffs_b, F::ZERO);
 
                     let mut a = EvaluationDomain::from_coeffs(a).unwrap();
                     let mut b = EvaluationDomain::from_coeffs(b).unwrap();

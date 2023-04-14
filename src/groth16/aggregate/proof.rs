@@ -733,7 +733,7 @@ mod tests {
         // create pairing, as pairing results can be compressed
         let a = G1Projective::generator();
         let b = G1Projective::generator();
-        let c = Scalar::zero();
+        let c = Scalar::ZERO;
 
         AggregateProofAndInstance::<Bls12> {
             num_inputs: 8,

@@ -82,7 +82,7 @@ impl<E: Engine> Transcript<E> {
         let shave_bits = repr_bits - E::Fr::NUM_BITS as usize;
 
         let mut counter_nonce: usize = 0;
-        let one = E::Fr::one();
+        let one = E::Fr::ONE;
         let r = loop {
             counter_nonce += 1;
             self.hasher.update(&counter_nonce.to_be_bytes()[..]);
@@ -125,7 +125,7 @@ mod test {
         let gt = <Bls12 as MultiMillerLoop>::multi_miller_loop(&[(&g1, &g2.into())])
             .final_exponentiation();
 
-        t = t.write(&g1).write(&g2).write(&gt).write(&Fr::one());
+        t = t.write(&g1).write(&g2).write(&gt).write(&Fr::ONE);
 
         let c1 = t.into_challenge();
 
@@ -133,7 +133,7 @@ mod test {
             .write(&g1)
             .write(&g2)
             .write(&gt)
-            .write(&Fr::one());
+            .write(&Fr::ONE);
 
         let c12 = t2.into_challenge();
         assert_eq!(c1, c12);

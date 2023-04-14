@@ -324,7 +324,7 @@ fn add_if_not_one_gt<E: Engine>(left: &mut E::Gt, right: &E::Gt) {
 fn derive_non_zero<E: Engine, R: rand_core::RngCore>(rng: &mut R) -> E::Fr {
     loop {
         let coeff = E::Fr::random(&mut *rng);
-        if coeff != E::Fr::zero() {
+        if coeff != E::Fr::ZERO {
             return coeff;
         }
     }

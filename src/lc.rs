@@ -150,7 +150,7 @@ impl<Scalar: PrimeField> LinearCombination<Scalar> {
     }
 
     pub fn from_variable(var: Variable) -> Self {
-        Self::from_coeff(var, Scalar::one())
+        Self::from_coeff(var, Scalar::ONE)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (Variable, &Scalar)> + '_ {
@@ -250,9 +250,9 @@ impl<Scalar: PrimeField> LinearCombination<Scalar> {
         input_assignment: &[Scalar],
         aux_assignment: &[Scalar],
     ) -> Scalar {
-        let mut acc = Scalar::zero();
+        let mut acc = Scalar::ZERO;
 
-        let one = Scalar::one();
+        let one = Scalar::ONE;
 
         for (index, coeff) in self.iter_inputs() {
             let mut tmp = input_assignment[*index];
@@ -303,7 +303,7 @@ impl<Scalar: PrimeField> Add<Variable> for LinearCombination<Scalar> {
     type Output = LinearCombination<Scalar>;
 
     fn add(self, other: Variable) -> LinearCombination<Scalar> {
-        self + (Scalar::one(), other)
+        self + (Scalar::ONE, other)
     }
 }
 
@@ -311,7 +311,7 @@ impl<Scalar: PrimeField> Sub<Variable> for LinearCombination<Scalar> {
     type Output = LinearCombination<Scalar>;
 
     fn sub(self, other: Variable) -> LinearCombination<Scalar> {
-        self - (Scalar::one(), other)
+        self - (Scalar::ONE, other)
     }
 }
 
@@ -401,11 +401,11 @@ mod tests {
 
         let mut lc = LinearCombination::<Scalar>::zero();
 
-        let mut expected_sums = vec![Scalar::zero(); n];
+        let mut expected_sums = vec![Scalar::ZERO; n];
         let mut total_additions = 0;
         for (i, expected_sum) in expected_sums.iter_mut().enumerate() {
             for _ in 0..i + 1 {
-                let coeff = Scalar::one();
+                let coeff = Scalar::ONE;
                 lc = lc + (coeff, Variable::new_unchecked(Index::Aux(i)));
                 *expected_sum += coeff;
                 total_additions += 1;
@@ -426,7 +426,7 @@ mod tests {
     #[test]
     fn test_insert_or_update() {
         let mut indexer = Indexer::default();
-        let one = Scalar::one();
+        let one = Scalar::ONE;
         let mut two = one;
         two += one;
 

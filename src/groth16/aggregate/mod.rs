@@ -45,7 +45,7 @@ impl Display for AggregateVersion {
 /// is not enough to simply prove the ipp of A*B, we need a random linear
 /// combination of those.
 fn structured_scalar_power<F: Field>(num: usize, s: &F) -> Vec<F> {
-    let mut powers = vec![F::one()];
+    let mut powers = vec![F::ONE];
     for i in 1..num {
         powers.push(powers[i - 1] * s);
     }

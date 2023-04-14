@@ -11,7 +11,7 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 use rand_core::RngCore;
 use std::convert::TryInto;
 use std::fmt;
-use std::iter::Sum;
+use std::iter::{Product, Sum};
 use std::num::Wrapping;
 use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
@@ -200,18 +200,29 @@ impl ConstantTimeEq for Fr {
     }
 }
 
+impl Product<Fr> for Fr {
+    fn product<I: Iterator<Item = Fr>>(iter: I) -> Fr {
+        let mut res = Fr::ONE;
+        for item in iter {
+            res *= item;
+        }
+        res
+    }
+}
+
+impl<'a> Product<&'a Fr> for Fr {
+    fn product<I: Iterator<Item = &'a Fr>>(iter: I) -> Fr {
+        iter.product()
+    }
+}
+
 impl Field for Fr {
     fn random(mut rng: impl RngCore) -> Self {
         Fr(Wrapping(rng.next_u32()) % MODULUS_R)
     }
 
-    fn zero() -> Self {
-        Fr(Wrapping(0))
-    }
-
-    fn one() -> Self {
-        Fr(Wrapping(R))
-    }
+    const ZERO: Self = Fr(Wrapping(0));
+    const ONE: Self = Fr(Wrapping(R));
 
     fn is_zero(&self) -> Choice {
         (self.0).0.ct_eq(&0)
@@ -242,20 +253,20 @@ impl Field for Fr {
             0 => CtOption::new(*self, Choice::from(1)),
             -1 => CtOption::new(Self::default(), Choice::from(0)),
             1 => {
-                let mut c = Fr::root_of_unity();
+                let mut c = Fr::ROOT_OF_UNITY;
                 // r = self^((t + 1) // 2)
                 let mut r = self.pow_vartime([32]);
                 // t = self^t
                 let mut t = self.pow_vartime([63]);
                 let mut m = Fr::S;
 
-                while t != <Fr as Field>::one() {
+                while t != <Fr as Field>::ONE {
                     let mut i = 1;
                     {
                         let mut t2i = t;
                         t2i = t2i.square();
                         loop {
-                            if t2i == <Fr as Field>::one() {
+                            if t2i == <Fr as Field>::ONE {
                                 break;
                             }
                             t2i = t2i.square();
@@ -277,15 +288,19 @@ impl Field for Fr {
             _ => unreachable!(),
         }
     }
+
+    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+        ff::helpers::sqrt_ratio_generic(num, div)
+    }
 }
 
 impl Fr {
     fn legendre(&self) -> i8 {
         // s = self^((r - 1) // 2)
         let s = self.pow_vartime([32256]);
-        if s == <Fr as Field>::zero() {
+        if s == <Fr as Field>::ZERO {
             0
-        } else if s == <Fr as Field>::one() {
+        } else if s == <Fr as Field>::ONE {
             1
         } else {
             -1
@@ -301,6 +316,13 @@ impl PrimeField for Fr {
     const NUM_BITS: u32 = 16;
     const CAPACITY: u32 = 15;
     const S: u32 = 10;
+
+    const MODULUS: &'static str = "64513";
+    const TWO_INV: Self = Fr(Wrapping(32257));
+    const MULTIPLICATIVE_GENERATOR: Self = Fr(Wrapping(5));
+    const ROOT_OF_UNITY: Self = Fr(Wrapping(57751));
+    const ROOT_OF_UNITY_INV: Self = Fr(Wrapping(12832));
+    const DELTA: Self = Fr(Wrapping(38779));
 
     fn from_repr(repr: Self::Repr) -> CtOption<Self> {
         // Only the first two bytes should be utilized.
@@ -321,14 +343,6 @@ impl PrimeField for Fr {
 
     fn is_odd(&self) -> Choice {
         Choice::from(((self.0).0 & 1) as u8)
-    }
-
-    fn multiplicative_generator() -> Fr {
-        Fr(Wrapping(5))
-    }
-
-    fn root_of_unity() -> Fr {
-        Fr(Wrapping(57751))
     }
 }
 
@@ -381,7 +395,7 @@ impl MultiMillerLoop for DummyEngine {
     type Result = Fr;
 
     fn multi_miller_loop(i: &[(&Self::G1Affine, &Self::G2Prepared)]) -> Self::Result {
-        let mut acc = <Fr as Field>::zero();
+        let mut acc = <Fr as Field>::ZERO;
         for (&a, &b) in i {
             acc += a * b;
         }
@@ -415,11 +429,11 @@ impl Group for Fr {
     }
 
     fn identity() -> Self {
-        <Fr as Field>::zero()
+        <Fr as Field>::ZERO
     }
 
     fn generator() -> Self {
-        <Fr as Field>::one()
+        <Fr as Field>::ONE
     }
 
     fn is_identity(&self) -> Choice {
@@ -489,11 +503,11 @@ impl PrimeCurveAffine for Fr {
     type Curve = Fr;
 
     fn identity() -> Self {
-        <Fr as Field>::zero()
+        <Fr as Field>::ZERO
     }
 
     fn generator() -> Self {
-        <Fr as Field>::one()
+        <Fr as Field>::ONE
     }
 
     fn is_identity(&self) -> Choice {

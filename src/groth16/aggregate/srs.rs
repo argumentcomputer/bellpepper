@@ -383,7 +383,7 @@ where
 {
     assert!(num > 0);
     let mut powers_of_scalar = Vec::with_capacity(num);
-    let mut pow_s = G::Scalar::one();
+    let mut pow_s = G::Scalar::ONE;
     for _ in 0..num {
         powers_of_scalar.push(pow_s);
         pow_s.mul_assign(s);

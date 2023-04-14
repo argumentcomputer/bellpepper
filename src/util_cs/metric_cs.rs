@@ -77,7 +77,7 @@ fn proc_lc<Scalar: PrimeField>(
     let mut map = BTreeMap::new();
     for (var, &coeff) in terms.iter() {
         map.entry(OrderedVariable(var))
-            .or_insert_with(Scalar::zero)
+            .or_insert_with(|| Scalar::ZERO)
             .add_assign(&coeff);
     }
 
@@ -133,7 +133,7 @@ impl<Scalar: PrimeField> MetricCS<Scalar> {
             writeln!(s, "INPUT {}", &input).expect("writing to string never fails");
         }
 
-        let negone = -Scalar::one();
+        let negone = -Scalar::ONE;
 
         let powers_of_two = (0..Scalar::NUM_BITS)
             .map(|i| Scalar::from(2u64).pow_vartime(&[u64::from(i)]))
@@ -150,7 +150,7 @@ impl<Scalar: PrimeField> MetricCS<Scalar> {
                 }
                 is_first = false;
 
-                if coeff != Scalar::one() && coeff != negone {
+                if coeff != Scalar::ONE && coeff != negone {
                     for (i, x) in powers_of_two.iter().enumerate() {
                         if x == &coeff {
                             write!(s, "2^{} . ", i).expect("writing to string never fails");

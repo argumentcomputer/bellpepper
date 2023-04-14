@@ -66,7 +66,7 @@ fn proc_lc<Scalar: PrimeField>(
     let mut map = BTreeMap::new();
     for (var, &coeff) in terms.iter() {
         map.entry(OrderedVariable(var))
-            .or_insert_with(Scalar::zero)
+            .or_insert_with(|| Scalar::ZERO)
             .add_assign(&coeff);
     }
 
@@ -118,7 +118,7 @@ fn _eval_lc2<Scalar: PrimeField>(
     inputs: &[Scalar],
     aux: &[Scalar],
 ) -> Scalar {
-    let mut acc = Scalar::zero();
+    let mut acc = Scalar::ZERO;
 
     for (var, coeff) in terms.iter() {
         let mut tmp = match var.get_unchecked() {
@@ -138,7 +138,7 @@ fn eval_lc<Scalar: PrimeField>(
     inputs: &[(Scalar, String)],
     aux: &[(Scalar, String)],
 ) -> Scalar {
-    let mut acc = Scalar::zero();
+    let mut acc = Scalar::ZERO;
 
     for (var, coeff) in terms.iter() {
         let mut tmp = match var.get_unchecked() {
@@ -165,7 +165,7 @@ impl<Scalar: PrimeField> Default for TestConstraintSystem<Scalar> {
             named_objects: map,
             current_namespace: vec![],
             constraints: vec![],
-            inputs: vec![(Scalar::one(), "ONE".into())],
+            inputs: vec![(Scalar::ONE, "ONE".into())],
             aux: vec![],
         }
     }
@@ -488,9 +488,9 @@ mod tests {
         {
             let mut cs = cs.namespace(|| "test1");
             let mut cs = cs.namespace(|| "test2");
-            cs.alloc(|| "hehe", || Ok(Fr::one())).unwrap();
+            cs.alloc(|| "hehe", || Ok(Fr::ONE)).unwrap();
         }
 
-        assert!(cs.get("test1/test2/hehe") == Fr::one());
+        assert!(cs.get("test1/test2/hehe") == Fr::ONE);
     }
 }

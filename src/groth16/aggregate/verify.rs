@@ -106,8 +106,8 @@ where
     // = (a^n - 1) / (a - 1)
     info!("checking aggregate pairing");
     let mut r_sum = r.pow_vartime(&[public_inputs.len() as u64]);
-    r_sum.sub_assign(&E::Fr::one());
-    let b = (*r - E::Fr::one()).invert().unwrap();
+    r_sum.sub_assign(&E::Fr::ONE);
+    let b = (*r - E::Fr::ONE).invert().unwrap();
     r_sum.mul_assign(&b);
 
     // The following parts 3 4 5 are independently computing the parts of the Groth16
@@ -333,8 +333,8 @@ where
         // = (a^n - 1) / (a - 1)
         info!("checking aggregate pairing");
         let mut r_sum = r.pow_vartime(&[ip_verifier_srs.n as u64]);
-        r_sum.sub_assign(&E::Fr::one());
-        let b = (*r - E::Fr::one()).invert().unwrap();
+        r_sum.sub_assign(&E::Fr::ONE);
+        let b = (*r - E::Fr::ONE).invert().unwrap();
         r_sum.mul_assign(&b);
 
         // The following parts 3 4 5 are independently computing the parts of the Groth16
@@ -781,7 +781,7 @@ where
     let final_r = polynomial_evaluation_product_form_from_transcript(
         ref_challenges_inv,
         r_shift,
-        &E::Fr::one(),
+        &E::Fr::ONE,
     );
 
     debug!(
@@ -812,11 +812,8 @@ pub fn verify_kzg_v<E, R>(
     R: rand_core::RngCore + Send,
 {
     // f_v(z)
-    let vpoly_eval_z = polynomial_evaluation_product_form_from_transcript(
-        challenges,
-        kzg_challenge,
-        &E::Fr::one(),
-    );
+    let vpoly_eval_z =
+        polynomial_evaluation_product_form_from_transcript(challenges, kzg_challenge, &E::Fr::ONE);
     // -g such that when we test a pairing equation we only need to check if
     // it's equal 1 at the end:
     // e(a,b) = e(c,d) <=> e(a,b)e(-c,d) = 1
