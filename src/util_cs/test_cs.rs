@@ -176,6 +176,17 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
         Default::default()
     }
 
+    pub fn scalar_inputs(&self) -> Vec<Scalar> {
+        self.inputs
+            .iter()
+            .map(|(scalar, _string)| *scalar)
+            .collect()
+    }
+
+    pub fn scalar_aux(&self) -> Vec<Scalar> {
+        self.aux.iter().map(|(scalar, _string)| *scalar).collect()
+    }
+
     pub fn pretty_print_list(&self) -> Vec<String> {
         let mut result = Vec::new();
 
@@ -340,6 +351,7 @@ impl<Scalar: PrimeField> Comparable<Scalar> for TestConstraintSystem<Scalar> {
             .map(|(_scalar, string)| string.to_string())
             .collect()
     }
+
     fn constraints(&self) -> &[crate::util_cs::Constraint<Scalar>] {
         &self.constraints
     }

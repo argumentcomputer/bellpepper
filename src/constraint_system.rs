@@ -156,6 +156,94 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
             "ConstraintSystem::extend must be implemented for types implementing ConstraintSystem"
         );
     }
+
+    /// Determines if the current `ConstraintSystem` instance is a witness generator.
+    /// ConstraintSystems that are witness generators need not assemble the actual constraints. Rather, they exist only
+    /// to efficiently create a witness.
+    ///
+    /// # Returns
+    ///
+    /// * `false` - By default, a `ConstraintSystem` is not a witness generator.
+    fn is_witness_generator(&self) -> bool {
+        false
+    }
+
+    /// Extend the inputs of the `ConstraintSystem`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called on a `ConstraintSystem` that is not a witness generator.
+    fn extend_inputs(&mut self, _new_inputs: &[Scalar]) {
+        assert!(self.is_witness_generator());
+        unimplemented!()
+    }
+
+    /// Extend the auxiliary inputs of the `ConstraintSystem`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called on a `ConstraintSystem` that is not a witness generator.
+    fn extend_aux(&mut self, _new_aux: &[Scalar]) {
+        assert!(self.is_witness_generator());
+        unimplemented!()
+    }
+
+    /// Allocate empty space for the auxiliary inputs and the main inputs of the `ConstraintSystem`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called on a `ConstraintSystem` that is not a witness generator.
+    fn allocate_empty(
+        &mut self,
+        _aux_n: usize,
+        _inputs_n: usize,
+    ) -> (&mut [Scalar], &mut [Scalar]) {
+        // This method should only ever be called on witness generators.
+        assert!(self.is_witness_generator());
+        unimplemented!()
+    }
+
+    /// Allocate empty space for the main inputs of the `ConstraintSystem`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called on a `ConstraintSystem` that is not a witness generator.
+    fn allocate_empty_inputs(&mut self, _n: usize) -> &mut [Scalar] {
+        // This method should only ever be called on witness generators.
+        assert!(self.is_witness_generator());
+        unimplemented!()
+    }
+
+    /// Allocate empty space for the auxiliary inputs of the `ConstraintSystem`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called on a `ConstraintSystem` that is not a witness generator.
+    fn allocate_empty_aux(&mut self, _n: usize) -> &mut [Scalar] {
+        // This method should only ever be called on witness generators.
+        assert!(self.is_witness_generator());
+        unimplemented!()
+    }
+
+    /// Returns the constraint system's inputs as a slice of `Scalar`s.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called on a `ConstraintSystem` that is not a witness generator.
+    fn inputs_slice(&self) -> &[Scalar] {
+        assert!(self.is_witness_generator());
+        unimplemented!()
+    }
+
+    /// Returns the constraint system's aux witness as a slice of `Scalar`s.
+    ///
+    /// # Panics
+    ///
+    /// Panics if called on a `ConstraintSystem` that is not a witness generator.
+    fn aux_slice(&self) -> &[Scalar] {
+        assert!(self.is_witness_generator());
+        unimplemented!()
+    }
 }
 
 /// This is a "namespaced" constraint system which borrows a constraint system (pushing
@@ -222,6 +310,29 @@ impl<'cs, Scalar: PrimeField, CS: ConstraintSystem<Scalar>> ConstraintSystem<Sca
     fn get_root(&mut self) -> &mut Self::Root {
         self.0.get_root()
     }
+
+    fn is_witness_generator(&self) -> bool {
+        self.0.is_witness_generator()
+    }
+
+    fn extend_inputs(&mut self, new_inputs: &[Scalar]) {
+        self.0.extend_inputs(new_inputs)
+    }
+
+    fn extend_aux(&mut self, new_aux: &[Scalar]) {
+        self.0.extend_aux(new_aux)
+    }
+
+    fn allocate_empty(&mut self, aux_n: usize, inputs_n: usize) -> (&mut [Scalar], &mut [Scalar]) {
+        self.0.allocate_empty(aux_n, inputs_n)
+    }
+
+    fn inputs_slice(&self) -> &[Scalar] {
+        self.0.inputs_slice()
+    }
+    fn aux_slice(&self) -> &[Scalar] {
+        self.0.aux_slice()
+    }
 }
 
 impl<'a, Scalar: PrimeField, CS: ConstraintSystem<Scalar>> Drop for Namespace<'a, Scalar, CS> {
@@ -284,5 +395,53 @@ impl<'cs, Scalar: PrimeField, CS: ConstraintSystem<Scalar>> ConstraintSystem<Sca
 
     fn get_root(&mut self) -> &mut Self::Root {
         (**self).get_root()
+    }
+
+    fn namespace<NR, N>(&mut self, name_fn: N) -> Namespace<'_, Scalar, Self::Root>
+    where
+        NR: Into<String>,
+        N: FnOnce() -> NR,
+    {
+        (**self).namespace(name_fn)
+    }
+
+    fn is_extensible() -> bool {
+        CS::is_extensible()
+    }
+
+    fn extend(&mut self, _other: Self) {
+        unimplemented!()
+    }
+
+    fn is_witness_generator(&self) -> bool {
+        (**self).is_witness_generator()
+    }
+
+    fn extend_inputs(&mut self, new_inputs: &[Scalar]) {
+        (**self).extend_inputs(new_inputs)
+    }
+
+    fn extend_aux(&mut self, new_aux: &[Scalar]) {
+        (**self).extend_aux(new_aux)
+    }
+
+    fn allocate_empty(&mut self, aux_n: usize, inputs_n: usize) -> (&mut [Scalar], &mut [Scalar]) {
+        (**self).allocate_empty(aux_n, inputs_n)
+    }
+
+    fn allocate_empty_inputs(&mut self, n: usize) -> &mut [Scalar] {
+        (**self).allocate_empty_inputs(n)
+    }
+
+    fn allocate_empty_aux(&mut self, n: usize) -> &mut [Scalar] {
+        (**self).allocate_empty_aux(n)
+    }
+
+    fn inputs_slice(&self) -> &[Scalar] {
+        (**self).inputs_slice()
+    }
+
+    fn aux_slice(&self) -> &[Scalar] {
+        (**self).aux_slice()
     }
 }

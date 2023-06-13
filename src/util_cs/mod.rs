@@ -4,6 +4,7 @@ use ff::PrimeField;
 pub mod bench_cs;
 pub mod metric_cs;
 pub mod test_cs;
+pub mod witness_cs;
 
 pub type Constraint<Scalar> = (
     LinearCombination<Scalar>,
