@@ -202,19 +202,19 @@ impl<Scalar: PrimeField> ConstraintSystem<Scalar> for ProvingAssignment<Scalar> 
         true
     }
 
-    fn extend(&mut self, other: Self) {
-        self.a_aux_density.extend(other.a_aux_density, false);
-        self.b_input_density.extend(other.b_input_density, true);
-        self.b_aux_density.extend(other.b_aux_density, false);
+    fn extend(&mut self, other: &Self) {
+        self.a_aux_density.extend(&other.a_aux_density, false);
+        self.b_input_density.extend(&other.b_input_density, true);
+        self.b_aux_density.extend(&other.b_aux_density, false);
 
-        self.a.extend(other.a);
-        self.b.extend(other.b);
-        self.c.extend(other.c);
+        self.a.extend(&other.a);
+        self.b.extend(&other.b);
+        self.c.extend(&other.c);
 
         self.input_assignment
             // Skip first input, which must have been a temporarily allocated one variable.
             .extend(&other.input_assignment[1..]);
-        self.aux_assignment.extend(other.aux_assignment);
+        self.aux_assignment.extend(&other.aux_assignment);
     }
 }
 
@@ -778,7 +778,7 @@ mod tests {
                     .alloc_input(|| "one", || Ok(<Fr as Field>::ONE))
                     .unwrap();
 
-                for assignment in partial_assignments.into_iter() {
+                for assignment in partial_assignments.iter() {
                     combined.extend(assignment);
                 }
                 assert_eq!(combined, full_assignment);

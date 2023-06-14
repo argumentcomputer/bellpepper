@@ -151,7 +151,7 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
     /// entirely independent sub-circuits. Each can be synthesized in its own thread, then the
     /// original `ConstraintSystem` can be extended with each, in the same order they would have
     /// been synthesized sequentially.
-    fn extend(&mut self, _other: Self) {
+    fn extend(&mut self, _other: &Self) {
         unimplemented!(
             "ConstraintSystem::extend must be implemented for types implementing ConstraintSystem"
         );
@@ -409,8 +409,8 @@ impl<'cs, Scalar: PrimeField, CS: ConstraintSystem<Scalar>> ConstraintSystem<Sca
         CS::is_extensible()
     }
 
-    fn extend(&mut self, _other: Self) {
-        unimplemented!()
+    fn extend(&mut self, other: &Self) {
+        (**self).extend(other)
     }
 
     fn is_witness_generator(&self) -> bool {
