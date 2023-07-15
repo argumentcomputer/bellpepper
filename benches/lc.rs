@@ -1,4 +1,4 @@
-use bellperson::{Index, LinearCombination, Variable};
+use bellpepper::{Index, LinearCombination, Variable};
 use blstrs::Scalar as Fr;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ff::Field;
