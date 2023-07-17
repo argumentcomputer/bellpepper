@@ -197,7 +197,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
             result.push(format!("AUX {}", aux.1));
         }
 
-        for &(ref _a, ref _b, ref _c, ref name) in &self.constraints {
+        for (_a, _b, _c, name) in &self.constraints {
             result.push(name.to_string());
         }
 
@@ -236,7 +236,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
     }
 
     pub fn which_is_unsatisfied(&self) -> Option<&str> {
-        for &(ref a, ref b, ref c, ref path) in &self.constraints {
+        for (a, b, c, path) in &self.constraints {
             let mut a = eval_lc::<Scalar>(a, &self.inputs, &self.aux);
             let b = eval_lc::<Scalar>(b, &self.inputs, &self.aux);
             let c = eval_lc::<Scalar>(c, &self.inputs, &self.aux);
@@ -244,7 +244,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
             a.mul_assign(&b);
 
             if a != c {
-                return Some(&*path);
+                return Some(path);
             }
         }
 
@@ -268,7 +268,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
 
     pub fn set(&mut self, path: &str, to: Scalar) {
         match self.named_objects.get(path) {
-            Some(&NamedObject::Var(ref v)) => match v.get_unchecked() {
+            Some(NamedObject::Var(v)) => match v.get_unchecked() {
                 Index::Input(index) => self.inputs[index].0 = to,
                 Index::Aux(index) => self.aux[index].0 = to,
             },
@@ -309,7 +309,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
 
     pub fn get(&mut self, path: &str) -> Scalar {
         match self.named_objects.get(path) {
-            Some(&NamedObject::Var(ref v)) => match v.get_unchecked() {
+            Some(NamedObject::Var(v)) => match v.get_unchecked() {
                 Index::Input(index) => self.inputs[index].0,
                 Index::Aux(index) => self.aux[index].0,
             },

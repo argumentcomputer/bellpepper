@@ -24,18 +24,8 @@ ff = "0.13.0"
 group = "0.13.0"
 rand_core = "0.6"
 byteorder = "1"
-log = "0.4.8"
-rand = { version = "0.8", default-features = false }
-rayon = "1.5.0"
 thiserror = "1.0.10"
-crossbeam-channel = "0.5.0"
-digest = "0.10.6"
-bincode = "1.3.1"
 serde = { version = "1.0", features = ["derive"] }
-sha2 = "0.10.6"
-pairing = "0.23"
-blstrs = { version = "0.7.0", features = ["__private_bench"] }
-ec-gpu-gen = { version = "0.7.0" }
 fs2 = { version = "0.4.3", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -43,16 +33,14 @@ memmap2 = "0.5.8"
 
 [dev-dependencies]
 hex-literal = "0.4"
-rand_xorshift = "0.3"
-env_logger = "0.10.0"
 criterion = "0.4.0"
-rand_chacha = "0.3"
-csv = "1.1.5"
 tempfile = "3.1.0"
 subtle = "2.2.1"
 temp-env = "0.3.0"
-rand = { version = "0.8", default-features = false, features = ["std", "std_rng"] }
 itertools = "0.10.0"
+blstrs = "0.7.0"
+rand_xorshift = "0.3.0"
+sha2 = "0.10.7"
 
 [features]
 default = []

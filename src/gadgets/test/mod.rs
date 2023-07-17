@@ -142,7 +142,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
         let negone = -Scalar::ONE;
 
         let powers_of_two = (0..Scalar::NUM_BITS)
-            .map(|i| Scalar::from(2u64).pow_vartime(&[u64::from(i)]))
+            .map(|i| Scalar::from(2u64).pow_vartime([u64::from(i)]))
             .collect::<Vec<_>>();
 
         let pp = |s: &mut String, lc: &LinearCombination<Scalar>| {
@@ -183,7 +183,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
             write!(s, ")").unwrap();
         };
 
-        for &(ref a, ref b, ref c, ref name) in &self.constraints {
+        for (a, b, c, name) in &self.constraints {
             writeln!(&mut s).unwrap();
 
             write!(&mut s, "{}: ", name).unwrap();
@@ -225,7 +225,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
     }
 
     pub fn which_is_unsatisfied(&self) -> Option<&str> {
-        for &(ref a, ref b, ref c, ref path) in &self.constraints {
+        for (a, b, c, path) in &self.constraints {
             let mut a = eval_lc::<Scalar>(a, &self.inputs, &self.aux);
             let b = eval_lc::<Scalar>(b, &self.inputs, &self.aux);
             let c = eval_lc::<Scalar>(c, &self.inputs, &self.aux);
@@ -233,7 +233,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
             a.mul_assign(&b);
 
             if a != c {
-                return Some(&*path);
+                return Some(path);
             }
         }
 
@@ -250,7 +250,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
 
     pub fn set(&mut self, path: &str, to: Scalar) {
         match self.named_objects.get(path) {
-            Some(&NamedObject::Var(ref v)) => match v.get_unchecked() {
+            Some(NamedObject::Var(v)) => match v.get_unchecked() {
                 Index::Input(index) => self.inputs[index].0 = to,
                 Index::Aux(index) => self.aux[index].0 = to,
             },
@@ -288,7 +288,7 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
 
     pub fn get(&mut self, path: &str) -> Scalar {
         match self.named_objects.get(path) {
-            Some(&NamedObject::Var(ref v)) => match v.get_unchecked() {
+            Some(NamedObject::Var(v)) => match v.get_unchecked() {
                 Index::Input(index) => self.inputs[index].0,
                 Index::Aux(index) => self.aux[index].0,
             },
@@ -317,7 +317,7 @@ fn compute_path(ns: &[String], this: String) -> String {
     let mut name = String::new();
 
     let mut needs_separation = false;
-    for ns in ns.iter().chain(Some(&this).into_iter()) {
+    for ns in ns.iter().chain(Some(&this)) {
         if needs_separation {
             name += "/";
         }
