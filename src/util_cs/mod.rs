@@ -29,7 +29,7 @@ pub trait Comparable<Scalar: PrimeField> {
     ///
     /// Example usage:
     ///
-    /// ```norun
+    /// ```ignore
     /// let delta = cs.delta(&cs_blank, false);
     /// assert!(delta == Delta::Equal);
     /// ```
