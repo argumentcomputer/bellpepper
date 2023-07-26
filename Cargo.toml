@@ -19,25 +19,25 @@ edition = "2021"
 rust-version = "1.62.1"
 
 [dependencies]
-blake2s_simd = "1.0.0"
+blake2s_simd = "1.0.1"
 ff = "0.13.0"
 group = "0.13.0"
 rand_core = "0.6"
 byteorder = "1"
-thiserror = "1.0.10"
+thiserror = "1.0.44"
 serde = { version = "1.0", features = ["derive"] }
 fs2 = { version = "0.4.3", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-memmap2 = "0.5.8"
+memmap2 = "0.5.10"
 
 [dev-dependencies]
 hex-literal = "0.4"
 criterion = "0.4.0"
-tempfile = "3.1.0"
-subtle = "2.2.1"
-temp-env = "0.3.0"
-itertools = "0.10.0"
+tempfile = "3.6.0"
+subtle = "2.5.0"
+temp-env = "0.3.4"
+itertools = "0.10.5"
 blstrs = "0.7.0"
 rand_xorshift = "0.3.0"
 sha2 = "0.10.7"
@@ -60,4 +60,4 @@ harness = false
 [build-dependencies]
 blstrs = { version = "0.7.0", features = ["__private_bench"] }
 ec-gpu-gen = { version = "0.7.0" }
-rustversion = "1.0.6"
+rustversion = "1.0.14"
