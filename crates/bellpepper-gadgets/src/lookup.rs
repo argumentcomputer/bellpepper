@@ -5,7 +5,7 @@ use ff::PrimeField;
 use super::boolean::Boolean;
 use super::num::{AllocatedNum, Num};
 use super::*;
-use crate::ConstraintSystem;
+use bellpepper_core::ConstraintSystem;
 
 // Synthesize the constants for each base pattern.
 fn synth<'a, Scalar: PrimeField, I>(window_size: usize, constants: I, assignment: &mut [Scalar])
@@ -189,8 +189,8 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::gadgets::boolean::{AllocatedBit, Boolean};
-    use crate::gadgets::test::*;
+    use crate::boolean::{AllocatedBit, Boolean};
+    use bellpepper_core::util_cs::test_cs::*;
     use blstrs::Scalar as Fr;
     use ff::Field;
     use rand_core::{RngCore, SeedableRng};

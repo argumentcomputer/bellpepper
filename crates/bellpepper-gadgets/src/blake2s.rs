@@ -7,7 +7,7 @@
 use ff::PrimeField;
 
 use super::{boolean::Boolean, multieq::MultiEq, uint32::UInt32};
-use crate::{ConstraintSystem, SynthesisError};
+use bellpepper_core::{ConstraintSystem, SynthesisError};
 
 /*
 2.1.  Parameters
@@ -409,13 +409,14 @@ pub fn blake2s<Scalar: PrimeField, CS: ConstraintSystem<Scalar>>(
 mod test {
     use blake2s_simd::Params as Blake2sParams;
     use blstrs::Scalar as Fr;
+    use hex_literal::hex;
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;
 
     use super::blake2s;
-    use crate::gadgets::boolean::{AllocatedBit, Boolean};
-    use crate::gadgets::test::TestConstraintSystem;
-    use crate::ConstraintSystem;
+    use crate::boolean::{AllocatedBit, Boolean};
+    use bellpepper_core::util_cs::test_cs::*;
+    use bellpepper_core::ConstraintSystem;
 
     #[test]
     fn test_blank_hash() {

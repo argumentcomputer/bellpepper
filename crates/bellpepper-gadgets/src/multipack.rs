@@ -5,7 +5,7 @@ use ff::PrimeField;
 use super::boolean::Boolean;
 use super::num::{AllocatedNum, Num};
 use super::Assignment;
-use crate::{ConstraintSystem, SynthesisError};
+use bellpepper_core::{ConstraintSystem, SynthesisError};
 
 /// Takes a sequence of booleans and exposes them as compact
 /// public inputs
@@ -104,41 +104,46 @@ where
     Ok(alloc_num)
 }
 
-#[test]
-fn test_multipacking() {
-    use crate::ConstraintSystem;
-    use blstrs::Scalar as Fr;
-    use rand_core::{RngCore, SeedableRng};
-    use rand_xorshift::XorShiftRng;
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_multipacking() {
+        use super::*;
+        use bellpepper_core::ConstraintSystem;
+        use blstrs::Scalar as Fr;
+        use rand_core::{RngCore, SeedableRng};
+        use rand_xorshift::XorShiftRng;
 
-    use super::boolean::{AllocatedBit, Boolean};
-    use crate::gadgets::test::*;
+        use crate::boolean::{AllocatedBit, Boolean};
+        use bellpepper_core::util_cs::test_cs::*;
 
-    let mut rng = XorShiftRng::from_seed([
-        0x59, 0x62, 0xbe, 0x3d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06, 0xbc,
-        0xe5,
-    ]);
+        let mut rng = XorShiftRng::from_seed([
+            0x59, 0x62, 0xbe, 0x3d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
+            0xbc, 0xe5,
+        ]);
 
-    for num_bits in 0..1500 {
-        let mut cs = TestConstraintSystem::<Fr>::new();
+        for num_bits in 0..1500 {
+            let mut cs = TestConstraintSystem::<Fr>::new();
 
-        let bits: Vec<bool> = (0..num_bits).map(|_| rng.next_u32() % 2 != 0).collect();
+            let bits: Vec<bool> = (0..num_bits).map(|_| rng.next_u32() % 2 != 0).collect();
 
-        let circuit_bits = bits
-            .iter()
-            .enumerate()
-            .map(|(i, &b)| {
-                Boolean::from(
-                    AllocatedBit::alloc(cs.namespace(|| format!("bit {}", i)), Some(b)).unwrap(),
-                )
-            })
-            .collect::<Vec<_>>();
+            let circuit_bits = bits
+                .iter()
+                .enumerate()
+                .map(|(i, &b)| {
+                    Boolean::from(
+                        AllocatedBit::alloc(cs.namespace(|| format!("bit {}", i)), Some(b))
+                            .unwrap(),
+                    )
+                })
+                .collect::<Vec<_>>();
 
-        let expected_inputs = compute_multipacking::<Fr>(&bits);
+            let expected_inputs = compute_multipacking::<Fr>(&bits);
 
-        pack_into_inputs(cs.namespace(|| "pack"), &circuit_bits).unwrap();
+            pack_into_inputs(cs.namespace(|| "pack"), &circuit_bits).unwrap();
 
-        assert!(cs.is_satisfied());
-        assert!(cs.verify(&expected_inputs));
+            assert!(cs.is_satisfied());
+            assert!(cs.verify(&expected_inputs));
+        }
     }
 }

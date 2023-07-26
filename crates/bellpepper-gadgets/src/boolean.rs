@@ -2,7 +2,7 @@
 
 use ff::{PrimeField, PrimeFieldBits};
 
-use crate::{ConstraintSystem, LinearCombination, SynthesisError, Variable};
+use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError, Variable};
 
 use super::Assignment;
 
@@ -743,8 +743,8 @@ impl From<AllocatedBit> for Boolean {
 #[cfg(test)]
 mod test {
     use super::{field_into_allocated_bits_le, u64_into_boolean_vec_le, AllocatedBit, Boolean};
-    use crate::gadgets::test::*;
-    use crate::ConstraintSystem;
+    use bellpepper_core::util_cs::test_cs::*;
+    use bellpepper_core::ConstraintSystem;
     use blstrs::Scalar as Fr;
     use ff::{Field, PrimeField};
 

@@ -3,11 +3,11 @@
 use ff::{PrimeField, PrimeFieldBits};
 use serde::{Deserialize, Serialize};
 
-use crate::{ConstraintSystem, LinearCombination, SynthesisError, Variable};
+use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError, Variable};
 
 use super::Assignment;
 
-use super::boolean::{self, AllocatedBit, Boolean};
+use crate::boolean::{self, AllocatedBit, Boolean};
 
 #[derive(Serialize, Deserialize)]
 pub struct AllocatedNum<Scalar: PrimeField> {
@@ -495,14 +495,14 @@ impl<Scalar: PrimeField> Num<Scalar> {
 mod test {
     use std::ops::{AddAssign, MulAssign, SubAssign};
 
-    use crate::ConstraintSystem;
+    use bellpepper_core::ConstraintSystem;
     use blstrs::Scalar as Fr;
     use ff::{Field, PrimeField, PrimeFieldBits};
     use rand_core::SeedableRng;
     use rand_xorshift::XorShiftRng;
 
     use super::{AllocatedNum, Boolean, Num};
-    use crate::gadgets::test::*;
+    use bellpepper_core::util_cs::test_cs::*;
 
     #[test]
     fn test_allocated_num() {
@@ -670,7 +670,7 @@ mod test {
 
     #[test]
     fn test_num_scale() {
-        use crate::{Index, LinearCombination, Variable};
+        use bellpepper_core::{Index, LinearCombination, Variable};
 
         let mut rng = XorShiftRng::from_seed([
             0x59, 0x62, 0xbe, 0x3d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,

@@ -1,0 +1,47 @@
+[package]
+name = "bellpepper-core"
+authors = [
+  "porcuquine <porcuquine@gmail.com>",
+  "dignifiedquire <me@dignifiedquire.com>",
+  "Sean Bowe <ewillbefull@gmail.com>",
+]
+description = "Core elements for a SNARK Circuit library"
+documentation = "https://docs.rs/bellpepper-core"
+homepage = "https://github.com/lurk-lab/bellpepper"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/lurk-lab/bellpepper"
+version = "0.1.2"
+readme = "README.md"
+edition = "2021"
+rust-version = "1.62.1"
+
+[dependencies]
+blake2s_simd = "1.0.1"
+ff = "0.13.0"
+group = "0.13.0"
+rand_core = "0.6"
+byteorder = "1"
+thiserror = "1.0.44"
+serde = { version = "1.0", features = ["derive"] }
+fs2 = { version = "0.4.3", optional = true }
+
+[dev-dependencies]
+hex-literal = "0.4"
+criterion = "0.4.0"
+subtle = "2.5.0"
+blstrs = "0.7.0"
+rand_xorshift = "0.3.0"
+sha2 = "0.10.7"
+
+[features]
+default = []
+# This feature disables/modifies long running tests to make the suitable for code coverage
+# reporting
+_coverage = []
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[[bench]]
+name = "lc"
+harness = false

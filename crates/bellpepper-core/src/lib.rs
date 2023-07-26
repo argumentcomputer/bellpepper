@@ -17,11 +17,6 @@
 
 #![cfg_attr(all(target_arch = "aarch64", nightly), feature(stdsimd))]
 
-#[cfg(test)]
-#[macro_use]
-extern crate hex_literal;
-
-pub mod gadgets;
 pub mod util_cs;
 
 mod lc;

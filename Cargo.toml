@@ -1,63 +1,6 @@
-# NOTE vmx 2022-08-19: Using the `__private_bench` feature of `blstrs` is just temporarily until
-# https://github.com/zkcrypto/group/pull/29 is fixed. Then we won't need the exports of `Fp` and
-# `Fp2` any more.
-[package]
-name = "bellpepper"
-authors = [
-  "porcuquine <porcuquine@gmail.com>",
-  "dignifiedquire <me@dignifiedquire.com>",
-  "Sean Bowe <ewillbefull@gmail.com>",
-]
-description = "SNARK Circuit library"
-documentation = "https://docs.rs/bellpepper"
-homepage = "https://github.com/lurk-lab/bellpepper"
-license = "MIT/Apache-2.0"
-repository = "https://github.com/lurk-lab/bellpepper"
-version = "0.1.2"
-readme = "README.md"
-edition = "2021"
-rust-version = "1.62.1"
-
-[dependencies]
-blake2s_simd = "1.0.1"
-ff = "0.13.0"
-group = "0.13.0"
-rand_core = "0.6"
-byteorder = "1"
-thiserror = "1.0.44"
-serde = { version = "1.0", features = ["derive"] }
-fs2 = { version = "0.4.3", optional = true }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-memmap2 = "0.5.10"
-
-[dev-dependencies]
-hex-literal = "0.4"
-criterion = "0.4.0"
-tempfile = "3.6.0"
-subtle = "2.5.0"
-temp-env = "0.3.4"
-itertools = "0.10.5"
-blstrs = "0.7.0"
-rand_xorshift = "0.3.0"
-sha2 = "0.10.7"
-
-[features]
-default = []
-# This feature disables/modifies long running tests to make the suitable for code coverage
-# reporting
-_coverage = []
-
-[badges]
-maintenance = { status = "actively-developed" }
-
-[[bench]]
-name = "lc"
-harness = false
-
 [workspace]
-
-[build-dependencies]
-blstrs = { version = "0.7.0", features = ["__private_bench"] }
-ec-gpu-gen = { version = "0.7.0" }
-rustversion = "1.0.14"
+resolver = "2"
+members = [
+    "crates/bellpepper-core",
+    "crates/bellpepper-gadgets"
+]
