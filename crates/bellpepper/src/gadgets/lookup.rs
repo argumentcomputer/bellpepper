@@ -189,8 +189,8 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::boolean::{AllocatedBit, Boolean};
-    use bellpepper_core::util_cs::test_cs::*;
+    use crate::gadgets::boolean::{AllocatedBit, Boolean};
+    use crate::util_cs::test_cs::*;
     use blstrs::Scalar as Fr;
     use ff::Field;
     use rand_core::{RngCore, SeedableRng};

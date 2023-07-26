@@ -15,10 +15,6 @@
 //! - Expose `hash` as a public input using multiscalar packing.
 //!
 
-#![cfg_attr(all(target_arch = "aarch64", nightly), feature(stdsimd))]
-
-pub mod util_cs;
-
 mod lc;
 pub use lc::{Index, LinearCombination, Variable};
 mod constraint_system;

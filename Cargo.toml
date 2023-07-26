@@ -2,5 +2,5 @@
 resolver = "2"
 members = [
     "crates/bellpepper-core",
-    "crates/bellpepper-gadgets"
+    "crates/bellpepper"
 ]

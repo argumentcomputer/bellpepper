@@ -33,12 +33,6 @@ blstrs = "0.7.0"
 rand_xorshift = "0.3.0"
 sha2 = "0.10.7"
 
-[features]
-default = []
-# This feature disables/modifies long running tests to make the suitable for code coverage
-# reporting
-_coverage = []
-
 [badges]
 maintenance = { status = "actively-developed" }
 

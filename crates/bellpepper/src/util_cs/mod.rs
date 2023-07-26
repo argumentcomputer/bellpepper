@@ -1,4 +1,4 @@
-use crate::LinearCombination;
+use bellpepper_core::LinearCombination;
 use ff::PrimeField;
 
 pub mod bench_cs;

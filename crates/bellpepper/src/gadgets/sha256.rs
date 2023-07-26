@@ -274,8 +274,8 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::boolean::AllocatedBit;
-    use bellpepper_core::util_cs::test_cs::*;
+    use crate::gadgets::boolean::AllocatedBit;
+    use crate::util_cs::test_cs::*;
     use blstrs::Scalar as Fr;
     use hex_literal::hex;
     use rand_core::{RngCore, SeedableRng};

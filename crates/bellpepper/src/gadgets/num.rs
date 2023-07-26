@@ -7,7 +7,7 @@ use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError, Varia
 
 use super::Assignment;
 
-use crate::boolean::{self, AllocatedBit, Boolean};
+use crate::gadgets::boolean::{self, AllocatedBit, Boolean};
 
 #[derive(Serialize, Deserialize)]
 pub struct AllocatedNum<Scalar: PrimeField> {
@@ -502,7 +502,7 @@ mod test {
     use rand_xorshift::XorShiftRng;
 
     use super::{AllocatedNum, Boolean, Num};
-    use bellpepper_core::util_cs::test_cs::*;
+    use crate::util_cs::test_cs::*;
 
     #[test]
     fn test_allocated_num() {

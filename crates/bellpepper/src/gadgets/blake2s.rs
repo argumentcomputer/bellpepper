@@ -414,8 +414,8 @@ mod test {
     use rand_xorshift::XorShiftRng;
 
     use super::blake2s;
-    use crate::boolean::{AllocatedBit, Boolean};
-    use bellpepper_core::util_cs::test_cs::*;
+    use crate::gadgets::boolean::{AllocatedBit, Boolean};
+    use crate::util_cs::test_cs::*;
     use bellpepper_core::ConstraintSystem;
 
     #[test]

@@ -86,7 +86,7 @@ jobs:
       matrix:
         package:
           - "bellpepper-core"
-          - "bellpepper-gadgets"
+          - "bellpepper"
     steps:
     - uses: actions/checkout@v3
     - name: Install rustup

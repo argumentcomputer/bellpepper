@@ -2,7 +2,7 @@
 
 use ff::PrimeField;
 
-use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
+use bellpepper_core::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
 
 pub trait SizedWitness<Scalar: PrimeField> {
     fn num_constraints(&self) -> usize;
