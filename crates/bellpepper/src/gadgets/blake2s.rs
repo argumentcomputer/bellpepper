@@ -415,7 +415,7 @@ mod test {
 
     use super::blake2s;
     use crate::gadgets::boolean::{AllocatedBit, Boolean};
-    use crate::util_cs::test_cs::*;
+    use bellpepper_core::test_cs::*;
     use bellpepper_core::ConstraintSystem;
 
     #[test]

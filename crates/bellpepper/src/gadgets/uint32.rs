@@ -411,7 +411,7 @@ mod test {
     use super::UInt32;
     use crate::gadgets::boolean::Boolean;
     use crate::gadgets::multieq::MultiEq;
-    use crate::util_cs::test_cs::*;
+    use bellpepper_core::test_cs::*;
     use bellpepper_core::ConstraintSystem;
     use blstrs::Scalar as Fr;
     use ff::Field;

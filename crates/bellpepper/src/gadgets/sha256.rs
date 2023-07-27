@@ -275,7 +275,7 @@ where
 mod test {
     use super::*;
     use crate::gadgets::boolean::AllocatedBit;
-    use crate::util_cs::test_cs::*;
+    use bellpepper_core::test_cs::*;
     use blstrs::Scalar as Fr;
     use hex_literal::hex;
     use rand_core::{RngCore, SeedableRng};

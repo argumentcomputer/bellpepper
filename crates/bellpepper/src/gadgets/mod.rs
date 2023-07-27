@@ -1,10 +1,10 @@
 //! Self-contained sub-circuit implementations for various primitives.
 pub mod blake2s;
-pub mod boolean;
+pub use bellpepper_core::boolean;
 pub mod lookup;
 pub mod multieq;
 pub mod multipack;
-pub mod num;
+pub use bellpepper_core::num;
 pub mod sha256;
 pub mod uint32;
 
