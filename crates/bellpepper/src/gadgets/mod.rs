@@ -1,17 +1,14 @@
 //! Self-contained sub-circuit implementations for various primitives.
-
-pub mod test;
-
 pub mod blake2s;
-pub mod boolean;
+pub use bellpepper_core::boolean;
 pub mod lookup;
 pub mod multieq;
 pub mod multipack;
-pub mod num;
+pub use bellpepper_core::num;
 pub mod sha256;
 pub mod uint32;
 
-use crate::SynthesisError;
+use bellpepper_core::SynthesisError;
 
 // TODO: This should probably be removed and we
 // should use existing helper methods on `Option`

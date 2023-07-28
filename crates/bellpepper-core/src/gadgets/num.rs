@@ -5,9 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ConstraintSystem, LinearCombination, SynthesisError, Variable};
 
-use super::Assignment;
-
-use super::boolean::{self, AllocatedBit, Boolean};
+use crate::gadgets::boolean::{self, AllocatedBit, Boolean};
 
 #[derive(Serialize, Deserialize)]
 pub struct AllocatedNum<Scalar: PrimeField> {
@@ -97,7 +95,10 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
     where
         CS: ConstraintSystem<Scalar>,
     {
-        let input = cs.alloc_input(|| "input variable", || Ok(*self.value.get()?))?;
+        let input = cs.alloc_input(
+            || "input variable",
+            || self.value.ok_or(SynthesisError::AssignmentMissing),
+        )?;
 
         cs.enforce(
             || "enforce input is correct",
@@ -274,8 +275,8 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         let var = cs.alloc(
             || "product num",
             || {
-                let mut tmp = *self.value.get()?;
-                tmp.mul_assign(other.value.get()?);
+                let mut tmp = self.value.ok_or(SynthesisError::AssignmentMissing)?;
+                tmp.mul_assign(other.value.ok_or(SynthesisError::AssignmentMissing)?);
 
                 value = Some(tmp);
 
@@ -306,7 +307,7 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         let var = cs.alloc(
             || "squared num",
             || {
-                let mut tmp = *self.value.get()?;
+                let mut tmp = self.value.ok_or(SynthesisError::AssignmentMissing)?;
                 tmp = tmp.square();
 
                 value = Some(tmp);
@@ -336,7 +337,7 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         let inv = cs.alloc(
             || "ephemeral inverse",
             || {
-                let tmp = *self.value.get()?;
+                let tmp = self.value.ok_or(SynthesisError::AssignmentMissing)?;
 
                 if tmp.is_zero().into() {
                     Err(SynthesisError::DivisionByZero)
@@ -372,10 +373,13 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         CS: ConstraintSystem<Scalar>,
     {
         let c = Self::alloc(cs.namespace(|| "conditional reversal result 1"), || {
-            if *condition.get_value().get()? {
-                Ok(*b.value.get()?)
+            if condition
+                .get_value()
+                .ok_or(SynthesisError::AssignmentMissing)?
+            {
+                Ok(b.value.ok_or(SynthesisError::AssignmentMissing)?)
             } else {
-                Ok(*a.value.get()?)
+                Ok(a.value.ok_or(SynthesisError::AssignmentMissing)?)
             }
         })?;
 
@@ -387,10 +391,13 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         );
 
         let d = Self::alloc(cs.namespace(|| "conditional reversal result 2"), || {
-            if *condition.get_value().get()? {
-                Ok(*a.value.get()?)
+            if condition
+                .get_value()
+                .ok_or(SynthesisError::AssignmentMissing)?
+            {
+                Ok(a.value.ok_or(SynthesisError::AssignmentMissing)?)
             } else {
-                Ok(*b.value.get()?)
+                Ok(b.value.ok_or(SynthesisError::AssignmentMissing)?)
             }
         })?;
 
@@ -502,7 +509,7 @@ mod test {
     use rand_xorshift::XorShiftRng;
 
     use super::{AllocatedNum, Boolean, Num};
-    use crate::gadgets::test::*;
+    use crate::util_cs::test_cs::*;
 
     #[test]
     fn test_allocated_num() {

@@ -3,10 +3,9 @@
 
 use ff::PrimeField;
 
-use crate::{ConstraintSystem, LinearCombination, SynthesisError};
+use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
 
 use super::boolean::{AllocatedBit, Boolean};
-
 use super::multieq::MultiEq;
 
 /// Represents an interpretation of 32 `Boolean` objects as an
@@ -412,8 +411,8 @@ mod test {
     use super::UInt32;
     use crate::gadgets::boolean::Boolean;
     use crate::gadgets::multieq::MultiEq;
-    use crate::gadgets::test::*;
-    use crate::ConstraintSystem;
+    use bellpepper_core::test_cs::*;
+    use bellpepper_core::ConstraintSystem;
     use blstrs::Scalar as Fr;
     use ff::Field;
     use rand_core::{RngCore, SeedableRng};

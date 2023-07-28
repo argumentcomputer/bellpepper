@@ -5,7 +5,7 @@ use std::fmt::Write;
 use super::Comparable;
 use ff::PrimeField;
 
-use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
+use bellpepper_core::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
 
 #[derive(Clone, Copy)]
 struct OrderedVariable(Variable);

@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use ff::PrimeField;
 
-use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
+use bellpepper_core::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]

@@ -4,8 +4,6 @@ use ff::{PrimeField, PrimeFieldBits};
 
 use crate::{ConstraintSystem, LinearCombination, SynthesisError, Variable};
 
-use super::Assignment;
-
 /// Represents a variable in the constraint system which is guaranteed
 /// to be either zero or one.
 #[derive(Clone)]
@@ -38,7 +36,7 @@ impl AllocatedBit {
         let var = cs.alloc(
             || "boolean",
             || {
-                if *value.get()? {
+                if value.ok_or(SynthesisError::AssignmentMissing)? {
                     Ok(Scalar::ONE)
                 } else {
                     Ok(Scalar::ZERO)
@@ -75,7 +73,7 @@ impl AllocatedBit {
         let var = cs.alloc(
             || "boolean",
             || {
-                if *value.get()? {
+                if value.ok_or(SynthesisError::AssignmentMissing)? {
                     Ok(Scalar::ONE)
                 } else {
                     Ok(Scalar::ZERO)
@@ -110,7 +108,9 @@ impl AllocatedBit {
         let result_var = cs.alloc(
             || "xor result",
             || {
-                if *a.value.get()? ^ *b.value.get()? {
+                if a.value.ok_or(SynthesisError::AssignmentMissing)?
+                    ^ b.value.ok_or(SynthesisError::AssignmentMissing)?
+                {
                     result_value = Some(true);
 
                     Ok(Scalar::ONE)
@@ -162,7 +162,9 @@ impl AllocatedBit {
         let result_var = cs.alloc(
             || "and result",
             || {
-                if *a.value.get()? & *b.value.get()? {
+                if a.value.ok_or(SynthesisError::AssignmentMissing)?
+                    & b.value.ok_or(SynthesisError::AssignmentMissing)?
+                {
                     result_value = Some(true);
 
                     Ok(Scalar::ONE)
@@ -200,7 +202,9 @@ impl AllocatedBit {
         let result_var = cs.alloc(
             || "and not result",
             || {
-                if *a.value.get()? & !*b.value.get()? {
+                if a.value.ok_or(SynthesisError::AssignmentMissing)?
+                    & !b.value.ok_or(SynthesisError::AssignmentMissing)?
+                {
                     result_value = Some(true);
 
                     Ok(Scalar::ONE)
@@ -238,7 +242,9 @@ impl AllocatedBit {
         let result_var = cs.alloc(
             || "nor result",
             || {
-                if !*a.value.get()? & !*b.value.get()? {
+                if !a.value.ok_or(SynthesisError::AssignmentMissing)?
+                    & !b.value.ok_or(SynthesisError::AssignmentMissing)?
+                {
                     result_value = Some(true);
 
                     Ok(Scalar::ONE)
@@ -595,9 +601,13 @@ impl Boolean {
         let ch = cs.alloc(
             || "ch",
             || {
-                ch_value
-                    .get()
-                    .map(|v| if *v { Scalar::ONE } else { Scalar::ZERO })
+                ch_value.ok_or(SynthesisError::AssignmentMissing).map(|v| {
+                    if v {
+                        Scalar::ONE
+                    } else {
+                        Scalar::ZERO
+                    }
+                })
             },
         )?;
 
@@ -698,9 +708,13 @@ impl Boolean {
         let maj = cs.alloc(
             || "maj",
             || {
-                maj_value
-                    .get()
-                    .map(|v| if *v { Scalar::ONE } else { Scalar::ZERO })
+                maj_value.ok_or(SynthesisError::AssignmentMissing).map(|v| {
+                    if v {
+                        Scalar::ONE
+                    } else {
+                        Scalar::ZERO
+                    }
+                })
             },
         )?;
 
@@ -743,7 +757,7 @@ impl From<AllocatedBit> for Boolean {
 #[cfg(test)]
 mod test {
     use super::{field_into_allocated_bits_le, u64_into_boolean_vec_le, AllocatedBit, Boolean};
-    use crate::gadgets::test::*;
+    use crate::test_cs::*;
     use crate::ConstraintSystem;
     use blstrs::Scalar as Fr;
     use ff::{Field, PrimeField};

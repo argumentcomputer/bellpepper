@@ -10,7 +10,7 @@ use ff::PrimeField;
 use super::boolean::Boolean;
 use super::multieq::MultiEq;
 use super::uint32::UInt32;
-use crate::{ConstraintSystem, SynthesisError};
+use bellpepper_core::{ConstraintSystem, SynthesisError};
 
 #[allow(clippy::unreadable_literal)]
 const ROUND_CONSTANTS: [u32; 64] = [
@@ -275,8 +275,9 @@ where
 mod test {
     use super::*;
     use crate::gadgets::boolean::AllocatedBit;
-    use crate::gadgets::test::TestConstraintSystem;
+    use bellpepper_core::test_cs::*;
     use blstrs::Scalar as Fr;
+    use hex_literal::hex;
     use rand_core::{RngCore, SeedableRng};
     use rand_xorshift::XorShiftRng;
 

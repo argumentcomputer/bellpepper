@@ -15,31 +15,13 @@
 //! - Expose `hash` as a public input using multiscalar packing.
 //!
 
-#![cfg_attr(all(target_arch = "aarch64", nightly), feature(stdsimd))]
-
-#[cfg(test)]
-#[macro_use]
-extern crate hex_literal;
-
-pub mod gadgets;
-pub mod util_cs;
-
 mod lc;
 pub use lc::{Index, LinearCombination, Variable};
 mod constraint_system;
 pub use constraint_system::{Circuit, ConstraintSystem, Namespace, SynthesisError};
+mod gadgets;
+pub use gadgets::{boolean, num};
+mod util_cs;
+pub use util_cs::{test_cs, Comparable, Constraint};
 
 pub const BELLPEPPER_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-#[cfg(feature = "groth16")]
-pub(crate) fn le_bytes_to_u64s(le_bytes: &[u8]) -> Vec<u64> {
-    assert_eq!(
-        le_bytes.len() % 8,
-        0,
-        "length must be divisible by u64 byte length (8-bytes)"
-    );
-    le_bytes
-        .chunks(8)
-        .map(|chunk| u64::from_le_bytes(chunk.try_into().unwrap()))
-        .collect()
-}

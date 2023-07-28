@@ -1,6 +1,6 @@
 use ff::PrimeField;
 
-use crate::{ConstraintSystem, LinearCombination, SynthesisError, Variable};
+use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError, Variable};
 
 pub struct MultiEq<Scalar: PrimeField, CS: ConstraintSystem<Scalar>> {
     cs: CS,
