@@ -24,7 +24,7 @@ byteorder = "1"
 thiserror = "1.0.44"
 serde = { version = "1.0", features = ["derive"] }
 fs2 = { version = "0.4.3", optional = true }
-bellpepper-core = { version = "0.2.0" }
+bellpepper-core = { version = "0.2.0", path = "../bellpepper-core" }
 
 [dev-dependencies]
 hex-literal = "0.4"
