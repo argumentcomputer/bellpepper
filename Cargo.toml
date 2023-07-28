@@ -7,7 +7,7 @@ members = [
 
 [workspace.dependencies]
 blake2s_simd = "1.0.1"
-blstrs = "0.7.0"
+blstrs = { git="https://github.com/lurk-lab/blstrs.git", branch="dev" }
 byteorder = "1"
 ff = "0.13.0"
 rand_core = "0.6"
