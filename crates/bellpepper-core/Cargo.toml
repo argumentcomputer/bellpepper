@@ -13,23 +13,23 @@ repository = "https://github.com/lurk-lab/bellpepper"
 version = "0.2.0"
 readme = "../../README.md"
 edition = "2021"
-rust-version = "1.62.1"
+rust-version = "1.64.0"
 
 [dependencies]
 blake2s_simd = "1.0.1"
-ff = "0.13.0"
-group = "0.13.0"
-rand_core = "0.6"
+ff = { workspace = true }
+group = { workspace = true }
+rand_core = { workspace = true}
 byteorder = "1"
 thiserror = "1.0.44"
-serde = { version = "1.0", features = ["derive"] }
+serde = { workspace = true }
 fs2 = { version = "0.4.3", optional = true }
 
 [dev-dependencies]
 hex-literal = "0.4"
 criterion = "0.4.0"
 subtle = "2.5.0"
-blstrs = "0.7.0"
+blstrs = { workspace = true }
 rand_xorshift = "0.3.0"
 sha2 = "0.10.7"
 

@@ -4,3 +4,10 @@ members = [
     "crates/bellpepper-core",
     "crates/bellpepper"
 ]
+
+[workspace.dependencies]
+blstrs = { version = "0.7.0"}
+ff = "0.13.0"
+group = "0.13.0"
+rand_core = "0.6"
+serde = { version = "1.0", features = ["derive"] }
