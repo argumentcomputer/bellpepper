@@ -6,8 +6,8 @@ members = [
 ]
 
 [workspace.dependencies]
-blake2s_simd = { workspace = true }
-blstrs = { version = "0.7.0"}
+blake2s_simd = "1.0.1"
+blstrs = "0.7.0"
 byteorder = "1"
 ff = "0.13.0"
 rand_core = "0.6"
