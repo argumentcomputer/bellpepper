@@ -22,6 +22,6 @@ pub use constraint_system::{Circuit, ConstraintSystem, Namespace, SynthesisError
 mod gadgets;
 pub use gadgets::{boolean, num};
 mod util_cs;
-pub use util_cs::{test_cs, Comparable, Constraint};
+pub use util_cs::{test_cs, Comparable, Constraint, Delta};
 
 pub const BELLPEPPER_VERSION: &str = env!("CARGO_PKG_VERSION");
