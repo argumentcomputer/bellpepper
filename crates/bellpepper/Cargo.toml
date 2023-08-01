@@ -16,20 +16,15 @@ edition = "2021"
 rust-version = "1.64.0"
 
 [dependencies]
-blake2s_simd = "1.0.1"
-ff = { workspace = true }
-group = { workspace = true }
-rand_core = { workspace = true }
-byteorder = "1"
-thiserror = "1.0.44"
-serde = { workspace = true }
-fs2 = { version = "0.4.3", optional = true }
 bellpepper-core = { version = "0.2.0", path = "../bellpepper-core" }
+byteorder = { workspace = true }
+ff = { workspace = true }
 
 [dev-dependencies]
+blake2s_simd = { workspace = true }
 hex-literal = "0.4"
-subtle = "2.5.0"
 blstrs = { workspace = true }
+rand_core = { workspace = true }
 rand_xorshift = "0.3.0"
 sha2 = "0.10.7"
 
