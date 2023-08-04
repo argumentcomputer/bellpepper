@@ -58,7 +58,7 @@ jobs:
       - name: cargo test
         # TODO: --all-features
         run: |
-          cargo nextest run --release
+          cargo nextest run --release --profile ci
       - name: Doctests
         run: |
           cargo test --doc
