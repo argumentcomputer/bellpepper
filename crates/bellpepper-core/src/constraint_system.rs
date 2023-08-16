@@ -128,7 +128,7 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
         Namespace(self.get_root(), Default::default())
     }
 
-    /// Most implementations of ConstraintSystem are not 'extensible': they won't implement a specialized
+    /// Most implementations of `ConstraintSystem` are not 'extensible': they won't implement a specialized
     /// version of `extend` and should therefore also keep the default implementation of `is_extensible`
     /// so callers which optionally make use of `extend` can know to avoid relying on it when unimplemented.
     fn is_extensible() -> bool {
@@ -148,7 +148,7 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
     }
 
     /// Determines if the current `ConstraintSystem` instance is a witness generator.
-    /// ConstraintSystems that are witness generators need not assemble the actual constraints. Rather, they exist only
+    /// `ConstraintSystems` that are witness generators need not assemble the actual constraints. Rather, they exist only
     /// to efficiently create a witness.
     ///
     /// # Returns
@@ -331,7 +331,7 @@ impl<'a, Scalar: PrimeField, CS: ConstraintSystem<Scalar>> Drop for Namespace<'a
     }
 }
 
-/// Convenience implementation of ConstraintSystem<Scalar> for mutable references to
+/// Convenience implementation of `ConstraintSystem`<Scalar> for mutable references to
 /// constraint systems.
 impl<'cs, Scalar: PrimeField, CS: ConstraintSystem<Scalar>> ConstraintSystem<Scalar>
     for &'cs mut CS

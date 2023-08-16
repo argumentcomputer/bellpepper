@@ -5,7 +5,8 @@
 # <https://github.com/EmbarkStudios/rust-ecosystem/issues/59>
 # TODO: add support for --all-features
 xclippy = [
-    "clippy", "--all-targets", "--",
+    "clippy", "--workspace", "--all-targets", "--",
     "-Wclippy::all",
     "-Wclippy::disallowed_methods",
+    "-Wclippy::doc_markdown",
 ]
