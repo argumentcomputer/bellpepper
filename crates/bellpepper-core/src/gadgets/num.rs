@@ -47,6 +47,16 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         })
     }
 
+    /// Allocate a `Variable(Aux)` in a `ConstraintSystem`. Requires an
+    /// infallible getter for the value.
+    pub fn alloc_infallible<CS, F>(cs: CS, value: F) -> Self
+    where
+        CS: ConstraintSystem<Scalar>,
+        F: FnOnce() -> Scalar,
+    {
+        Self::alloc(cs, || Ok(value())).unwrap()
+    }
+
     /// Allocate a `Variable(Input)` in a `ConstraintSystem`.
     pub fn alloc_input<CS, F>(mut cs: CS, value: F) -> Result<Self, SynthesisError>
     where
@@ -516,6 +526,15 @@ mod test {
         let mut cs = TestConstraintSystem::<Fr>::new();
 
         AllocatedNum::alloc(&mut cs, || Ok(Fr::ONE)).unwrap();
+
+        assert!(cs.get("num") == Fr::ONE);
+    }
+
+    #[test]
+    fn test_allocated_infallible_num() {
+        let mut cs = TestConstraintSystem::<Fr>::new();
+
+        AllocatedNum::alloc_infallible(&mut cs, || Fr::ONE);
 
         assert!(cs.get("num") == Fr::ONE);
     }
