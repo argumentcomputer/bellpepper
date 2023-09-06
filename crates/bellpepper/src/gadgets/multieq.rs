@@ -2,6 +2,7 @@ use ff::PrimeField;
 
 use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError, Variable};
 
+#[derive(Debug)]
 pub struct MultiEq<Scalar: PrimeField, CS: ConstraintSystem<Scalar>> {
     cs: CS,
     ops: usize,

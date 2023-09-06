@@ -44,6 +44,7 @@ impl Ord for OrderedVariable {
 }
 
 #[allow(clippy::upper_case_acronyms)]
+#[derive(Debug)]
 pub struct MetricCS<Scalar: PrimeField> {
     named_objects: HashMap<String, NamedObject>,
     current_namespace: Vec<String>,

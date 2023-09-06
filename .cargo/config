@@ -8,4 +8,5 @@ xclippy = [
     "clippy", "--all-targets", "--",
     "-Wclippy::all",
     "-Wclippy::disallowed_methods",
+    "-Wmissing_debug_implementations",
 ]
