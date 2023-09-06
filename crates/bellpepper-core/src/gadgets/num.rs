@@ -7,7 +7,7 @@ use crate::{ConstraintSystem, LinearCombination, SynthesisError, Variable};
 
 use crate::gadgets::boolean::{self, AllocatedBit, Boolean};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AllocatedNum<Scalar: PrimeField> {
     value: Option<Scalar>,
     variable: Variable,
@@ -430,7 +430,7 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Num<Scalar: PrimeField> {
     value: Option<Scalar>,
     lc: LinearCombination<Scalar>,

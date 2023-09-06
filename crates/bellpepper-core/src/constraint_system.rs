@@ -238,6 +238,7 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
 
 /// This is a "namespaced" constraint system which borrows a constraint system (pushing
 /// a namespace context) and, when dropped, pops out of the namespace context.
+#[derive(Debug)]
 pub struct Namespace<'a, Scalar: PrimeField, CS: ConstraintSystem<Scalar>>(
     &'a mut CS,
     PhantomData<Scalar>,

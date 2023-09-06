@@ -10,7 +10,7 @@ use super::multieq::MultiEq;
 
 /// Represents an interpretation of 32 `Boolean` objects as an
 /// unsigned integer.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct UInt32 {
     // Least significant bit first
     bits: Vec<Boolean>,

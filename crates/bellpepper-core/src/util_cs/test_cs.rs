@@ -17,6 +17,7 @@ enum NamedObject {
 }
 
 /// Constraint system for testing purposes.
+#[derive(Debug)]
 pub struct TestConstraintSystem<Scalar: PrimeField> {
     named_objects: HashMap<String, NamedObject>,
     current_namespace: Vec<String>,
