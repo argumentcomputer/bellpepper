@@ -1,4 +1,4 @@
-#![allow(clippy::suspicious_arithmetic_impl)]
+#![deny(missing_debug_implementations)]
 //! `bellpepper` is a crate for building zk-SNARK circuits. It provides circuit
 //! traits and and primitive structures, as well as basic gadget implementations
 //! such as booleans and number abstractions.
