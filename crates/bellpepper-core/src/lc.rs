@@ -247,19 +247,23 @@ impl<Scalar: PrimeField> LinearCombination<Scalar> {
         let one = Scalar::ONE;
 
         for (index, coeff) in self.iter_inputs() {
-            let mut tmp = input_assignment[*index];
-            if coeff != &one {
-                tmp *= coeff;
+            if !coeff.is_zero_vartime() {
+                let mut tmp = input_assignment[*index];
+                if coeff != &one {
+                    tmp *= coeff;
+                }
+                acc += tmp;
             }
-            acc += tmp;
         }
 
         for (index, coeff) in self.iter_aux() {
-            let mut tmp = aux_assignment[*index];
-            if coeff != &one {
-                tmp *= coeff;
+            if !coeff.is_zero_vartime() {
+                let mut tmp = aux_assignment[*index];
+                if coeff != &one {
+                    tmp *= coeff;
+                }
+                acc += tmp;
             }
-            acc += tmp;
         }
 
         acc
@@ -373,7 +377,7 @@ impl<'a, Scalar: PrimeField> Sub<(Scalar, &'a LinearCombination<Scalar>)>
     }
 }
 
-#[cfg(all(test, feature = "groth16"))]
+#[cfg(test)]
 mod tests {
     use super::*;
     use blstrs::Scalar;
