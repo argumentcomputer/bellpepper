@@ -588,14 +588,11 @@ impl Boolean {
                 // b xor ((not a) and c)
                 // So we just continue!
             }
-            (&Boolean::Is(_), &Boolean::Is(_), &Boolean::Is(_))
-            | (&Boolean::Is(_), &Boolean::Is(_), &Boolean::Not(_))
-            | (&Boolean::Is(_), &Boolean::Not(_), &Boolean::Is(_))
-            | (&Boolean::Is(_), &Boolean::Not(_), &Boolean::Not(_))
-            | (&Boolean::Not(_), &Boolean::Is(_), &Boolean::Is(_))
-            | (&Boolean::Not(_), &Boolean::Is(_), &Boolean::Not(_))
-            | (&Boolean::Not(_), &Boolean::Not(_), &Boolean::Is(_))
-            | (&Boolean::Not(_), &Boolean::Not(_), &Boolean::Not(_)) => {}
+            (
+                &Boolean::Is(_) | &Boolean::Not(_),
+                &Boolean::Is(_) | &Boolean::Not(_),
+                &Boolean::Is(_) | &Boolean::Not(_),
+            ) => {}
         }
 
         let ch = cs.alloc(
@@ -695,14 +692,11 @@ impl Boolean {
                 // (b) xor (c) xor (b and c)
                 return Ok(Boolean::and(cs, &b.not(), &c.not())?.not());
             }
-            (&Boolean::Is(_), &Boolean::Is(_), &Boolean::Is(_))
-            | (&Boolean::Is(_), &Boolean::Is(_), &Boolean::Not(_))
-            | (&Boolean::Is(_), &Boolean::Not(_), &Boolean::Is(_))
-            | (&Boolean::Is(_), &Boolean::Not(_), &Boolean::Not(_))
-            | (&Boolean::Not(_), &Boolean::Is(_), &Boolean::Is(_))
-            | (&Boolean::Not(_), &Boolean::Is(_), &Boolean::Not(_))
-            | (&Boolean::Not(_), &Boolean::Not(_), &Boolean::Is(_))
-            | (&Boolean::Not(_), &Boolean::Not(_), &Boolean::Not(_)) => {}
+            (
+                &Boolean::Is(_) | &Boolean::Not(_),
+                &Boolean::Is(_) | &Boolean::Not(_),
+                &Boolean::Is(_) | &Boolean::Not(_),
+            ) => {}
         }
 
         let maj = cs.alloc(

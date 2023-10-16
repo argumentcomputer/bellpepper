@@ -165,7 +165,7 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
     /// Panics if called on a `ConstraintSystem` that is not a witness generator.
     fn extend_inputs(&mut self, _new_inputs: &[Scalar]) {
         assert!(self.is_witness_generator());
-        unimplemented!()
+        unimplemented!("ConstraintSystem::extend_inputs must be implemented for witness generators implementing ConstraintSystem")
     }
 
     /// Extend the auxiliary inputs of the `ConstraintSystem`.
@@ -175,7 +175,7 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
     /// Panics if called on a `ConstraintSystem` that is not a witness generator.
     fn extend_aux(&mut self, _new_aux: &[Scalar]) {
         assert!(self.is_witness_generator());
-        unimplemented!()
+        unimplemented!("ConstraintSystem::extend_aux must be implemented for witness generators implementing ConstraintSystem")
     }
 
     /// Allocate empty space for the auxiliary inputs and the main inputs of the `ConstraintSystem`.
@@ -190,7 +190,7 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
     ) -> (&mut [Scalar], &mut [Scalar]) {
         // This method should only ever be called on witness generators.
         assert!(self.is_witness_generator());
-        unimplemented!()
+        unimplemented!("ConstraintSystem::allocate_empty must be implemented for witness generators implementing ConstraintSystem")
     }
 
     /// Allocate empty space for the main inputs of the `ConstraintSystem`.
@@ -201,7 +201,7 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
     fn allocate_empty_inputs(&mut self, _n: usize) -> &mut [Scalar] {
         // This method should only ever be called on witness generators.
         assert!(self.is_witness_generator());
-        unimplemented!()
+        unimplemented!("ConstraintSystem::allocate_empty_inputs must be implemented for witness generators implementing ConstraintSystem")
     }
 
     /// Allocate empty space for the auxiliary inputs of the `ConstraintSystem`.
@@ -212,7 +212,7 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
     fn allocate_empty_aux(&mut self, _n: usize) -> &mut [Scalar] {
         // This method should only ever be called on witness generators.
         assert!(self.is_witness_generator());
-        unimplemented!()
+        unimplemented!("ConstraintSystem::allocate_empty_aux must be implemented for witness generators implementing ConstraintSystem")
     }
 
     /// Returns the constraint system's inputs as a slice of `Scalar`s.
@@ -222,7 +222,7 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
     /// Panics if called on a `ConstraintSystem` that is not a witness generator.
     fn inputs_slice(&self) -> &[Scalar] {
         assert!(self.is_witness_generator());
-        unimplemented!()
+        unimplemented!("ConstraintSystem::inputs_slice must be implemented for witness generators implementing ConstraintSystem")
     }
 
     /// Returns the constraint system's aux witness as a slice of `Scalar`s.
@@ -232,7 +232,7 @@ pub trait ConstraintSystem<Scalar: PrimeField>: Sized + Send {
     /// Panics if called on a `ConstraintSystem` that is not a witness generator.
     fn aux_slice(&self) -> &[Scalar] {
         assert!(self.is_witness_generator());
-        unimplemented!()
+        unimplemented!("ConstraintSystem::aux_slice must be implemented for witness generators implementing ConstraintSystem")
     }
 }
 
