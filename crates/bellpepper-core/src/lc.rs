@@ -66,8 +66,8 @@ impl<T> Indexer<T> {
         self.values.iter().map(|(key, value)| (key, value))
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&mut usize, &mut T)> + '_ {
-        self.values.iter_mut().map(|(key, value)| (key, value))
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&usize, &mut T)> + '_ {
+        self.values.iter_mut().map(|(key, value)| (&*key, value))
     }
 
     pub fn insert_or_update<F, G>(&mut self, key: usize, insert: F, update: G)
