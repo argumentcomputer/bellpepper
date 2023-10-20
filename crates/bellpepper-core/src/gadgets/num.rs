@@ -276,6 +276,38 @@ impl<Scalar: PrimeField> AllocatedNum<Scalar> {
         Ok(bits.into_iter().map(Boolean::from).collect())
     }
 
+    pub fn add<CS>(&self, mut cs: CS, other: &Self) -> Result<Self, SynthesisError>
+    where
+        CS: ConstraintSystem<Scalar>,
+    {
+        let mut value = None;
+
+        let var = cs.alloc(
+            || "sum num",
+            || {
+                let mut tmp = self.value.ok_or(SynthesisError::AssignmentMissing)?;
+                tmp.add_assign(other.value.ok_or(SynthesisError::AssignmentMissing)?);
+
+                value = Some(tmp);
+
+                Ok(tmp)
+            },
+        )?;
+
+        // Constrain: (a + b) * 1 = a + b
+        cs.enforce(
+            || "addition constraint",
+            |lc| lc + self.variable + other.variable,
+            |lc| lc + CS::one(),
+            |lc| lc + var,
+        );
+
+        Ok(AllocatedNum {
+            value,
+            variable: var,
+        })
+    }
+
     pub fn mul<CS>(&self, mut cs: CS, other: &Self) -> Result<Self, SynthesisError>
     where
         CS: ConstraintSystem<Scalar>,
@@ -537,6 +569,21 @@ mod test {
         AllocatedNum::alloc_infallible(&mut cs, || Fr::ONE);
 
         assert!(cs.get("num") == Fr::ONE);
+    }
+
+    #[test]
+    fn test_num_addition() {
+        let mut cs = TestConstraintSystem::<Fr>::new();
+
+        let n = AllocatedNum::alloc(cs.namespace(|| "a"), || Ok(Fr::from(19u64))).unwrap();
+        let n2 = AllocatedNum::alloc(cs.namespace(|| "b"), || Ok(Fr::from(97u64))).unwrap();
+        let n3 = n.add(&mut cs, &n2).unwrap();
+
+        assert!(cs.is_satisfied());
+        assert!(cs.get("sum num") == Fr::from(116u64));
+        assert!(n3.value.unwrap() == Fr::from(116u64));
+        cs.set("sum num", Fr::from(115u64));
+        assert!(!cs.is_satisfied());
     }
 
     #[test]
