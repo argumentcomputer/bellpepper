@@ -575,14 +575,20 @@ mod test {
     fn test_num_addition() {
         let mut cs = TestConstraintSystem::<Fr>::new();
 
-        let n = AllocatedNum::alloc(cs.namespace(|| "a"), || Ok(Fr::from(19u64))).unwrap();
-        let n2 = AllocatedNum::alloc(cs.namespace(|| "b"), || Ok(Fr::from(97u64))).unwrap();
-        let n3 = n.add(&mut cs, &n2).unwrap();
+        let mut char = Fr::char();
+        char[0] -= 1u8;
+        let mod_minus_one = Fr::from_repr(char);
+        assert!(bool::from(mod_minus_one.is_some()));
+        let mod_minus_one = mod_minus_one.unwrap();
+
+        let a = AllocatedNum::alloc(cs.namespace(|| "a"), || Ok(mod_minus_one)).unwrap();
+        let b = AllocatedNum::alloc(cs.namespace(|| "b"), || Ok(Fr::ONE)).unwrap();
+        let c = a.add(&mut cs, &b).unwrap();
 
         assert!(cs.is_satisfied());
-        assert!(cs.get("sum num") == Fr::from(116u64));
-        assert!(n3.value.unwrap() == Fr::from(116u64));
-        cs.set("sum num", Fr::from(115u64));
+        assert!(cs.get("sum num") == Fr::ZERO);
+        assert!(c.value.unwrap() == Fr::ZERO);
+        cs.set("sum num", Fr::ONE);
         assert!(!cs.is_satisfied());
     }
 
