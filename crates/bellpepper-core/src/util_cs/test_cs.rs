@@ -119,19 +119,17 @@ fn eval_lc<Scalar: PrimeField>(
     inputs: &[(Scalar, String)],
     aux: &[(Scalar, String)],
 ) -> Scalar {
-    let mut acc = Scalar::ZERO;
+    let inputs_acc = terms
+        .iter_inputs()
+        .fold(Scalar::ZERO, |acc, (&index, coeff)| {
+            acc + coeff.mul(inputs[index].0)
+        });
 
-    for (var, coeff) in terms.iter() {
-        let mut tmp = match var.get_unchecked() {
-            Index::Input(index) => inputs[index].0,
-            Index::Aux(index) => aux[index].0,
-        };
+    let aux_acc = terms.iter_aux().fold(Scalar::ZERO, |acc, (&index, coeff)| {
+        acc + coeff.mul(aux[index].0)
+    });
 
-        tmp.mul_assign(coeff);
-        acc.add_assign(&tmp);
-    }
-
-    acc
+    inputs_acc + aux_acc
 }
 
 impl<Scalar: PrimeField> Default for TestConstraintSystem<Scalar> {
