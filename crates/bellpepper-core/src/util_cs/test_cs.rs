@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt::Write;
 
-use super::Comparable;
+use super::{Comparable, Constraint};
 use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
 use blake2s_simd::State as Blake2s;
 use byteorder::{BigEndian, ByteOrder};
@@ -22,12 +22,7 @@ pub struct TestConstraintSystem<Scalar: PrimeField> {
     named_objects: HashMap<String, NamedObject>,
     current_namespace: Vec<String>,
     #[allow(clippy::type_complexity)]
-    constraints: Vec<(
-        LinearCombination<Scalar>,
-        LinearCombination<Scalar>,
-        LinearCombination<Scalar>,
-        String,
-    )>,
+    constraints: Vec<Constraint<Scalar>>,
     inputs: Vec<(Scalar, String)>,
     aux: Vec<(Scalar, String)>,
 }
@@ -64,26 +59,11 @@ impl Ord for OrderedVariable {
 fn proc_lc<Scalar: PrimeField>(
     terms: &LinearCombination<Scalar>,
 ) -> BTreeMap<OrderedVariable, Scalar> {
-    let mut map = BTreeMap::new();
-    for (var, &coeff) in terms.iter() {
-        map.entry(OrderedVariable(var))
-            .or_insert_with(|| Scalar::ZERO)
-            .add_assign(&coeff);
-    }
-
-    // Remove terms that have a zero coefficient to normalize
-    let mut to_remove = vec![];
-    for (var, coeff) in map.iter() {
-        if coeff.is_zero().into() {
-            to_remove.push(*var)
-        }
-    }
-
-    for var in to_remove {
-        map.remove(&var);
-    }
-
-    map
+    terms
+        .iter()
+        .filter(|(_, v)| **v != Scalar::ZERO)
+        .map(|(k, v)| (OrderedVariable(k), *v))
+        .collect()
 }
 
 fn hash_lc<Scalar: PrimeField>(terms: &LinearCombination<Scalar>, h: &mut Blake2s) {
@@ -139,19 +119,10 @@ fn eval_lc<Scalar: PrimeField>(
     inputs: &[(Scalar, String)],
     aux: &[(Scalar, String)],
 ) -> Scalar {
-    let mut acc = Scalar::ZERO;
-
-    for (var, coeff) in terms.iter() {
-        let mut tmp = match var.get_unchecked() {
-            Index::Input(index) => inputs[index].0,
-            Index::Aux(index) => aux[index].0,
-        };
-
-        tmp.mul_assign(coeff);
-        acc.add_assign(&tmp);
-    }
-
-    acc
+    terms.eval(
+        &inputs.iter().map(|(val, _)| *val).collect::<Vec<_>>(),
+        &aux.iter().map(|(val, _)| *val).collect::<Vec<_>>(),
+    )
 }
 
 impl<Scalar: PrimeField> Default for TestConstraintSystem<Scalar> {
@@ -353,7 +324,7 @@ impl<Scalar: PrimeField> Comparable<Scalar> for TestConstraintSystem<Scalar> {
             .collect()
     }
 
-    fn constraints(&self) -> &[crate::util_cs::Constraint<Scalar>] {
+    fn constraints(&self) -> &[Constraint<Scalar>] {
         &self.constraints
     }
 }
@@ -505,5 +476,23 @@ mod tests {
         }
 
         assert!(cs.get("test1/test2/hehe") == Fr::ONE);
+    }
+
+    #[test]
+    fn test_eval_lc() {
+        let one = Fr::ONE;
+        let two = Fr::ONE + Fr::ONE;
+        let mut lc = LinearCombination::<Fr>::zero();
+        let mut inputs = Vec::new();
+        let mut aux = Vec::new();
+        for i in 0..10 {
+            lc = lc + (one, Variable::new_unchecked(Index::Input(i)));
+            lc = lc + (two, Variable::new_unchecked(Index::Aux(i)));
+
+            inputs.push((Fr::from(i as u64), String::new()));
+            aux.push((Fr::from(1 + i as u64), String::new()));
+        }
+        let res = eval_lc(&lc, &inputs, &aux);
+        assert_eq!(res, Fr::from(155));
     }
 }
