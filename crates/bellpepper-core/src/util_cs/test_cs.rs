@@ -323,9 +323,11 @@ impl<Scalar: PrimeField> TestConstraintSystem<Scalar> {
     }
 
     fn set_named_obj(&mut self, path: String, to: NamedObject) {
-        if self.named_objects.contains_key(&path) {
-            panic!("tried to create object at existing path: {}", path);
-        }
+        assert!(
+            !self.named_objects.contains_key(&path),
+            "tried to create object at existing path: {}",
+            path
+        );
 
         self.named_objects.insert(path, to);
     }
