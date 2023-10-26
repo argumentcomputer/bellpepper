@@ -242,14 +242,24 @@ impl<Scalar: PrimeField> LinearCombination<Scalar> {
     }
 
     pub fn eval(&self, input_assignment: &[Scalar], aux_assignment: &[Scalar]) -> Scalar {
+        let one = Scalar::ONE;
+
         let inputs_acc = self
             .iter_inputs()
             .fold(Scalar::ZERO, |acc, (&index, coeff)| {
-                acc + coeff.mul(input_assignment[index])
+                acc + if coeff != &one {
+                    coeff.mul(input_assignment[index])
+                } else {
+                    input_assignment[index]
+                }
             });
 
         let aux_acc = self.iter_aux().fold(Scalar::ZERO, |acc, (&index, coeff)| {
-            acc + coeff.mul(aux_assignment[index])
+            acc + if coeff != &one {
+                coeff.mul(aux_assignment[index])
+            } else {
+                aux_assignment[index]
+            }
         });
 
         inputs_acc + aux_acc

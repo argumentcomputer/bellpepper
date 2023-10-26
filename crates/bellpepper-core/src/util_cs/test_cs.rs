@@ -486,6 +486,24 @@ mod tests {
     }
 
     #[test]
+    fn test_proc_lc() {
+        let one = Fr::ONE;
+        let two = Fr::ONE + Fr::ONE;
+
+        let mut lc = LinearCombination::<Fr>::zero();
+        lc = lc + (two, Variable::new_unchecked(Index::Input(1)));
+        lc = lc + (two, Variable::new_unchecked(Index::Aux(0)));
+
+        lc = lc + (-one, Variable::new_unchecked(Index::Input(1)));
+        lc = lc + (-one, Variable::new_unchecked(Index::Input(1)));
+
+        lc = lc + (-one, Variable::new_unchecked(Index::Aux(0)));
+        lc = lc + (-one, Variable::new_unchecked(Index::Aux(0)));
+        let res = proc_lc(&lc);
+        assert!(res.is_empty());
+    }
+
+    #[test]
     fn test_eval_lc() {
         let one = Fr::ONE;
         let two = Fr::ONE + Fr::ONE;
