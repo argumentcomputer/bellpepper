@@ -55,11 +55,11 @@ impl<Scalar> WitnessCS<Scalar>
 where
     Scalar: PrimeField,
 {
-    pub fn input_assignment(&self) -> &Vec<Scalar> {
+    pub fn scalar_inputs(&self) -> &[Scalar] {
         &self.input_assignment
     }
 
-    pub fn aux_assignment(&self) -> &Vec<Scalar> {
+    pub fn scalar_aux(&self) -> &[Scalar] {
         &self.aux_assignment
     }
 }
