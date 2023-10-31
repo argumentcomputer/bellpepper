@@ -47,8 +47,21 @@ where
     Scalar: PrimeField,
 {
     // Assignments of variables
-    pub input_assignment: Vec<Scalar>,
-    pub aux_assignment: Vec<Scalar>,
+    pub(crate) input_assignment: Vec<Scalar>,
+    pub(crate) aux_assignment: Vec<Scalar>,
+}
+
+impl<Scalar> WitnessCS<Scalar>
+where
+    Scalar: PrimeField,
+{
+    pub fn input_assignment(&self) -> &Vec<Scalar> {
+        &self.input_assignment
+    }
+
+    pub fn aux_assignment(&self) -> &Vec<Scalar> {
+        &self.aux_assignment
+    }
 }
 
 impl<Scalar> ConstraintSystem<Scalar> for WitnessCS<Scalar>
@@ -164,15 +177,5 @@ where
 
     fn aux_slice(&self) -> &[Scalar] {
         &self.aux_assignment
-    }
-}
-
-impl<Scalar: PrimeField> WitnessCS<Scalar> {
-    pub fn scalar_inputs(&self) -> Vec<Scalar> {
-        self.input_assignment.clone()
-    }
-
-    pub fn scalar_aux(&self) -> Vec<Scalar> {
-        self.aux_assignment.clone()
     }
 }
