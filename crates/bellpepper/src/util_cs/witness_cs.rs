@@ -47,8 +47,8 @@ where
     Scalar: PrimeField,
 {
     // Assignments of variables
-    pub(crate) input_assignment: Vec<Scalar>,
-    pub(crate) aux_assignment: Vec<Scalar>,
+    pub input_assignment: Vec<Scalar>,
+    pub aux_assignment: Vec<Scalar>,
 }
 
 impl<Scalar> ConstraintSystem<Scalar> for WitnessCS<Scalar>
