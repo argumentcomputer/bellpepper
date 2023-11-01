@@ -180,15 +180,19 @@ where
     }
 }
 
-#[deprecated(
-    since = "0.4.0",
-    note = "Deprecated for performance; use `input_assignment` and `aux_assignment` to avoid data cloning."
-)]
 impl<Scalar: PrimeField> WitnessCS<Scalar> {
+    #[deprecated(
+        since = "0.4.0",
+        note = "Deprecated for performance; use the `input_assignment` method to avoid data cloning."
+    )]
     pub fn scalar_inputs(&self) -> Vec<Scalar> {
         self.input_assignment.clone()
     }
 
+    #[deprecated(
+        since = "0.4.0",
+        note = "Deprecated for performance; use `aux_assignment` method to avoid data cloning."
+    )]
     pub fn scalar_aux(&self) -> Vec<Scalar> {
         self.aux_assignment.clone()
     }
