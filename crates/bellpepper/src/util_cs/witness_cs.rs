@@ -55,11 +55,11 @@ impl<Scalar> WitnessCS<Scalar>
 where
     Scalar: PrimeField,
 {
-    pub fn scalar_inputs(&self) -> &[Scalar] {
+    pub fn input_assignment(&self) -> &[Scalar] {
         &self.input_assignment
     }
 
-    pub fn scalar_aux(&self) -> &[Scalar] {
+    pub fn aux_assignment(&self) -> &[Scalar] {
         &self.aux_assignment
     }
 }
@@ -177,5 +177,19 @@ where
 
     fn aux_slice(&self) -> &[Scalar] {
         &self.aux_assignment
+    }
+}
+
+#[deprecated(
+    since = "0.4.0",
+    note = "Deprecated for performance; use `input_assignment` and `aux_assignment` to avoid data cloning."
+)]
+impl<Scalar: PrimeField> WitnessCS<Scalar> {
+    pub fn scalar_inputs(&self) -> Vec<Scalar> {
+        self.input_assignment.clone()
+    }
+
+    pub fn scalar_aux(&self) -> Vec<Scalar> {
+        self.aux_assignment.clone()
     }
 }
