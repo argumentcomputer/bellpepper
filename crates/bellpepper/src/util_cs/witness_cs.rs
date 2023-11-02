@@ -51,6 +51,19 @@ where
     pub(crate) aux_assignment: Vec<Scalar>,
 }
 
+impl<Scalar> WitnessCS<Scalar>
+where
+    Scalar: PrimeField,
+{
+    pub fn input_assignment(&self) -> &[Scalar] {
+        &self.input_assignment
+    }
+
+    pub fn aux_assignment(&self) -> &[Scalar] {
+        &self.aux_assignment
+    }
+}
+
 impl<Scalar> ConstraintSystem<Scalar> for WitnessCS<Scalar>
 where
     Scalar: PrimeField,
@@ -168,10 +181,18 @@ where
 }
 
 impl<Scalar: PrimeField> WitnessCS<Scalar> {
+    #[deprecated(
+        since = "0.4.0",
+        note = "Deprecated for performance; use the `input_assignment` method to avoid data cloning."
+    )]
     pub fn scalar_inputs(&self) -> Vec<Scalar> {
         self.input_assignment.clone()
     }
 
+    #[deprecated(
+        since = "0.4.0",
+        note = "Deprecated for performance; use `aux_assignment` method to avoid data cloning."
+    )]
     pub fn scalar_aux(&self) -> Vec<Scalar> {
         self.aux_assignment.clone()
     }
