@@ -1,4 +1,5 @@
-# bellpepper [![Crates.io](https://img.shields.io/crates/v/bellpepper.svg)](https://crates.io/crates/bellpepper)
+# bellpepper [![Crates.io](https://img.shields.io/crates/v/bellpepper.svg)](https://crates.io/crates/bellpepper) [![dependency status](https://deps.rs/repo/github/lurk-lab/bellpepper/status.svg)](https://deps.rs/repo/github/lurk-lab/bellpepper)
+
 
 > This is a fork of the great [bellperson](https://github.com/filecoin-project/bellperson) library,
 > Itself a fork of the great [bellman](https://github.com/zkcrypto/bellman) library.
