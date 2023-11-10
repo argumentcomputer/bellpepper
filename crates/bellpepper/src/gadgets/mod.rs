@@ -7,6 +7,8 @@ pub mod multipack;
 pub use bellpepper_core::num;
 pub mod sha256;
 pub mod uint32;
+#[macro_use]
+pub mod boolean_utils;
 
 use bellpepper_core::SynthesisError;
 
