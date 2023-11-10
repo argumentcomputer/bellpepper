@@ -48,8 +48,8 @@ macro_rules! and {
 
 }
 
-/// Allocate a Boolean which is true if and only if `num` is zero.
-pub fn alloc_num_is_zero<CS: ConstraintSystem<F>, F: PrimeField>(
+// Allocate a Boolean which is true if and only if `num` is zero.
+fn alloc_num_is_zero<CS: ConstraintSystem<F>, F: PrimeField>(
     mut cs: CS,
     num: &Num<F>,
 ) -> Result<Boolean, SynthesisError> {
