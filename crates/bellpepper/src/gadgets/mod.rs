@@ -6,7 +6,6 @@ pub mod boolean_utils;
 pub mod lookup;
 pub mod multieq;
 pub mod multipack;
-pub mod negative_num;
 pub use bellpepper_core::num;
 pub mod sha256;
 pub mod uint32;
