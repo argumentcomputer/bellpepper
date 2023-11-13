@@ -62,6 +62,26 @@ where
     pub fn aux_assignment(&self) -> &[Scalar] {
         &self.aux_assignment
     }
+
+    pub fn with_capacity(input_size: usize, aux_size: usize) -> Self {
+        let input_assignment = Vec::with_capacity(input_size);
+        let aux_assignment = Vec::with_capacity(aux_size);
+        Self {
+            input_assignment,
+            aux_assignment,
+        }
+    }
+
+    pub fn from_assignments(input_assignment: Vec<Scalar>, aux_assignment: Vec<Scalar>) -> Self {
+        Self {
+            input_assignment,
+            aux_assignment,
+        }
+    }
+
+    pub fn to_assignments(self) -> (Vec<Scalar>, Vec<Scalar>) {
+        (self.input_assignment, self.aux_assignment)
+    }
 }
 
 impl<Scalar> ConstraintSystem<Scalar> for WitnessCS<Scalar>
