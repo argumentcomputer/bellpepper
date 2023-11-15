@@ -64,7 +64,8 @@ where
     }
 
     pub fn with_capacity(input_size: usize, aux_size: usize) -> Self {
-        let input_assignment = Vec::with_capacity(input_size);
+        let mut input_assignment = Vec::with_capacity(input_size);
+        input_assignment.push(Scalar::ONE);
         let aux_assignment = Vec::with_capacity(aux_size);
         Self {
             input_assignment,
