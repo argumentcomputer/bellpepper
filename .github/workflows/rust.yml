@@ -36,11 +36,8 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: [ubuntu-latest]
     strategy:
-      matrix:
-        os:
-          - ubuntu-latest
       fail-fast: false
     env:
       RUSTFLAGS: -D warnings
@@ -60,6 +57,32 @@ jobs:
       - name: Doctests
         run: |
           cargo test --doc
+
+  check-lurk-compiles:
+    if: github.event_name == 'pull_request'
+    runs-on: [ubuntu-latest]
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        path: ${{ github.workspace }}/bellpepper
+    - uses: actions/checkout@v4
+      with:
+        repository: lurk-lab/lurk-rs
+        path: ${{ github.workspace }}/lurk
+        submodules: recursive
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: Swatinem/rust-cache@v2
+    - name: Patch Cargo.toml
+      working-directory: ${{ github.workspace }}/lurk
+      run: |
+        echo "[patch.'https://github.com/lurk-lab/bellpepper']" >> Cargo.toml
+        echo "bellpepper = { path='../bellpepper/crates/bellpepper' }" >> Cargo.toml
+        echo "bellpepper-core = { path='../bellpepper/crates/bellpepper-core' }" >> Cargo.toml
+    - name: Check Lurk-rs types don't break spectacularly
+      working-directory: ${{ github.workspace }}/lurk
+      run: cargo check --all --tests --benches --examples
 
   clippy:
     runs-on: ubuntu-latest
@@ -98,3 +121,13 @@ jobs:
     - name: Check Rust MSRV
       run: cargo msrv verify
       working-directory: crates/${{ matrix.package }}
+
+  # Check documentation links aren't broken
+  link-checker:
+    uses: lurk-lab/ci-workflows/.github/workflows/links-check.yml@main
+    with: 
+      fail-fast: true
+
+  # Lint dependencies for licensing and auditing issues as per https://github.com/lurk-lab/bellpepper/blob/main/deny.toml
+  licenses-audits:
+    uses: lurk-lab/ci-workflows/.github/workflows/licenses-audits.yml@main
