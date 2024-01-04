@@ -26,7 +26,7 @@ blake2s_simd = { workspace = true }
 hex-literal = "0.4"
 blstrs = { workspace = true }
 rand_core = { workspace = true }
-rand_xorshift = "0.3.0"
+rand_xorshift = { workspace = true }
 sha2 = "0.10.7"
 
 [badges]

@@ -16,9 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-        with:
-            profile: minimal
-
       - name: Install cargo-release
         uses: taiki-e/install-action@v2
         with:
