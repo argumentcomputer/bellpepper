@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["BELLPEPPER_VERSION"],"enum":["Delta","Index","SynthesisError"],"mod":["boolean","num","test_cs"],"struct":["LinearCombination","Namespace","Variable"],"trait":["Circuit","Comparable","ConstraintSystem"],"type":["Constraint"]};

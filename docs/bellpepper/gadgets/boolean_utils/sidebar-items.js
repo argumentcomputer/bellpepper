@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["and_v","or_v","or_v_unchecked_for_optimization"]};
