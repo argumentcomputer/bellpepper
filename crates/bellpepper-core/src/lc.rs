@@ -63,6 +63,7 @@ impl<T> Indexer<T> {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&usize, &T)> + '_ {
+        #[allow(clippy::map_identity)]
         self.values.iter().map(|(key, value)| (key, value))
     }
 
