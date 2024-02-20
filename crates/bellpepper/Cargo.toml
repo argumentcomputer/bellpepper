@@ -16,7 +16,7 @@ edition = "2021"
 rust-version = "1.66.0"
 
 [dependencies]
-bellpepper-core = { version = "0.4", path = "../bellpepper-core" }
+bellpepper-core = { version = "0.4" }
 byteorder = { workspace = true }
 ff = { workspace = true }
 
