@@ -3,10 +3,10 @@ name: Rust
 on:
   merge_group:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    branches: [main]
+    branches: [main, dev]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
