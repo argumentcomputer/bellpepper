@@ -1,9 +1,10 @@
 use bellpepper_core::{
     boolean::{AllocatedBit, Boolean},
-    num::Num,
+    num::{AllocatedNum, Num},
     ConstraintSystem, SynthesisError,
 };
 use ff::PrimeField;
+use itertools::Itertools as _;
 
 // Returns a Boolean which is true if any of its arguments are true.
 #[macro_export]
@@ -149,11 +150,86 @@ pub fn and_v<CS: ConstraintSystem<F>, F: PrimeField>(
     Ok(and)
 }
 
+/// If condition return a otherwise b
+pub fn conditionally_select<F: PrimeField, CS: ConstraintSystem<F>>(
+    mut cs: CS,
+    a: &AllocatedNum<F>,
+    b: &AllocatedNum<F>,
+    condition: &Boolean,
+) -> Result<AllocatedNum<F>, SynthesisError> {
+    let c = AllocatedNum::alloc(cs.namespace(|| "conditional select result"), || {
+        if condition
+            .get_value()
+            .ok_or(SynthesisError::AssignmentMissing)?
+        {
+            a.get_value().ok_or(SynthesisError::AssignmentMissing)
+        } else {
+            b.get_value().ok_or(SynthesisError::AssignmentMissing)
+        }
+    })?;
+
+    // a * condition + b*(1-condition) = c ->
+    // a * condition - b*condition = c - b
+    cs.enforce(
+        || "conditional select constraint",
+        |lc| lc + a.get_variable() - b.get_variable(),
+        |_| condition.lc(CS::one(), F::ONE),
+        |lc| lc + c.get_variable() - b.get_variable(),
+    );
+
+    Ok(c)
+}
+
+/// If condition return a otherwise b
+pub fn conditionally_select_slice<F: PrimeField, CS: ConstraintSystem<F>>(
+    mut cs: CS,
+    a: &[AllocatedNum<F>],
+    b: &[AllocatedNum<F>],
+    condition: &Boolean,
+) -> Result<Vec<AllocatedNum<F>>, SynthesisError> {
+    a.iter()
+        .zip_eq(b.iter())
+        .enumerate()
+        .map(|(i, (a, b))| {
+            conditionally_select(cs.namespace(|| format!("select_{i}")), a, b, condition)
+        })
+        .collect::<Result<Vec<AllocatedNum<F>>, SynthesisError>>()
+}
+
 #[cfg(test)]
 mod tests {
-    use bellpepper_core::{boolean::Boolean, test_cs::TestConstraintSystem};
+    use super::*;
+    use bellpepper_core::{
+        boolean::{AllocatedBit, Boolean},
+        num::AllocatedNum,
+        test_cs::TestConstraintSystem,
+    };
     use blstrs::Scalar as Fr;
+    use ff::PrimeField;
     use proptest::prelude::*;
+    use rand_xorshift::XorShiftRng;
+
+    /// Wrapper struct around a field element that implements additional traits
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub struct FWrap<F>(pub F);
+
+    impl<F: PrimeField> Copy for FWrap<F> {}
+
+    #[cfg(not(target_arch = "wasm32"))]
+    /// Trait implementation for generating `FWrap<F>` instances with proptest
+    impl<F: PrimeField> Arbitrary for FWrap<F> {
+        type Parameters = ();
+        type Strategy = BoxedStrategy<Self>;
+
+        fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+            use rand_core::SeedableRng;
+
+            let strategy = any::<[u8; 16]>()
+                .prop_map(|seed| Self(F::random(XorShiftRng::from_seed(seed))))
+                .no_shrink();
+            strategy.boxed()
+        }
+    }
 
     proptest! {
         #[test]
@@ -190,6 +266,21 @@ mod tests {
             assert_eq!(expected_or1, or1.get_value().unwrap());
             assert_eq!(expected_or2, or2.get_value().unwrap());
             assert!(cs.is_satisfied());
+        }
+
+        #[test]
+        fn test_conditional_selection((f1, f2) in any::<(FWrap<Fr>, FWrap<Fr>)>(), b in any::<bool>()) {
+            let mut cs = TestConstraintSystem::<Fr>::new();
+            let a1 = AllocatedNum::alloc_infallible(cs.namespace(|| "f1"), || f1.0);
+            let a2 = AllocatedNum::alloc_infallible(cs.namespace(|| "f2"), || f2.0);
+            let cond = Boolean::from(AllocatedBit::alloc(
+                cs.namespace(|| "condition"),
+                Some(b),
+            ).unwrap());
+            let c = conditionally_select(&mut cs, &a1, &a2, &cond).unwrap();
+            assert!(cs.is_satisfied());
+            let valid_value = if b { f1.0 } else { f2.0 };
+            assert_eq!(c.get_value(), Some(valid_value));
         }
     }
 }
