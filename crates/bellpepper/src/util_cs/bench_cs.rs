@@ -24,6 +24,10 @@ impl<Scalar: PrimeField> BenchCS<Scalar> {
         self.a
     }
 
+    pub fn num_auxiliaries(&self) -> usize {
+        self.aux
+    }
+
     pub fn num_inputs(&self) -> usize {
         self.inputs
     }
