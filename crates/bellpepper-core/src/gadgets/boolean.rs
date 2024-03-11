@@ -774,11 +774,11 @@ impl Boolean {
             }
             _ => None,
         };
-    
+
         match (a, b, c) {
             (&Boolean::Constant(_), &Boolean::Constant(_), &Boolean::Constant(_)) => {
                 // They're all constants, so we can just compute the value.
-    
+
                 return Ok(Boolean::Constant(d1_value.expect("they're all constants")));
             }
             (&Boolean::Constant(false), b, c) => {
@@ -809,7 +809,7 @@ impl Boolean {
                 // (a and b) xor (a) xor (b)
                 // equals
                 // not ((not a) and (not b))
-                
+
                 return Ok(Boolean::and(cs, &a.not(), b)?.not());
             }
             (a, &Boolean::Constant(true), _c) => {
@@ -824,7 +824,7 @@ impl Boolean {
                 // (a and b) xor (a and c) xor (b and c)
                 // equals
                 // (b) xor (c) xor (b and c)
-                
+
                 return Ok(Boolean::and(cs, &b.not(), &c.not())?.not());
             }
             (
@@ -833,7 +833,7 @@ impl Boolean {
                 &Boolean::Is(_) | &Boolean::Not(_),
             ) => {}
         }
-    
+
         let d1 = cs.alloc(
             || "d1",
             || {
@@ -846,22 +846,21 @@ impl Boolean {
                 })
             },
         )?;
-    
+
         cs.enforce(
             || "d1 computation",
             |_| a.lc(CS::one(), Scalar::ONE) - &c.lc(CS::one(), Scalar::ONE),
             |_| b.lc(CS::one(), Scalar::ONE),
             |lc| lc + d1 - &c.lc(CS::one(), Scalar::ONE),
         );
-    
+
         Ok(AllocatedBit {
             value: d1_value,
             variable: d1,
         }
         .into())
     }
-    
-    
+
     pub fn ripemd160_d2<'a, Scalar, CS>(
         mut cs: CS,
         a: &'a Self,
@@ -875,15 +874,15 @@ impl Boolean {
         let d2_value = match (a.get_value(), b.get_value(), c.get_value()) {
             (Some(a), Some(b), Some(c)) => {
                 // (a)xor(b or not(c))
-                Some((a)^(b|!c))
+                Some((a) ^ (b | !c))
             }
             _ => None,
         };
-    
+
         match (a, b, c) {
             (&Boolean::Constant(_), &Boolean::Constant(_), &Boolean::Constant(_)) => {
                 // They're all constants, so we can just compute the value.
-    
+
                 return Ok(Boolean::Constant(d2_value.expect("they're all constants")));
             }
             (&Boolean::Constant(false), b, c) => {
@@ -898,7 +897,7 @@ impl Boolean {
                 // (a and b) xor (a and c) xor (b and c)
                 // equals
                 // (a and c)
-                
+
                 return Boolean::xor(cs, a, &c.not());
             }
             (a, _b, &Boolean::Constant(false)) => {
@@ -915,7 +914,7 @@ impl Boolean {
                 // (a and b) xor (a) xor (b)
                 // equals
                 // not ((not a) and (not b))
-                
+
                 return Boolean::xor(cs, a, b);
             }
             (a, &Boolean::Constant(true), _c) => {
@@ -938,7 +937,7 @@ impl Boolean {
                 &Boolean::Is(_) | &Boolean::Not(_),
             ) => {}
         }
-    
+
         let d2 = cs.alloc(
             || "d2",
             || {
@@ -951,16 +950,20 @@ impl Boolean {
                 })
             },
         )?;
-    
+
         let notbc = Self::and(cs.namespace(|| "not b and c"), &b.not(), c)?;
-    
+
         cs.enforce(
             || "d2 computation",
             |lc| lc + CS::one() - &a.lc(CS::one(), Scalar::ONE),
-            |lc| lc + CS::one() +&b.lc(CS::one(), Scalar::ONE)- &c.lc(CS::one(), Scalar::ONE)- &notbc.lc(CS::one(), Scalar::ONE),
-            |lc| lc + d2 -&notbc.lc(CS::one(), Scalar::ONE),
+            |lc| {
+                lc + CS::one() + &b.lc(CS::one(), Scalar::ONE)
+                    - &c.lc(CS::one(), Scalar::ONE)
+                    - &notbc.lc(CS::one(), Scalar::ONE)
+            },
+            |lc| lc + d2 - &notbc.lc(CS::one(), Scalar::ONE),
         );
-    
+
         Ok(AllocatedBit {
             value: d2_value,
             variable: d2,
@@ -2313,7 +2316,7 @@ mod test {
             OperandType::NegatedAllocatedTrue,
             OperandType::NegatedAllocatedFalse,
         ];
-// (a)xor(b or not(c))
+        // (a)xor(b or not(c))
         for first_operand in variants.iter().cloned() {
             for second_operand in variants.iter().cloned() {
                 for third_operand in variants.iter().cloned() {
@@ -2323,9 +2326,8 @@ mod test {
                     let b;
                     let c;
 
-                    
-                    let expected = (first_operand.val())
-                        ^ ((second_operand.val()) | (!third_operand.val()));
+                    let expected =
+                        (first_operand.val()) ^ ((second_operand.val()) | (!third_operand.val()));
 
                     {
                         let mut dyn_construct = |operand, name| {
@@ -2357,7 +2359,7 @@ mod test {
                     }
 
                     let d2 = Boolean::ripemd160_d2(&mut cs, &a, &b, &c).unwrap();
-                    
+
                     // assert!(cs.is_satisfied());
                     assert_eq!(d2.get_value().unwrap(), expected);
 
