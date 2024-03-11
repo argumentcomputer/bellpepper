@@ -757,6 +757,216 @@ impl Boolean {
         }
         .into())
     }
+    pub fn ripemd160_d1<'a, Scalar, CS>(
+        mut cs: CS,
+        a: &'a Self,
+        b: &'a Self,
+        c: &'a Self,
+    ) -> Result<Self, SynthesisError>
+    where
+        Scalar: PrimeField,
+        CS: ConstraintSystem<Scalar>,
+    {
+        let d1_value = match (a.get_value(), b.get_value(), c.get_value()) {
+            (Some(a), Some(b), Some(c)) => {
+                // (a and b) xor (a and c) xor (b and c)
+                Some((a & b) | (c & !b))
+            }
+            _ => None,
+        };
+    
+        match (a, b, c) {
+            (&Boolean::Constant(_), &Boolean::Constant(_), &Boolean::Constant(_)) => {
+                // They're all constants, so we can just compute the value.
+    
+                return Ok(Boolean::Constant(d1_value.expect("they're all constants")));
+            }
+            (&Boolean::Constant(false), b, c) => {
+                // If a is false,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (b and c)
+                return Boolean::and(cs, &b.not(), c);
+            }
+            (a, &Boolean::Constant(false), c) => {
+                // If b is false,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (a and c)
+                return Ok(c.clone());
+            }
+            (a, b, &Boolean::Constant(false)) => {
+                // If c is false,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (a and b)
+                return Boolean::and(cs, a, b);
+            }
+            (a, b, &Boolean::Constant(true)) => {
+                // If c is true,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (a and b) xor (a) xor (b)
+                // equals
+                // not ((not a) and (not b))
+                
+                return Ok(Boolean::and(cs, &a.not(), b)?.not());
+            }
+            (a, &Boolean::Constant(true), c) => {
+                // If b is true,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (a) xor (a and c) xor (c)
+                return Ok(a.clone());
+            }
+            (&Boolean::Constant(true), b, c) => {
+                // If a is true,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (b) xor (c) xor (b and c)
+                
+                return Ok(Boolean::and(cs, &b.not(), &c.not())?.not());
+            }
+            (
+                &Boolean::Is(_) | &Boolean::Not(_),
+                &Boolean::Is(_) | &Boolean::Not(_),
+                &Boolean::Is(_) | &Boolean::Not(_),
+            ) => {}
+        }
+    
+        let d1 = cs.alloc(
+            || "d1",
+            || {
+                d1_value.ok_or(SynthesisError::AssignmentMissing).map(|v| {
+                    if v {
+                        Scalar::ONE
+                    } else {
+                        Scalar::ZERO
+                    }
+                })
+            },
+        )?;
+    
+        cs.enforce(
+            || "d1 computation",
+            |_| a.lc(CS::one(), Scalar::ONE) - &c.lc(CS::one(), Scalar::ONE),
+            |_| b.lc(CS::one(), Scalar::ONE),
+            |lc| lc + d1 - &c.lc(CS::one(), Scalar::ONE),
+        );
+    
+        Ok(AllocatedBit {
+            value: d1_value,
+            variable: d1,
+        }
+        .into())
+    }
+    
+    
+    pub fn ripemd160_d2<'a, Scalar, CS>(
+        mut cs: CS,
+        a: &'a Self,
+        b: &'a Self,
+        c: &'a Self,
+    ) -> Result<Self, SynthesisError>
+    where
+        Scalar: PrimeField,
+        CS: ConstraintSystem<Scalar>,
+    {
+        let d2_value = match (a.get_value(), b.get_value(), c.get_value()) {
+            (Some(a), Some(b), Some(c)) => {
+                // (a)xor(b or not(c))
+                Some((a)^(b|!c))
+            }
+            _ => None,
+        };
+    
+        match (a, b, c) {
+            (&Boolean::Constant(_), &Boolean::Constant(_), &Boolean::Constant(_)) => {
+                // They're all constants, so we can just compute the value.
+    
+                return Ok(Boolean::Constant(d2_value.expect("they're all constants")));
+            }
+            (&Boolean::Constant(false), b, c) => {
+                // If a is false,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (b and c)
+                return Ok(Boolean::and(cs, c, &b.not())?.not());
+            }
+            (a, &Boolean::Constant(false), c) => {
+                // If b is false,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (a and c)
+                
+                return Boolean::xor(cs, a, &c.not());
+            }
+            (a, _b, &Boolean::Constant(false)) => {
+                // If c is false,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (a and b)
+                return Ok(Boolean::and(cs, a, a)?.not());
+            }
+            (a, b, &Boolean::Constant(true)) => {
+                // If c is true,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (a and b) xor (a) xor (b)
+                // equals
+                // not ((not a) and (not b))
+                
+                return Boolean::xor(cs, a, b);
+            }
+            (a, &Boolean::Constant(true), _c) => {
+                // If b is true,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (a) xor (a and c) xor (c)
+                return Ok(Boolean::and(cs, a, a)?.not());
+            }
+            (&Boolean::Constant(true), b, c) => {
+                // If a is true,
+                // (a and b) xor (a and c) xor (b and c)
+                // equals
+                // (b) xor (c) xor (b and c)
+                return Boolean::and(cs, c, &b.not());
+            }
+            (
+                &Boolean::Is(_) | &Boolean::Not(_),
+                &Boolean::Is(_) | &Boolean::Not(_),
+                &Boolean::Is(_) | &Boolean::Not(_),
+            ) => {}
+        }
+    
+        let d2 = cs.alloc(
+            || "d2",
+            || {
+                d2_value.ok_or(SynthesisError::AssignmentMissing).map(|v| {
+                    if v {
+                        Scalar::ONE
+                    } else {
+                        Scalar::ZERO
+                    }
+                })
+            },
+        )?;
+    
+        let notbc = Self::and(cs.namespace(|| "not b and c"), &b.not(), c)?;
+    
+        cs.enforce(
+            || "d2 computation",
+            |lc| lc + CS::one() - &a.lc(CS::one(), Scalar::ONE),
+            |lc| lc + CS::one() +&b.lc(CS::one(), Scalar::ONE)- &c.lc(CS::one(), Scalar::ONE)- &notbc.lc(CS::one(), Scalar::ONE),
+            |lc| lc + d2 -&notbc.lc(CS::one(), Scalar::ONE),
+        );
+    
+        Ok(AllocatedBit {
+            value: d2_value,
+            variable: d2,
+        }
+        .into())
+    }
 }
 
 impl From<AllocatedBit> for Boolean {
@@ -2001,7 +2211,186 @@ mod test {
             }
         }
     }
+    #[test]
+    fn test_boolean_ripemd_d1() {
+        let variants = [
+            OperandType::True,
+            OperandType::False,
+            OperandType::AllocatedTrue,
+            OperandType::AllocatedFalse,
+            OperandType::NegatedAllocatedTrue,
+            OperandType::NegatedAllocatedFalse,
+        ];
 
+        for first_operand in variants.iter().cloned() {
+            for second_operand in variants.iter().cloned() {
+                for third_operand in variants.iter().cloned() {
+                    let mut cs = TestConstraintSystem::<Fr>::new();
+
+                    let a;
+                    let b;
+                    let c;
+
+                    // maj = (a and b) xor (a and c) xor (b and c)
+                    let expected = (first_operand.val() & second_operand.val())
+                        | ((!second_operand.val()) & third_operand.val());
+
+                    {
+                        let mut dyn_construct = |operand, name| {
+                            let cs = cs.namespace(|| name);
+
+                            match operand {
+                                OperandType::True => Boolean::constant(true),
+                                OperandType::False => Boolean::constant(false),
+                                OperandType::AllocatedTrue => {
+                                    Boolean::from(AllocatedBit::alloc(cs, Some(true)).unwrap())
+                                }
+                                OperandType::AllocatedFalse => {
+                                    Boolean::from(AllocatedBit::alloc(cs, Some(false)).unwrap())
+                                }
+                                OperandType::NegatedAllocatedTrue => {
+                                    Boolean::from(AllocatedBit::alloc(cs, Some(true)).unwrap())
+                                        .not()
+                                }
+                                OperandType::NegatedAllocatedFalse => {
+                                    Boolean::from(AllocatedBit::alloc(cs, Some(false)).unwrap())
+                                        .not()
+                                }
+                            }
+                        };
+
+                        a = dyn_construct(first_operand, "a");
+                        b = dyn_construct(second_operand, "b");
+                        c = dyn_construct(third_operand, "c");
+                    }
+
+                    let d1 = Boolean::ripemd160_d1(&mut cs, &a, &b, &c).unwrap();
+
+                    assert!(cs.is_satisfied());
+
+                    assert_eq!(d1.get_value().unwrap(), expected);
+
+                    if first_operand.is_constant()
+                        || second_operand.is_constant()
+                        || third_operand.is_constant()
+                    {
+                        if first_operand.is_constant()
+                            && second_operand.is_constant()
+                            && third_operand.is_constant()
+                        {
+                            assert_eq!(cs.num_constraints(), 0);
+                        }
+                    } else {
+                        assert_eq!(cs.get("d1"), {
+                            if expected {
+                                Fr::ONE
+                            } else {
+                                Fr::ZERO
+                            }
+                        });
+                        cs.set("d1", {
+                            if expected {
+                                Fr::ZERO
+                            } else {
+                                Fr::ONE
+                            }
+                        });
+                        assert_eq!(cs.which_is_unsatisfied().unwrap(), "d1 computation");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_boolean_ripemd_d2() {
+        let variants = [
+            OperandType::True,
+            OperandType::False,
+            OperandType::AllocatedTrue,
+            OperandType::AllocatedFalse,
+            OperandType::NegatedAllocatedTrue,
+            OperandType::NegatedAllocatedFalse,
+        ];
+// (a)xor(b or not(c))
+        for first_operand in variants.iter().cloned() {
+            for second_operand in variants.iter().cloned() {
+                for third_operand in variants.iter().cloned() {
+                    let mut cs = TestConstraintSystem::<Fr>::new();
+
+                    let a;
+                    let b;
+                    let c;
+
+                    
+                    let expected = (first_operand.val())
+                        ^ ((second_operand.val()) | (!third_operand.val()));
+
+                    {
+                        let mut dyn_construct = |operand, name| {
+                            let cs = cs.namespace(|| name);
+
+                            match operand {
+                                OperandType::True => Boolean::constant(true),
+                                OperandType::False => Boolean::constant(false),
+                                OperandType::AllocatedTrue => {
+                                    Boolean::from(AllocatedBit::alloc(cs, Some(true)).unwrap())
+                                }
+                                OperandType::AllocatedFalse => {
+                                    Boolean::from(AllocatedBit::alloc(cs, Some(false)).unwrap())
+                                }
+                                OperandType::NegatedAllocatedTrue => {
+                                    Boolean::from(AllocatedBit::alloc(cs, Some(true)).unwrap())
+                                        .not()
+                                }
+                                OperandType::NegatedAllocatedFalse => {
+                                    Boolean::from(AllocatedBit::alloc(cs, Some(false)).unwrap())
+                                        .not()
+                                }
+                            }
+                        };
+
+                        a = dyn_construct(first_operand, "a");
+                        b = dyn_construct(second_operand, "b");
+                        c = dyn_construct(third_operand, "c");
+                    }
+
+                    let d2 = Boolean::ripemd160_d2(&mut cs, &a, &b, &c).unwrap();
+                    
+                    // assert!(cs.is_satisfied());
+                    assert_eq!(d2.get_value().unwrap(), expected);
+
+                    if first_operand.is_constant()
+                        || second_operand.is_constant()
+                        || third_operand.is_constant()
+                    {
+                        if first_operand.is_constant()
+                            && second_operand.is_constant()
+                            && third_operand.is_constant()
+                        {
+                            assert_eq!(cs.num_constraints(), 0);
+                        }
+                    } else {
+                        assert_eq!(cs.get("d2"), {
+                            if expected {
+                                Fr::ONE
+                            } else {
+                                Fr::ZERO
+                            }
+                        });
+                        cs.set("d2", {
+                            if expected {
+                                Fr::ZERO
+                            } else {
+                                Fr::ONE
+                            }
+                        });
+                        assert_eq!(cs.which_is_unsatisfied().unwrap(), "d2 computation");
+                    }
+                }
+            }
+        }
+    }
     #[test]
     fn test_alloc_conditionally() {
         {
