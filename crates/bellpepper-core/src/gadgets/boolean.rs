@@ -788,7 +788,7 @@ impl Boolean {
                 // (b and c)
                 return Boolean::and(cs, &b.not(), c);
             }
-            (a, &Boolean::Constant(false), c) => {
+            (_a, &Boolean::Constant(false), c) => {
                 // If b is false,
                 // (a and b) xor (a and c) xor (b and c)
                 // equals
@@ -812,7 +812,7 @@ impl Boolean {
                 
                 return Ok(Boolean::and(cs, &a.not(), b)?.not());
             }
-            (a, &Boolean::Constant(true), c) => {
+            (a, &Boolean::Constant(true), _c) => {
                 // If b is true,
                 // (a and b) xor (a and c) xor (b and c)
                 // equals
