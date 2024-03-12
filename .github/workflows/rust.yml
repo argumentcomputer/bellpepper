@@ -46,6 +46,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        repository: lurk-lab/ci-workflows
+    - uses: ./.github/actions/ci-env
+    - uses: ./.github/actions/install-deps
+      with:
+        packages: 'pkg-config libssl-dev protobuf-compiler libprotobuf-dev'
+    - uses: actions/checkout@v4
+      with:
         path: ${{ github.workspace }}/bellpepper
     - uses: actions/checkout@v4
       with:
@@ -54,9 +61,6 @@ jobs:
         submodules: recursive
     - uses: dtolnay/rust-toolchain@stable
     - uses: Swatinem/rust-cache@v2
-    - uses: lurk-lab/ci-workflows/.github/actions/install-deps
-      with:
-        packages: 'pkg-config libssl-dev protobuf-compiler libprotobuf-dev'
     - name: Patch Cargo.toml
       working-directory: ${{ github.workspace }}/lurk
       run: |
