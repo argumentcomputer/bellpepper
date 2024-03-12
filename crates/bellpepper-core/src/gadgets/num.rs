@@ -520,8 +520,7 @@ impl<Scalar: PrimeField> Num<Scalar> {
                 tmp.add_assign(&v2);
                 Some(tmp)
             }
-            (Some(v), None) | (None, Some(v)) => Some(v),
-            (None, None) => None,
+            _ => None,
         };
 
         Num { value, lc }
@@ -569,6 +568,23 @@ mod test {
         AllocatedNum::alloc_infallible(&mut cs, || Fr::ONE);
 
         assert!(cs.get("num") == Fr::ONE);
+    }
+
+    #[test]
+    fn test_num_partial_addition() {
+        let a = Num::<Fr>::zero();
+        let b = Num::<Fr> {
+            value: None,
+            lc: Default::default(),
+        };
+        let c = a.clone().add(&b);
+        assert!(c.value.is_none());
+        let c = b.clone().add(&a);
+        assert!(c.value.is_none());
+        let c = b.clone().add(&b);
+        assert!(c.value.is_none());
+        let c = a.clone().add(&a);
+        assert!(c.value == Some(Fr::ZERO));
     }
 
     #[test]

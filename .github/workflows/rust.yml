@@ -46,6 +46,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        repository: lurk-lab/ci-workflows
+    - uses: ./.github/actions/ci-env
+    - uses: ./.github/actions/install-deps
+      with:
+        packages: 'pkg-config libssl-dev protobuf-compiler libprotobuf-dev'
+    - uses: actions/checkout@v4
+      with:
         path: ${{ github.workspace }}/bellpepper
     - uses: actions/checkout@v4
       with:
@@ -59,6 +66,7 @@ jobs:
       run: |
         echo "[patch.'https://github.com/lurk-lab/bellpepper']" >> Cargo.toml
         echo "bellpepper = { path='../bellpepper/crates/bellpepper' }" >> Cargo.toml
+        echo "[patch.crates-io]" >> Cargo.toml
         echo "bellpepper-core = { path='../bellpepper/crates/bellpepper-core' }" >> Cargo.toml
     - name: Check Lurk-rs types don't break spectacularly
       working-directory: ${{ github.workspace }}/lurk
