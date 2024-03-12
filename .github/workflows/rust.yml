@@ -59,6 +59,7 @@ jobs:
       run: |
         echo "[patch.'https://github.com/lurk-lab/bellpepper']" >> Cargo.toml
         echo "bellpepper = { path='../bellpepper/crates/bellpepper' }" >> Cargo.toml
+        echo "[patch.crates-io]" >> Cargo.toml
         echo "bellpepper-core = { path='../bellpepper/crates/bellpepper-core' }" >> Cargo.toml
     - name: Check Lurk-rs types don't break spectacularly
       working-directory: ${{ github.workspace }}/lurk
