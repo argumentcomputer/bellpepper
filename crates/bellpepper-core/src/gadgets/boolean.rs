@@ -598,14 +598,12 @@ impl Boolean {
                 // (a or c)
                 return Boolean::or(cs, a, c);
             }
-            (&Boolean::Constant(true), b, _) => {
+            (&Boolean::Constant(true), _, _) => {
                 // If a is true
                 // (a and b) xor ((not a) and c)
                 // equals
                 // b xor ((not a) and c)
-                // equals
-                // (b) xor (false)
-                return Ok(b.clone());
+                // So we just continue!
             }
             (
                 &Boolean::Is(_) | &Boolean::Not(_),
