@@ -586,8 +586,8 @@ impl Boolean {
                 // equals
                 // (a and b) xor (not a)
                 // equals
-                // not (a and (not b))
-                return Ok(Boolean::and(cs, a, &b.not())?.not());
+                // ((not a) or b)
+                return Boolean::or(cs, &a.not(), b);
             }
             (a, &Boolean::Constant(true), c) => {
                 // If b is true
@@ -595,15 +595,17 @@ impl Boolean {
                 // equals
                 // a xor ((not a) and c)
                 // equals
-                // not ((not a) and (not c))
-                return Ok(Boolean::and(cs, &a.not(), &c.not())?.not());
+                // (a or c)
+                return Boolean::or(cs, a, c);
             }
-            (&Boolean::Constant(true), _, _) => {
+            (&Boolean::Constant(true), b, _) => {
                 // If a is true
                 // (a and b) xor ((not a) and c)
                 // equals
                 // b xor ((not a) and c)
-                // So we just continue!
+                // equals
+                // (b) xor (false)
+                return Ok(b.clone());
             }
             (
                 &Boolean::Is(_) | &Boolean::Not(_),
@@ -692,22 +694,22 @@ impl Boolean {
                 // equals
                 // (a and b) xor (a) xor (b)
                 // equals
-                // not ((not a) and (not b))
-                return Ok(Boolean::and(cs, &a.not(), &b.not())?.not());
+                // (a or b)
+                return Boolean::or(cs, a, b);
             }
             (a, &Boolean::Constant(true), c) => {
                 // If b is true,
                 // (a and b) xor (a and c) xor (b and c)
                 // equals
-                // (a) xor (a and c) xor (c)
-                return Ok(Boolean::and(cs, &a.not(), &c.not())?.not());
+                // (a or c)
+                return Boolean::or(cs, a, c);
             }
             (&Boolean::Constant(true), b, c) => {
                 // If a is true,
                 // (a and b) xor (a and c) xor (b and c)
                 // equals
-                // (b) xor (c) xor (b and c)
-                return Ok(Boolean::and(cs, &b.not(), &c.not())?.not());
+                // (b or c)
+                return Boolean::or(cs, b, c);
             }
             (
                 &Boolean::Is(_) | &Boolean::Not(_),
