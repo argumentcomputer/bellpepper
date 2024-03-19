@@ -1,7 +1,9 @@
-use crate::LinearCombination;
 use ff::PrimeField;
 
+use crate::LinearCombination;
+
 pub mod test_cs;
+pub mod test_shape_cs;
 
 pub type Constraint<Scalar> = (
     LinearCombination<Scalar>,
