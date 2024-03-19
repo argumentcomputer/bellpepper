@@ -8,9 +8,8 @@ use std::{
     collections::{BTreeMap, HashMap},
 };
 
-use ff::{Field, PrimeField};
-
-use crate::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
+use bellpepper_core::{ConstraintSystem, Index, LinearCombination, SynthesisError, Variable};
+use ff::PrimeField;
 
 #[derive(Clone, Copy)]
 struct OrderedVariable(Variable);
@@ -50,6 +49,7 @@ impl Ord for OrderedVariable {
     }
 }
 
+#[derive(Debug)]
 /// `TestShapeCS` is a `ConstraintSystem` for creating `R1CSShape`s for a circuit.
 pub struct TestShapeCS<Scalar: PrimeField> {
     named_objects: HashMap<String, NamedObject>,
@@ -146,10 +146,10 @@ impl<Scalar: PrimeField> TestShapeCS<Scalar> {
             .map(|i| Scalar::from(2u64).pow_vartime([u64::from(i)]))
             .collect::<Vec<_>>();
 
-        let pp = |s: &mut String, lc: &LinearCombination<E::Scalar>| {
+        let pp = |s: &mut String, lc: &LinearCombination<Scalar>| {
             s.push('(');
             let mut is_first = true;
-            for (var, coeff) in proc_lc::<E::Scalar>(lc) {
+            for (var, coeff) in proc_lc::<Scalar>(lc) {
                 if coeff == negone {
                     s.push_str(" - ")
                 } else if !is_first {
