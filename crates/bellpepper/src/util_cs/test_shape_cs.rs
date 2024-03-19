@@ -55,6 +55,7 @@ pub struct TestShapeCS<Scalar: PrimeField> {
     named_objects: HashMap<String, NamedObject>,
     current_namespace: Vec<String>,
     /// All constraints added to the `TestShapeCS`.
+    #[allow(clippy::type_complexity)] // To fit `ShapeCS` on arecibo
     pub constraints: Vec<(
         LinearCombination<Scalar>,
         LinearCombination<Scalar>,
