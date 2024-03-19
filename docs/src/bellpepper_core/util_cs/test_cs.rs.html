@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/bellpepper-core/src/util_cs/test_cs.rs`."><title>test_cs.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="bellpepper_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/bellpepper-core/src/util_cs/test_cs.rs`."><title>test_cs.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="bellpepper_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -607,11 +608,11 @@
     <span class="kw">for </span>(var, coeff) <span class="kw">in </span>map {
         <span class="kw">match </span>var.<span class="number">0</span>.get_unchecked() {
             Index::Input(i) =&gt; {
-                buf[<span class="number">0</span>] = <span class="string">b&#39;I&#39;</span>;
+                buf[<span class="number">0</span>] = <span class="string">b'I'</span>;
                 BigEndian::write_u64(<span class="kw-2">&amp;mut </span>buf[<span class="number">1</span>..<span class="number">9</span>], i <span class="kw">as </span>u64);
             }
             Index::Aux(i) =&gt; {
-                buf[<span class="number">0</span>] = <span class="string">b&#39;A&#39;</span>;
+                buf[<span class="number">0</span>] = <span class="string">b'A'</span>;
                 BigEndian::write_u64(<span class="kw-2">&amp;mut </span>buf[<span class="number">1</span>..<span class="number">9</span>], i <span class="kw">as </span>u64);
             }
         }
@@ -669,7 +670,7 @@
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>map = HashMap::new();
         map.insert(
-            <span class="string">&quot;ONE&quot;</span>.into(),
+            <span class="string">"ONE"</span>.into(),
             NamedObject::Var(TestConstraintSystem::&lt;Scalar&gt;::one()),
         );
 
@@ -677,7 +678,7 @@
             named_objects: map,
             current_namespace: <span class="macro">vec!</span>[],
             constraints: <span class="macro">vec!</span>[],
-            inputs: <span class="macro">vec!</span>[(Scalar::ONE, <span class="string">&quot;ONE&quot;</span>.into())],
+            inputs: <span class="macro">vec!</span>[(Scalar::ONE, <span class="string">"ONE"</span>.into())],
             aux: <span class="macro">vec!</span>[],
         }
     }
@@ -703,10 +704,10 @@
         <span class="kw">let </span><span class="kw-2">mut </span>result = Vec::new();
 
         <span class="kw">for </span>input <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.inputs {
-            result.push(<span class="macro">format!</span>(<span class="string">&quot;INPUT {}&quot;</span>, input.<span class="number">1</span>));
+            result.push(<span class="macro">format!</span>(<span class="string">"INPUT {}"</span>, input.<span class="number">1</span>));
         }
         <span class="kw">for </span>aux <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.aux {
-            result.push(<span class="macro">format!</span>(<span class="string">&quot;AUX {}&quot;</span>, aux.<span class="number">1</span>));
+            result.push(<span class="macro">format!</span>(<span class="string">"AUX {}"</span>, aux.<span class="number">1</span>));
         }
 
         <span class="kw">for </span>(_a, _b, _c, name) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.constraints {
@@ -719,7 +720,7 @@
     <span class="kw">pub fn </span>pretty_print(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="kw">let </span>res = <span class="self">self</span>.pretty_print_list();
 
-        res.join(<span class="string">&quot;\n&quot;</span>)
+        res.join(<span class="string">"\n"</span>)
     }
 
     <span class="kw">pub fn </span>hash(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
@@ -741,7 +742,7 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>s = String::new();
         <span class="kw">for </span>b <span class="kw">in </span>h.finalize().as_ref() {
-            <span class="macro">write!</span>(s, <span class="string">&quot;{:02x}&quot;</span>, b).expect(<span class="string">&quot;writing to string never fails&quot;</span>);
+            <span class="macro">write!</span>(s, <span class="string">"{:02x}"</span>, b).expect(<span class="string">"writing to string never fails"</span>);
         }
 
         s
@@ -766,7 +767,7 @@
     <span class="kw">pub fn </span>is_satisfied(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="kw">match </span><span class="self">self</span>.which_is_unsatisfied() {
             <span class="prelude-val">Some</span>(b) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;fail: {:?}&quot;</span>, b);
+                <span class="macro">println!</span>(<span class="string">"fail: {:?}"</span>, b);
                 <span class="bool-val">false
             </span>}
             <span class="prelude-val">None </span>=&gt; <span class="bool-val">true</span>,
@@ -785,10 +786,10 @@
                 Index::Aux(index) =&gt; <span class="self">self</span>.aux[index].<span class="number">0 </span>= to,
             },
             <span class="prelude-val">Some</span>(e) =&gt; <span class="macro">panic!</span>(
-                <span class="string">&quot;tried to set path `{}` to value, but `{:?}` already exists there.&quot;</span>,
+                <span class="string">"tried to set path `{}` to value, but `{:?}` already exists there."</span>,
                 path, e
             ),
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;no variable exists at path: {}&quot;</span>, path),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"no variable exists at path: {}"</span>, path),
         }
     }
 
@@ -826,17 +827,17 @@
                 Index::Aux(index) =&gt; <span class="self">self</span>.aux[index].<span class="number">0</span>,
             },
             <span class="prelude-val">Some</span>(e) =&gt; <span class="macro">panic!</span>(
-                <span class="string">&quot;tried to get value of path `{}`, but `{:?}` exists there (not a variable)&quot;</span>,
+                <span class="string">"tried to get value of path `{}`, but `{:?}` exists there (not a variable)"</span>,
                 path, e
             ),
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;no variable exists at path: {}&quot;</span>, path),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"no variable exists at path: {}"</span>, path),
         }
     }
 
     <span class="kw">fn </span>set_named_obj(<span class="kw-2">&amp;mut </span><span class="self">self</span>, path: String, to: NamedObject) {
         <span class="macro">assert!</span>(
             !<span class="self">self</span>.named_objects.contains_key(<span class="kw-2">&amp;</span>path),
-            <span class="string">&quot;tried to create object at existing path: {}&quot;</span>,
+            <span class="string">"tried to create object at existing path: {}"</span>,
             path
         );
 
@@ -873,16 +874,16 @@
 
 <span class="kw">fn </span>compute_path(ns: <span class="kw-2">&amp;</span>[String], this: <span class="kw-2">&amp;</span>str) -&gt; String {
     <span class="macro">assert!</span>(
-        !this.chars().any(|a| a == <span class="string">&#39;/&#39;</span>),
-        <span class="string">&quot;&#39;/&#39; is not allowed in names&quot;
+        !this.chars().any(|a| a == <span class="string">'/'</span>),
+        <span class="string">"'/' is not allowed in names"
     </span>);
 
     <span class="kw">if </span>ns.is_empty() {
         <span class="kw">return </span>this.to_string();
     }
 
-    <span class="kw">let </span>name = ns.join(<span class="string">&quot;/&quot;</span>);
-    <span class="macro">format!</span>(<span class="string">&quot;{}/{}&quot;</span>, name, this)
+    <span class="kw">let </span>name = ns.join(<span class="string">"/"</span>);
+    <span class="macro">format!</span>(<span class="string">"{}/{}"</span>, name, this)
 }
 
 <span class="kw">impl</span>&lt;Scalar: PrimeField&gt; ConstraintSystem&lt;Scalar&gt; <span class="kw">for </span>TestConstraintSystem&lt;Scalar&gt; {
@@ -969,13 +970,13 @@
         <span class="macro">assert_eq!</span>(
             compute_path(
                 <span class="kw-2">&amp;</span>[
-                    <span class="string">&quot;hello&quot;</span>.to_string(),
-                    <span class="string">&quot;world&quot;</span>.to_string(),
-                    <span class="string">&quot;things&quot;</span>.to_string()
+                    <span class="string">"hello"</span>.to_string(),
+                    <span class="string">"world"</span>.to_string(),
+                    <span class="string">"things"</span>.to_string()
                 ],
-                <span class="string">&quot;thing&quot;
+                <span class="string">"thing"
             </span>),
-            <span class="string">&quot;hello/world/things/thing&quot;
+            <span class="string">"hello/world/things/thing"
         </span>);
     }
 
@@ -985,39 +986,39 @@
         <span class="macro">assert!</span>(cs.is_satisfied());
         <span class="macro">assert_eq!</span>(cs.num_constraints(), <span class="number">0</span>);
         <span class="kw">let </span>a = cs
-            .namespace(|| <span class="string">&quot;a&quot;</span>)
-            .alloc(|| <span class="string">&quot;var&quot;</span>, || <span class="prelude-val">Ok</span>(Fr::from(<span class="number">10u64</span>)))
+            .namespace(|| <span class="string">"a"</span>)
+            .alloc(|| <span class="string">"var"</span>, || <span class="prelude-val">Ok</span>(Fr::from(<span class="number">10u64</span>)))
             .unwrap();
         <span class="kw">let </span>b = cs
-            .namespace(|| <span class="string">&quot;b&quot;</span>)
-            .alloc(|| <span class="string">&quot;var&quot;</span>, || <span class="prelude-val">Ok</span>(Fr::from(<span class="number">4u64</span>)))
+            .namespace(|| <span class="string">"b"</span>)
+            .alloc(|| <span class="string">"var"</span>, || <span class="prelude-val">Ok</span>(Fr::from(<span class="number">4u64</span>)))
             .unwrap();
-        <span class="kw">let </span>c = cs.alloc(|| <span class="string">&quot;product&quot;</span>, || <span class="prelude-val">Ok</span>(Fr::from(<span class="number">40u64</span>))).unwrap();
+        <span class="kw">let </span>c = cs.alloc(|| <span class="string">"product"</span>, || <span class="prelude-val">Ok</span>(Fr::from(<span class="number">40u64</span>))).unwrap();
 
-        cs.enforce(|| <span class="string">&quot;mult&quot;</span>, |lc| lc + a, |lc| lc + b, |lc| lc + c);
+        cs.enforce(|| <span class="string">"mult"</span>, |lc| lc + a, |lc| lc + b, |lc| lc + c);
         <span class="macro">assert!</span>(cs.is_satisfied());
         <span class="macro">assert_eq!</span>(cs.num_constraints(), <span class="number">1</span>);
 
-        cs.set(<span class="string">&quot;a/var&quot;</span>, Fr::from(<span class="number">4u64</span>));
+        cs.set(<span class="string">"a/var"</span>, Fr::from(<span class="number">4u64</span>));
 
         <span class="kw">let </span>one = TestConstraintSystem::&lt;Fr&gt;::one();
-        cs.enforce(|| <span class="string">&quot;eq&quot;</span>, |lc| lc + a, |lc| lc + one, |lc| lc + b);
+        cs.enforce(|| <span class="string">"eq"</span>, |lc| lc + a, |lc| lc + one, |lc| lc + b);
 
         <span class="macro">assert!</span>(!cs.is_satisfied());
-        <span class="macro">assert!</span>(cs.which_is_unsatisfied() == <span class="prelude-val">Some</span>(<span class="string">&quot;mult&quot;</span>));
+        <span class="macro">assert!</span>(cs.which_is_unsatisfied() == <span class="prelude-val">Some</span>(<span class="string">"mult"</span>));
 
-        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;product&quot;</span>) == Fr::from(<span class="number">40u64</span>));
+        <span class="macro">assert!</span>(cs.get(<span class="string">"product"</span>) == Fr::from(<span class="number">40u64</span>));
 
-        cs.set(<span class="string">&quot;product&quot;</span>, Fr::from(<span class="number">16u64</span>));
+        cs.set(<span class="string">"product"</span>, Fr::from(<span class="number">16u64</span>));
         <span class="macro">assert!</span>(cs.is_satisfied());
 
         {
-            <span class="kw">let </span><span class="kw-2">mut </span>cs = cs.namespace(|| <span class="string">&quot;test1&quot;</span>);
-            <span class="kw">let </span><span class="kw-2">mut </span>cs = cs.namespace(|| <span class="string">&quot;test2&quot;</span>);
-            cs.alloc(|| <span class="string">&quot;hehe&quot;</span>, || <span class="prelude-val">Ok</span>(Fr::ONE)).unwrap();
+            <span class="kw">let </span><span class="kw-2">mut </span>cs = cs.namespace(|| <span class="string">"test1"</span>);
+            <span class="kw">let </span><span class="kw-2">mut </span>cs = cs.namespace(|| <span class="string">"test2"</span>);
+            cs.alloc(|| <span class="string">"hehe"</span>, || <span class="prelude-val">Ok</span>(Fr::ONE)).unwrap();
         }
 
-        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;test1/test2/hehe&quot;</span>) == Fr::ONE);
+        <span class="macro">assert!</span>(cs.get(<span class="string">"test1/test2/hehe"</span>) == Fr::ONE);
     }
 }
 </code></pre></div></section></main></body></html>

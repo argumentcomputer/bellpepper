@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/bellpepper/src/gadgets/blake2s.rs`."><title>blake2s.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="bellpepper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/bellpepper/src/gadgets/blake2s.rs`."><title>blake2s.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="bellpepper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -759,8 +760,8 @@
 
 <span class="comment">/*
 3.1.  Mixing Function G
-   The G primitive function mixes two input words, &quot;x&quot; and &quot;y&quot;, into
-   four words indexed by &quot;a&quot;, &quot;b&quot;, &quot;c&quot;, and &quot;d&quot; in the working vector
+   The G primitive function mixes two input words, "x" and "y", into
+   four words indexed by "a", "b", "c", and "d" in the working vector
    v[0..15].  The full modified vector is returned.  The rotation
    constants (R1, R2, R3, R4) are given in Section 2.1.
        FUNCTION G( v[0..15], a, b, c, d, x, y )
@@ -794,36 +795,36 @@
     </span>M: ConstraintSystem&lt;Scalar, Root = MultiEq&lt;Scalar, CS&gt;&gt;,
 {
     v[a] = UInt32::addmany(
-        cs.namespace(|| <span class="string">&quot;mixing step 1&quot;</span>),
+        cs.namespace(|| <span class="string">"mixing step 1"</span>),
         <span class="kw-2">&amp;</span>[v[a].clone(), v[b].clone(), x.clone()],
     )<span class="question-mark">?</span>;
-    v[d] = v[d].xor(cs.namespace(|| <span class="string">&quot;mixing step 2&quot;</span>), <span class="kw-2">&amp;</span>v[a])<span class="question-mark">?</span>.rotr(R1);
+    v[d] = v[d].xor(cs.namespace(|| <span class="string">"mixing step 2"</span>), <span class="kw-2">&amp;</span>v[a])<span class="question-mark">?</span>.rotr(R1);
     v[c] = UInt32::addmany(
-        cs.namespace(|| <span class="string">&quot;mixing step 3&quot;</span>),
+        cs.namespace(|| <span class="string">"mixing step 3"</span>),
         <span class="kw-2">&amp;</span>[v[c].clone(), v[d].clone()],
     )<span class="question-mark">?</span>;
-    v[b] = v[b].xor(cs.namespace(|| <span class="string">&quot;mixing step 4&quot;</span>), <span class="kw-2">&amp;</span>v[c])<span class="question-mark">?</span>.rotr(R2);
+    v[b] = v[b].xor(cs.namespace(|| <span class="string">"mixing step 4"</span>), <span class="kw-2">&amp;</span>v[c])<span class="question-mark">?</span>.rotr(R2);
     v[a] = UInt32::addmany(
-        cs.namespace(|| <span class="string">&quot;mixing step 5&quot;</span>),
+        cs.namespace(|| <span class="string">"mixing step 5"</span>),
         <span class="kw-2">&amp;</span>[v[a].clone(), v[b].clone(), y.clone()],
     )<span class="question-mark">?</span>;
-    v[d] = v[d].xor(cs.namespace(|| <span class="string">&quot;mixing step 6&quot;</span>), <span class="kw-2">&amp;</span>v[a])<span class="question-mark">?</span>.rotr(R3);
+    v[d] = v[d].xor(cs.namespace(|| <span class="string">"mixing step 6"</span>), <span class="kw-2">&amp;</span>v[a])<span class="question-mark">?</span>.rotr(R3);
     v[c] = UInt32::addmany(
-        cs.namespace(|| <span class="string">&quot;mixing step 7&quot;</span>),
+        cs.namespace(|| <span class="string">"mixing step 7"</span>),
         <span class="kw-2">&amp;</span>[v[c].clone(), v[d].clone()],
     )<span class="question-mark">?</span>;
-    v[b] = v[b].xor(cs.namespace(|| <span class="string">&quot;mixing step 8&quot;</span>), <span class="kw-2">&amp;</span>v[c])<span class="question-mark">?</span>.rotr(R4);
+    v[b] = v[b].xor(cs.namespace(|| <span class="string">"mixing step 8"</span>), <span class="kw-2">&amp;</span>v[c])<span class="question-mark">?</span>.rotr(R4);
 
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="comment">/*
 3.2.  Compression Function F
-   Compression function F takes as an argument the state vector &quot;h&quot;,
-   message block vector &quot;m&quot; (last block is padded with zeros to full
-   block size, if required), 2w-bit offset counter &quot;t&quot;, and final block
-   indicator flag &quot;f&quot;.  Local vector v[0..15] is used in processing.  F
-   returns a new state vector.  The number of rounds, &quot;r&quot;, is 12 for
+   Compression function F takes as an argument the state vector "h",
+   message block vector "m" (last block is padded with zeros to full
+   block size, if required), 2w-bit offset counter "t", and final block
+   indicator flag "f".  Local vector v[0..15] is used in processing.  F
+   returns a new state vector.  The number of rounds, "r", is 12 for
    BLAKE2b and 10 for BLAKE2s.  Rounds are numbered from 0 to r - 1.
        FUNCTION F( h[0..7], m[0..15], t, f )
        |
@@ -896,15 +897,15 @@
 
     <span class="macro">assert_eq!</span>(v.len(), <span class="number">16</span>);
 
-    v[<span class="number">12</span>] = v[<span class="number">12</span>].xor(cs.namespace(|| <span class="string">&quot;first xor&quot;</span>), <span class="kw-2">&amp;</span>UInt32::constant(t <span class="kw">as </span>u32))<span class="question-mark">?</span>;
+    v[<span class="number">12</span>] = v[<span class="number">12</span>].xor(cs.namespace(|| <span class="string">"first xor"</span>), <span class="kw-2">&amp;</span>UInt32::constant(t <span class="kw">as </span>u32))<span class="question-mark">?</span>;
     v[<span class="number">13</span>] = v[<span class="number">13</span>].xor(
-        cs.namespace(|| <span class="string">&quot;second xor&quot;</span>),
+        cs.namespace(|| <span class="string">"second xor"</span>),
         <span class="kw-2">&amp;</span>UInt32::constant((t &gt;&gt; <span class="number">32</span>) <span class="kw">as </span>u32),
     )<span class="question-mark">?</span>;
 
     <span class="kw">if </span>f {
         v[<span class="number">14</span>] = v[<span class="number">14</span>].xor(
-            cs.namespace(|| <span class="string">&quot;third xor&quot;</span>),
+            cs.namespace(|| <span class="string">"third xor"</span>),
             <span class="kw-2">&amp;</span>UInt32::constant(u32::max_value()),
         )<span class="question-mark">?</span>;
     }
@@ -913,12 +914,12 @@
         <span class="kw">let </span><span class="kw-2">mut </span>cs = MultiEq::new(<span class="kw-2">&amp;mut </span>cs);
 
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
-            <span class="kw">let </span><span class="kw-2">mut </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;round {}&quot;</span>, i));
+            <span class="kw">let </span><span class="kw-2">mut </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">"round {}"</span>, i));
 
             <span class="kw">let </span>s = SIGMA[i % <span class="number">10</span>];
 
             mixing_g(
-                cs.namespace(|| <span class="string">&quot;mixing invocation 1&quot;</span>),
+                cs.namespace(|| <span class="string">"mixing invocation 1"</span>),
                 <span class="kw-2">&amp;mut </span>v,
                 <span class="number">0</span>,
                 <span class="number">4</span>,
@@ -928,7 +929,7 @@
                 <span class="kw-2">&amp;</span>m[s[<span class="number">1</span>]],
             )<span class="question-mark">?</span>;
             mixing_g(
-                cs.namespace(|| <span class="string">&quot;mixing invocation 2&quot;</span>),
+                cs.namespace(|| <span class="string">"mixing invocation 2"</span>),
                 <span class="kw-2">&amp;mut </span>v,
                 <span class="number">1</span>,
                 <span class="number">5</span>,
@@ -938,7 +939,7 @@
                 <span class="kw-2">&amp;</span>m[s[<span class="number">3</span>]],
             )<span class="question-mark">?</span>;
             mixing_g(
-                cs.namespace(|| <span class="string">&quot;mixing invocation 3&quot;</span>),
+                cs.namespace(|| <span class="string">"mixing invocation 3"</span>),
                 <span class="kw-2">&amp;mut </span>v,
                 <span class="number">2</span>,
                 <span class="number">6</span>,
@@ -948,7 +949,7 @@
                 <span class="kw-2">&amp;</span>m[s[<span class="number">5</span>]],
             )<span class="question-mark">?</span>;
             mixing_g(
-                cs.namespace(|| <span class="string">&quot;mixing invocation 4&quot;</span>),
+                cs.namespace(|| <span class="string">"mixing invocation 4"</span>),
                 <span class="kw-2">&amp;mut </span>v,
                 <span class="number">3</span>,
                 <span class="number">7</span>,
@@ -959,7 +960,7 @@
             )<span class="question-mark">?</span>;
 
             mixing_g(
-                cs.namespace(|| <span class="string">&quot;mixing invocation 5&quot;</span>),
+                cs.namespace(|| <span class="string">"mixing invocation 5"</span>),
                 <span class="kw-2">&amp;mut </span>v,
                 <span class="number">0</span>,
                 <span class="number">5</span>,
@@ -969,7 +970,7 @@
                 <span class="kw-2">&amp;</span>m[s[<span class="number">9</span>]],
             )<span class="question-mark">?</span>;
             mixing_g(
-                cs.namespace(|| <span class="string">&quot;mixing invocation 6&quot;</span>),
+                cs.namespace(|| <span class="string">"mixing invocation 6"</span>),
                 <span class="kw-2">&amp;mut </span>v,
                 <span class="number">1</span>,
                 <span class="number">6</span>,
@@ -979,7 +980,7 @@
                 <span class="kw-2">&amp;</span>m[s[<span class="number">11</span>]],
             )<span class="question-mark">?</span>;
             mixing_g(
-                cs.namespace(|| <span class="string">&quot;mixing invocation 7&quot;</span>),
+                cs.namespace(|| <span class="string">"mixing invocation 7"</span>),
                 <span class="kw-2">&amp;mut </span>v,
                 <span class="number">2</span>,
                 <span class="number">7</span>,
@@ -989,7 +990,7 @@
                 <span class="kw-2">&amp;</span>m[s[<span class="number">13</span>]],
             )<span class="question-mark">?</span>;
             mixing_g(
-                cs.namespace(|| <span class="string">&quot;mixing invocation 8&quot;</span>),
+                cs.namespace(|| <span class="string">"mixing invocation 8"</span>),
                 <span class="kw-2">&amp;mut </span>v,
                 <span class="number">3</span>,
                 <span class="number">4</span>,
@@ -1002,10 +1003,10 @@
     }
 
     <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">8 </span>{
-        <span class="kw">let </span><span class="kw-2">mut </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;h[{i}] ^ v[{i}] ^ v[{i} + 8]&quot;</span>, i = i));
+        <span class="kw">let </span><span class="kw-2">mut </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">"h[{i}] ^ v[{i}] ^ v[{i} + 8]"</span>, i = i));
 
-        h[i] = h[i].xor(cs.namespace(|| <span class="string">&quot;first xor&quot;</span>), <span class="kw-2">&amp;</span>v[i])<span class="question-mark">?</span>;
-        h[i] = h[i].xor(cs.namespace(|| <span class="string">&quot;second xor&quot;</span>), <span class="kw-2">&amp;</span>v[i + <span class="number">8</span>])<span class="question-mark">?</span>;
+        h[i] = h[i].xor(cs.namespace(|| <span class="string">"first xor"</span>), <span class="kw-2">&amp;</span>v[i])<span class="question-mark">?</span>;
+        h[i] = h[i].xor(cs.namespace(|| <span class="string">"second xor"</span>), <span class="kw-2">&amp;</span>v[i + <span class="number">8</span>])<span class="question-mark">?</span>;
     }
 
     <span class="prelude-val">Ok</span>(())
@@ -1033,7 +1034,7 @@
         |     |       h := F( h, d[dd - 1], ll + bb, TRUE )
         |     END IF.
         |
-        |     RETURN first &quot;nn&quot; bytes from little-endian word array h[].
+        |     RETURN first "nn" bytes from little-endian word array h[].
         |
         END FUNCTION.
 */
@@ -1082,13 +1083,13 @@
     }
 
     <span class="kw">for </span>(i, block) <span class="kw">in </span>blocks[<span class="number">0</span>..blocks.len() - <span class="number">1</span>].iter().enumerate() {
-        <span class="kw">let </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;block {}&quot;</span>, i));
+        <span class="kw">let </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">"block {}"</span>, i));
 
         blake2s_compression(cs, <span class="kw-2">&amp;mut </span>h, block, ((i <span class="kw">as </span>u64) + <span class="number">1</span>) * <span class="number">64</span>, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
     }
 
     {
-        <span class="kw">let </span>cs = cs.namespace(|| <span class="string">&quot;final block&quot;</span>);
+        <span class="kw">let </span>cs = cs.namespace(|| <span class="string">"final block"</span>);
 
         blake2s_compression(
             cs,
@@ -1119,14 +1120,14 @@
     </span><span class="kw">fn </span>test_blank_hash() {
         <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
         <span class="kw">let </span>input_bits = <span class="macro">vec!</span>[];
-        <span class="kw">let </span>out = blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b&quot;12345678&quot;</span>).unwrap();
+        <span class="kw">let </span>out = blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b"12345678"</span>).unwrap();
         <span class="macro">assert!</span>(cs.is_satisfied());
         <span class="macro">assert_eq!</span>(cs.num_constraints(), <span class="number">0</span>);
 
         <span class="comment">// &gt;&gt;&gt; import blake2s from hashlib
-        // &gt;&gt;&gt; h = blake2s(digest_size=32, person=b&#39;12345678&#39;)
+        // &gt;&gt;&gt; h = blake2s(digest_size=32, person=b'12345678')
         // &gt;&gt;&gt; h.hexdigest()
-        </span><span class="kw">let </span>expected = <span class="macro">hex!</span>(<span class="string">&quot;c59f682376d137f3f255e671e207d1f2374ebe504e9314208a52d9f88d69e8c8&quot;</span>);
+        </span><span class="kw">let </span>expected = <span class="macro">hex!</span>(<span class="string">"c59f682376d137f3f255e671e207d1f2374ebe504e9314208a52d9f88d69e8c8"</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>out = out.into_iter();
         <span class="kw">for </span>b <span class="kw">in </span>expected.iter() {
@@ -1143,12 +1144,12 @@
         <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
         <span class="kw">let </span>input_bits: Vec&lt;<span class="kw">_</span>&gt; = (<span class="number">0</span>..<span class="number">512</span>)
             .map(|i| {
-                AllocatedBit::alloc(cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;input bit {}&quot;</span>, i)), <span class="prelude-val">Some</span>(<span class="bool-val">true</span>))
+                AllocatedBit::alloc(cs.namespace(|| <span class="macro">format!</span>(<span class="string">"input bit {}"</span>, i)), <span class="prelude-val">Some</span>(<span class="bool-val">true</span>))
                     .unwrap()
                     .into()
             })
             .collect();
-        blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b&quot;12345678&quot;</span>).unwrap();
+        blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b"12345678"</span>).unwrap();
         <span class="macro">assert!</span>(cs.is_satisfied());
         <span class="macro">assert_eq!</span>(cs.num_constraints(), <span class="number">21518</span>);
     }
@@ -1156,7 +1157,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_blake2s_precomp_constraints() {
         <span class="comment">// Test that 512 fixed leading bits (constants)
-        // doesn&#39;t result in more constraints.
+        // doesn't result in more constraints.
 
         </span><span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
         <span class="kw">let </span><span class="kw-2">mut </span>rng = XorShiftRng::from_seed([
@@ -1166,12 +1167,12 @@
         <span class="kw">let </span>input_bits: Vec&lt;<span class="kw">_</span>&gt; = (<span class="number">0</span>..<span class="number">512</span>)
             .map(|<span class="kw">_</span>| Boolean::constant(rng.next_u32() % <span class="number">2 </span>!= <span class="number">0</span>))
             .chain((<span class="number">0</span>..<span class="number">512</span>).map(|i| {
-                AllocatedBit::alloc(cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;input bit {}&quot;</span>, i)), <span class="prelude-val">Some</span>(<span class="bool-val">true</span>))
+                AllocatedBit::alloc(cs.namespace(|| <span class="macro">format!</span>(<span class="string">"input bit {}"</span>, i)), <span class="prelude-val">Some</span>(<span class="bool-val">true</span>))
                     .unwrap()
                     .into()
             }))
             .collect();
-        blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b&quot;12345678&quot;</span>).unwrap();
+        blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b"12345678"</span>).unwrap();
         <span class="macro">assert!</span>(cs.is_satisfied());
         <span class="macro">assert_eq!</span>(cs.num_constraints(), <span class="number">21518</span>);
     }
@@ -1186,7 +1187,7 @@
         <span class="kw">let </span>input_bits: Vec&lt;<span class="kw">_</span>&gt; = (<span class="number">0</span>..<span class="number">512</span>)
             .map(|<span class="kw">_</span>| Boolean::constant(rng.next_u32() % <span class="number">2 </span>!= <span class="number">0</span>))
             .collect();
-        blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b&quot;12345678&quot;</span>).unwrap();
+        blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b"12345678"</span>).unwrap();
         <span class="macro">assert_eq!</span>(cs.num_constraints(), <span class="number">0</span>);
     }
 
@@ -1200,7 +1201,7 @@
         <span class="kw">for </span>input_len <span class="kw">in </span>(<span class="number">0</span>..<span class="number">32</span>).chain((<span class="number">32</span>..<span class="number">256</span>).filter(|a| a % <span class="number">8 </span>== <span class="number">0</span>)) {
             <span class="kw">let </span><span class="kw-2">mut </span>h = Blake2sParams::new()
                 .hash_length(<span class="number">32</span>)
-                .personal(<span class="string">b&quot;12345678&quot;</span>)
+                .personal(<span class="string">b"12345678"</span>)
                 .to_state();
 
             <span class="kw">let </span>data: Vec&lt;u8&gt; = (<span class="number">0</span>..input_len).map(|<span class="kw">_</span>| rng.next_u32() <span class="kw">as </span>u8).collect();
@@ -1215,7 +1216,7 @@
 
             <span class="kw">for </span>(byte_i, input_byte) <span class="kw">in </span>data.into_iter().enumerate() {
                 <span class="kw">for </span>bit_i <span class="kw">in </span><span class="number">0</span>..<span class="number">8 </span>{
-                    <span class="kw">let </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;input bit {} {}&quot;</span>, byte_i, bit_i));
+                    <span class="kw">let </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">"input bit {} {}"</span>, byte_i, bit_i));
 
                     input_bits.push(
                         AllocatedBit::alloc(cs, <span class="prelude-val">Some</span>((input_byte &gt;&gt; bit_i) &amp; <span class="number">1u8 </span>== <span class="number">1u8</span>))
@@ -1225,7 +1226,7 @@
                 }
             }
 
-            <span class="kw">let </span>r = blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b&quot;12345678&quot;</span>).unwrap();
+            <span class="kw">let </span>r = blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b"12345678"</span>).unwrap();
 
             <span class="macro">assert!</span>(cs.is_satisfied());
 
@@ -1253,7 +1254,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_blake2s_256_vars() {
-        <span class="kw">let </span>data: Vec&lt;u8&gt; = <span class="macro">hex!</span>(<span class="string">&quot;be9f9c485e670acce8b1516a378176161b20583637b6f1c536fbc1158a0a3296831df2920e57a442d5738f4be4dd6be89dd7913fc8b4d1c0a815646a4d674b77f7caf313bd880bf759fcac27037c48c2b2a20acd2fd5248e3be426c84a341c0a3c63eaf36e0d537d10b8db5c6e4c801832c41eb1a3ed602177acded8b4b803bd34339d99a18b71df399641cc8dfae2ad193fcd74b5913e704551777160d14c78f2e8d5c32716a8599c1080cb89a40ccd6ba596694a8b4a065d9f2d0667ef423ed2e418093caff884540858b4f4b62acd47edcea880523e1b1cda8eb225c128c2e9e83f14f6e7448c5733a195cac7d79a53dde5083172462c45b2f799e42af1c9&quot;</span>).to_vec();
+        <span class="kw">let </span>data: Vec&lt;u8&gt; = <span class="macro">hex!</span>(<span class="string">"be9f9c485e670acce8b1516a378176161b20583637b6f1c536fbc1158a0a3296831df2920e57a442d5738f4be4dd6be89dd7913fc8b4d1c0a815646a4d674b77f7caf313bd880bf759fcac27037c48c2b2a20acd2fd5248e3be426c84a341c0a3c63eaf36e0d537d10b8db5c6e4c801832c41eb1a3ed602177acded8b4b803bd34339d99a18b71df399641cc8dfae2ad193fcd74b5913e704551777160d14c78f2e8d5c32716a8599c1080cb89a40ccd6ba596694a8b4a065d9f2d0667ef423ed2e418093caff884540858b4f4b62acd47edcea880523e1b1cda8eb225c128c2e9e83f14f6e7448c5733a195cac7d79a53dde5083172462c45b2f799e42af1c9"</span>).to_vec();
         <span class="macro">assert_eq!</span>(data.len(), <span class="number">256</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
@@ -1262,7 +1263,7 @@
 
         <span class="kw">for </span>(byte_i, input_byte) <span class="kw">in </span>data.into_iter().enumerate() {
             <span class="kw">for </span>bit_i <span class="kw">in </span><span class="number">0</span>..<span class="number">8 </span>{
-                <span class="kw">let </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;input bit {} {}&quot;</span>, byte_i, bit_i));
+                <span class="kw">let </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">"input bit {} {}"</span>, byte_i, bit_i));
 
                 input_bits.push(
                     AllocatedBit::alloc(cs, <span class="prelude-val">Some</span>((input_byte &gt;&gt; bit_i) &amp; <span class="number">1u8 </span>== <span class="number">1u8</span>))
@@ -1272,11 +1273,11 @@
             }
         }
 
-        <span class="kw">let </span>r = blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b&quot;12345678&quot;</span>).unwrap();
+        <span class="kw">let </span>r = blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b"12345678"</span>).unwrap();
 
         <span class="macro">assert!</span>(cs.is_satisfied());
 
-        <span class="kw">let </span>expected = <span class="macro">hex!</span>(<span class="string">&quot;0af5695115ced92c8a0341e43869209636e9aa6472e4576f0f2b996cf812b30e&quot;</span>);
+        <span class="kw">let </span>expected = <span class="macro">hex!</span>(<span class="string">"0af5695115ced92c8a0341e43869209636e9aa6472e4576f0f2b996cf812b30e"</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>out = r.into_iter();
         <span class="kw">for </span>b <span class="kw">in </span>expected.iter() {
@@ -1290,7 +1291,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_blake2s_700_vars() {
-        <span class="kw">let </span>data: Vec&lt;u8&gt; = <span class="macro">hex!</span>(<span class="string">&quot;5dcfe8bab4c758d2eb1ddb7ef337583e0df3e2c358e1755b7cd303a658de9a1227eed1d1114179a5c3c38d692ff2cf2d4e5c92a9516de750106774bbf9f7d063f707f4c9b6a02c0a77e4feb99e036c3ccaee7d1a31cb144093aa074bc9da608f8ff30b39c3c60e4a243cc0bbd406d1262a7d6607b31c60275c6bcc8b0ac49a06a4b629a98693c5f7640f3bca45e4977cfabc5b17f52838af3433b1fd407dbbdc131e8e4bd58bcee85bbab4b57b656c6a2ec6cf852525bc8423675e2bf29159139cd5df99db94719f3f7167230e0d5bd76f6d7891b656732cef9c3c0d48a5fa3d7a879988157b39015a85451b25af0301ca5e759ac35fea79dca38c673ec6db9f3885d9103e2dcb3304bd3d59b0b1d01babc97ef8a74d91b6ab6bf50f29eb5adf7250a28fd85db37bff0133193635da69caeefc72979cf3bef1d2896d847eea7e8a81e0927893dbd010feb6fb845d0399007d9a148a0596d86cd8f4192631f975c560f4de8da5f712c161342063af3c11029d93d6df7ff46db48343499de9ec4786cac059c4025ef418c9fe40132428ff8b91259d71d1709ff066add84ae944b45a817f60b4c1bf719e39ae23e9b413469db2310793e9137cf38741e5dd2a3c138a566dbde1950c00071b20ac457b46ba9b0a7ebdddcc212bd228d2a4c4146a970e54158477247c27871af1564b176576e9fd43bf63740bf77434bc4ea3b1a4b430e1a11714bf43160145578a575c3f78ddeaa48de97f73460f26f8df2b5d63e31800100d16bc27160fea5ced5a977ef541cfe8dadc7b3991ed1c0d4f16a3076bbfed96ba3e155113e794987af8abb133f06feefabc2ac32eb4d4d4ba1541ca08b9e518d2e74b7f946b0cbd2663d58c689359b9a565821acc619011233d1011963fa302cde34fc9c5ba2e03eeb2512f547391e940d56218e22ae325f2dfa38d4bae35744ee707aa5dc9c17674025d15390a08f5c452343546ef6da0f7&quot;</span>).to_vec();
+        <span class="kw">let </span>data: Vec&lt;u8&gt; = <span class="macro">hex!</span>(<span class="string">"5dcfe8bab4c758d2eb1ddb7ef337583e0df3e2c358e1755b7cd303a658de9a1227eed1d1114179a5c3c38d692ff2cf2d4e5c92a9516de750106774bbf9f7d063f707f4c9b6a02c0a77e4feb99e036c3ccaee7d1a31cb144093aa074bc9da608f8ff30b39c3c60e4a243cc0bbd406d1262a7d6607b31c60275c6bcc8b0ac49a06a4b629a98693c5f7640f3bca45e4977cfabc5b17f52838af3433b1fd407dbbdc131e8e4bd58bcee85bbab4b57b656c6a2ec6cf852525bc8423675e2bf29159139cd5df99db94719f3f7167230e0d5bd76f6d7891b656732cef9c3c0d48a5fa3d7a879988157b39015a85451b25af0301ca5e759ac35fea79dca38c673ec6db9f3885d9103e2dcb3304bd3d59b0b1d01babc97ef8a74d91b6ab6bf50f29eb5adf7250a28fd85db37bff0133193635da69caeefc72979cf3bef1d2896d847eea7e8a81e0927893dbd010feb6fb845d0399007d9a148a0596d86cd8f4192631f975c560f4de8da5f712c161342063af3c11029d93d6df7ff46db48343499de9ec4786cac059c4025ef418c9fe40132428ff8b91259d71d1709ff066add84ae944b45a817f60b4c1bf719e39ae23e9b413469db2310793e9137cf38741e5dd2a3c138a566dbde1950c00071b20ac457b46ba9b0a7ebdddcc212bd228d2a4c4146a970e54158477247c27871af1564b176576e9fd43bf63740bf77434bc4ea3b1a4b430e1a11714bf43160145578a575c3f78ddeaa48de97f73460f26f8df2b5d63e31800100d16bc27160fea5ced5a977ef541cfe8dadc7b3991ed1c0d4f16a3076bbfed96ba3e155113e794987af8abb133f06feefabc2ac32eb4d4d4ba1541ca08b9e518d2e74b7f946b0cbd2663d58c689359b9a565821acc619011233d1011963fa302cde34fc9c5ba2e03eeb2512f547391e940d56218e22ae325f2dfa38d4bae35744ee707aa5dc9c17674025d15390a08f5c452343546ef6da0f7"</span>).to_vec();
         <span class="macro">assert_eq!</span>(data.len(), <span class="number">700</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
@@ -1299,7 +1300,7 @@
 
         <span class="kw">for </span>(byte_i, input_byte) <span class="kw">in </span>data.into_iter().enumerate() {
             <span class="kw">for </span>bit_i <span class="kw">in </span><span class="number">0</span>..<span class="number">8 </span>{
-                <span class="kw">let </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;input bit {} {}&quot;</span>, byte_i, bit_i));
+                <span class="kw">let </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">"input bit {} {}"</span>, byte_i, bit_i));
 
                 input_bits.push(
                     AllocatedBit::alloc(cs, <span class="prelude-val">Some</span>((input_byte &gt;&gt; bit_i) &amp; <span class="number">1u8 </span>== <span class="number">1u8</span>))
@@ -1309,11 +1310,11 @@
             }
         }
 
-        <span class="kw">let </span>r = blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b&quot;12345678&quot;</span>).unwrap();
+        <span class="kw">let </span>r = blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b"12345678"</span>).unwrap();
 
         <span class="macro">assert!</span>(cs.is_satisfied());
 
-        <span class="kw">let </span>expected = <span class="macro">hex!</span>(<span class="string">&quot;2ab8f0683167ba220eef19dccf4f9b1a8193cc09b35e0235842323950530f18a&quot;</span>);
+        <span class="kw">let </span>expected = <span class="macro">hex!</span>(<span class="string">"2ab8f0683167ba220eef19dccf4f9b1a8193cc09b35e0235842323950530f18a"</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>out = r.into_iter();
         <span class="kw">for </span>b <span class="kw">in </span>expected.iter() {
@@ -1333,13 +1334,13 @@
         ]);
 
         <span class="kw">let </span>expecteds = [
-            <span class="macro">hex!</span>(<span class="string">&quot;a1309e334376c8f36a736a4ab0e691ef931ee3ebdb9ea96187127136fea622a1&quot;</span>),
-            <span class="macro">hex!</span>(<span class="string">&quot;82fefff60f265cea255252f7c194a7f93965dffee0609ef74eb67f0d76cd41c6&quot;</span>),
+            <span class="macro">hex!</span>(<span class="string">"a1309e334376c8f36a736a4ab0e691ef931ee3ebdb9ea96187127136fea622a1"</span>),
+            <span class="macro">hex!</span>(<span class="string">"82fefff60f265cea255252f7c194a7f93965dffee0609ef74eb67f0d76cd41c6"</span>),
         ];
         <span class="kw">for </span>expected <span class="kw">in </span><span class="kw-2">&amp;</span>expecteds {
             <span class="kw">let </span><span class="kw-2">mut </span>h = Blake2sParams::new()
                 .hash_length(<span class="number">32</span>)
-                .personal(<span class="string">b&quot;12345678&quot;</span>)
+                .personal(<span class="string">b"12345678"</span>)
                 .to_state();
             <span class="kw">let </span>input_len = <span class="number">1024</span>;
             <span class="kw">let </span>data: Vec&lt;u8&gt; = (<span class="number">0</span>..input_len).map(|<span class="kw">_</span>| rng.next_u32() <span class="kw">as </span>u8).collect();
@@ -1354,7 +1355,7 @@
 
             <span class="kw">for </span>(byte_i, input_byte) <span class="kw">in </span>data.into_iter().enumerate() {
                 <span class="kw">for </span>bit_i <span class="kw">in </span><span class="number">0</span>..<span class="number">8 </span>{
-                    <span class="kw">let </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;input bit {} {}&quot;</span>, byte_i, bit_i));
+                    <span class="kw">let </span>cs = cs.namespace(|| <span class="macro">format!</span>(<span class="string">"input bit {} {}"</span>, byte_i, bit_i));
 
                     input_bits.push(
                         AllocatedBit::alloc(cs, <span class="prelude-val">Some</span>((input_byte &gt;&gt; bit_i) &amp; <span class="number">1u8 </span>== <span class="number">1u8</span>))
@@ -1364,7 +1365,7 @@
                 }
             }
 
-            <span class="kw">let </span>r = blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b&quot;12345678&quot;</span>).unwrap();
+            <span class="kw">let </span>r = blake2s(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>input_bits, <span class="string">b"12345678"</span>).unwrap();
 
             <span class="macro">assert!</span>(cs.is_satisfied());
 

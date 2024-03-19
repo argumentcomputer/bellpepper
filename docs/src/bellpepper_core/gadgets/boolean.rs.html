@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/bellpepper-core/src/gadgets/boolean.rs`."><title>boolean.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="bellpepper_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/bellpepper-core/src/gadgets/boolean.rs`."><title>boolean.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="bellpepper_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -2106,7 +2107,7 @@
         CS: ConstraintSystem&lt;Scalar&gt;,
     {
         <span class="kw">let </span>var = cs.alloc(
-            || <span class="string">&quot;boolean&quot;</span>,
+            || <span class="string">"boolean"</span>,
             || {
                 <span class="kw">if </span>value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">? </span>{
                     <span class="prelude-val">Ok</span>(Scalar::ONE)
@@ -2123,7 +2124,7 @@
         // reduces to (1 - a) * a = 0, which is a
         // traditional boolean constraint.
         </span>cs.enforce(
-            || <span class="string">&quot;boolean constraint&quot;</span>,
+            || <span class="string">"boolean constraint"</span>,
             |lc| lc + CS::one() - must_be_false.variable - var,
             |lc| lc + var,
             |lc| lc,
@@ -2143,7 +2144,7 @@
         CS: ConstraintSystem&lt;Scalar&gt;,
     {
         <span class="kw">let </span>var = cs.alloc(
-            || <span class="string">&quot;boolean&quot;</span>,
+            || <span class="string">"boolean"</span>,
             || {
                 <span class="kw">if </span>value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">? </span>{
                     <span class="prelude-val">Ok</span>(Scalar::ONE)
@@ -2156,7 +2157,7 @@
         <span class="comment">// Constrain: (1 - a) * a = 0
         // This constrains a to be either 0 or 1.
         </span>cs.enforce(
-            || <span class="string">&quot;boolean constraint&quot;</span>,
+            || <span class="string">"boolean constraint"</span>,
             |lc| lc + CS::one() - var,
             |lc| lc + var,
             |lc| lc,
@@ -2178,7 +2179,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>result_value = <span class="prelude-val">None</span>;
 
         <span class="kw">let </span>result_var = cs.alloc(
-            || <span class="string">&quot;xor result&quot;</span>,
+            || <span class="string">"xor result"</span>,
             || {
                 <span class="kw">if </span>a.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?
                     </span>^ b.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?
@@ -2210,7 +2211,7 @@
         // 2a * b = a + b - c
         // (a + a) * b = a + b - c
         </span>cs.enforce(
-            || <span class="string">&quot;xor constraint&quot;</span>,
+            || <span class="string">"xor constraint"</span>,
             |lc| lc + a.variable + a.variable,
             |lc| lc + b.variable,
             |lc| lc + a.variable + b.variable - result_var,
@@ -2232,7 +2233,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>result_value = <span class="prelude-val">None</span>;
 
         <span class="kw">let </span>result_var = cs.alloc(
-            || <span class="string">&quot;and result&quot;</span>,
+            || <span class="string">"and result"</span>,
             || {
                 <span class="kw">if </span>a.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?
                     </span>&amp; b.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?
@@ -2251,7 +2252,7 @@
         <span class="comment">// Constrain (a) * (b) = (c), ensuring c is 1 iff
         // a AND b are both 1.
         </span>cs.enforce(
-            || <span class="string">&quot;and constraint&quot;</span>,
+            || <span class="string">"and constraint"</span>,
             |lc| lc + a.variable,
             |lc| lc + b.variable,
             |lc| lc + result_var,
@@ -2272,7 +2273,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>result_value = <span class="prelude-val">None</span>;
 
         <span class="kw">let </span>result_var = cs.alloc(
-            || <span class="string">&quot;and not result&quot;</span>,
+            || <span class="string">"and not result"</span>,
             || {
                 <span class="kw">if </span>a.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?
                     </span>&amp; !b.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?
@@ -2291,7 +2292,7 @@
         <span class="comment">// Constrain (a) * (1 - b) = (c), ensuring c is 1 iff
         // a is true and b is false, and otherwise c is 0.
         </span>cs.enforce(
-            || <span class="string">&quot;and not constraint&quot;</span>,
+            || <span class="string">"and not constraint"</span>,
             |lc| lc + a.variable,
             |lc| lc + CS::one() - b.variable,
             |lc| lc + result_var,
@@ -2312,7 +2313,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>result_value = <span class="prelude-val">None</span>;
 
         <span class="kw">let </span>result_var = cs.alloc(
-            || <span class="string">&quot;nor result&quot;</span>,
+            || <span class="string">"nor result"</span>,
             || {
                 <span class="kw">if </span>!a.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?
                     </span>&amp; !b.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?
@@ -2331,7 +2332,7 @@
         <span class="comment">// Constrain (1 - a) * (1 - b) = (c), ensuring c is 1 iff
         // a and b are both false, and otherwise c is 0.
         </span>cs.enforce(
-            || <span class="string">&quot;nor constraint&quot;</span>,
+            || <span class="string">"nor constraint"</span>,
             |lc| lc + CS::one() - a.variable,
             |lc| lc + CS::one() - b.variable,
             |lc| lc + result_var,
@@ -2366,7 +2367,7 @@
         .enumerate()
         .map(|(i, b)| {
             <span class="prelude-val">Ok</span>(Boolean::from(AllocatedBit::alloc(
-                cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;bit {}&quot;</span>, i)),
+                cs.namespace(|| <span class="macro">format!</span>(<span class="string">"bit {}"</span>, i)),
                 b,
             )<span class="question-mark">?</span>))
         })
@@ -2429,7 +2430,7 @@
         .into_iter()
         .rev()
         .enumerate()
-        .map(|(i, b)| AllocatedBit::alloc(cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;bit {}&quot;</span>, i)), b))
+        .map(|(i, b)| AllocatedBit::alloc(cs.namespace(|| <span class="macro">format!</span>(<span class="string">"bit {}"</span>, i)), b))
         .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, SynthesisError&gt;&gt;()<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(bits)
@@ -2467,7 +2468,7 @@
             }
             (<span class="kw-2">&amp;</span>Boolean::Constant(<span class="bool-val">true</span>), a) | (a, <span class="kw-2">&amp;</span>Boolean::Constant(<span class="bool-val">true</span>)) =&gt; {
                 cs.enforce(
-                    || <span class="string">&quot;enforce equal to one&quot;</span>,
+                    || <span class="string">"enforce equal to one"</span>,
                     |lc| lc,
                     |lc| lc,
                     |lc| lc + CS::one() - <span class="kw-2">&amp;</span>a.lc(CS::one(), Scalar::ONE),
@@ -2477,7 +2478,7 @@
             }
             (<span class="kw-2">&amp;</span>Boolean::Constant(<span class="bool-val">false</span>), a) | (a, <span class="kw-2">&amp;</span>Boolean::Constant(<span class="bool-val">false</span>)) =&gt; {
                 cs.enforce(
-                    || <span class="string">&quot;enforce equal to zero&quot;</span>,
+                    || <span class="string">"enforce equal to zero"</span>,
                     |lc| lc,
                     |lc| lc,
                     |<span class="kw">_</span>| a.lc(CS::one(), Scalar::ONE),
@@ -2487,7 +2488,7 @@
             }
             (a, b) =&gt; {
                 cs.enforce(
-                    || <span class="string">&quot;enforce equal&quot;</span>,
+                    || <span class="string">"enforce equal"</span>,
                     |lc| lc,
                     |lc| lc,
                     |<span class="kw">_</span>| a.lc(CS::one(), Scalar::ONE) - <span class="kw-2">&amp;</span>b.lc(CS::one(), Scalar::ONE),
@@ -2541,7 +2542,7 @@
     }
 
     <span class="doccomment">/// Perform XOR over two boolean operands
-    </span><span class="kw">pub fn </span>xor&lt;<span class="lifetime">&#39;a</span>, Scalar, CS&gt;(cs: CS, a: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>, b: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, SynthesisError&gt;
+    </span><span class="kw">pub fn </span>xor&lt;<span class="lifetime">'a</span>, Scalar, CS&gt;(cs: CS, a: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>, b: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, SynthesisError&gt;
     <span class="kw">where
         </span>Scalar: PrimeField,
         CS: ConstraintSystem&lt;Scalar&gt;,
@@ -2563,7 +2564,7 @@
     }
 
     <span class="doccomment">/// Perform AND over two boolean operands
-    </span><span class="kw">pub fn </span>and&lt;<span class="lifetime">&#39;a</span>, Scalar, CS&gt;(cs: CS, a: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>, b: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, SynthesisError&gt;
+    </span><span class="kw">pub fn </span>and&lt;<span class="lifetime">'a</span>, Scalar, CS&gt;(cs: CS, a: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>, b: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, SynthesisError&gt;
     <span class="kw">where
         </span>Scalar: PrimeField,
         CS: ConstraintSystem&lt;Scalar&gt;,
@@ -2588,28 +2589,28 @@
     }
 
     <span class="doccomment">/// Perform OR over two boolean operands
-    </span><span class="kw">pub fn </span>or&lt;<span class="lifetime">&#39;a</span>, Scalar, CS&gt;(
+    </span><span class="kw">pub fn </span>or&lt;<span class="lifetime">'a</span>, Scalar, CS&gt;(
         <span class="kw-2">mut </span>cs: CS,
-        a: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Boolean,
-        b: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Boolean,
+        a: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Boolean,
+        b: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Boolean,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Boolean, SynthesisError&gt;
     <span class="kw">where
         </span>Scalar: PrimeField,
         CS: ConstraintSystem&lt;Scalar&gt;,
     {
         <span class="prelude-val">Ok</span>(Boolean::not(<span class="kw-2">&amp;</span>Boolean::and(
-            cs.namespace(|| <span class="string">&quot;not and (not a) (not b)&quot;</span>),
+            cs.namespace(|| <span class="string">"not and (not a) (not b)"</span>),
             <span class="kw-2">&amp;</span>Boolean::not(a),
             <span class="kw-2">&amp;</span>Boolean::not(b),
         )<span class="question-mark">?</span>))
     }
 
     <span class="doccomment">/// Computes (a and b) xor ((not a) and c)
-    </span><span class="kw">pub fn </span>sha256_ch&lt;<span class="lifetime">&#39;a</span>, Scalar, CS&gt;(
+    </span><span class="kw">pub fn </span>sha256_ch&lt;<span class="lifetime">'a</span>, Scalar, CS&gt;(
         <span class="kw-2">mut </span>cs: CS,
-        a: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>,
-        b: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>,
-        c: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>,
+        a: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>,
+        b: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>,
+        c: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, SynthesisError&gt;
     <span class="kw">where
         </span>Scalar: PrimeField,
@@ -2625,9 +2626,9 @@
 
         <span class="kw">match </span>(a, b, c) {
             (<span class="kw-2">&amp;</span>Boolean::Constant(<span class="kw">_</span>), <span class="kw-2">&amp;</span>Boolean::Constant(<span class="kw">_</span>), <span class="kw-2">&amp;</span>Boolean::Constant(<span class="kw">_</span>)) =&gt; {
-                <span class="comment">// They&#39;re all constants, so we can just compute the value.
+                <span class="comment">// They're all constants, so we can just compute the value.
 
-                </span><span class="kw">return </span><span class="prelude-val">Ok</span>(Boolean::Constant(ch_value.expect(<span class="string">&quot;they&#39;re all constants&quot;</span>)));
+                </span><span class="kw">return </span><span class="prelude-val">Ok</span>(Boolean::Constant(ch_value.expect(<span class="string">"they're all constants"</span>)));
             }
             (<span class="kw-2">&amp;</span>Boolean::Constant(<span class="bool-val">false</span>), <span class="kw">_</span>, c) =&gt; {
                 <span class="comment">// If a is false
@@ -2685,7 +2686,7 @@
         }
 
         <span class="kw">let </span>ch = cs.alloc(
-            || <span class="string">&quot;ch&quot;</span>,
+            || <span class="string">"ch"</span>,
             || {
                 ch_value.ok_or(SynthesisError::AssignmentMissing).map(|v| {
                     <span class="kw">if </span>v {
@@ -2699,7 +2700,7 @@
 
         <span class="comment">// a(b - c) = ch - c
         </span>cs.enforce(
-            || <span class="string">&quot;ch computation&quot;</span>,
+            || <span class="string">"ch computation"</span>,
             |<span class="kw">_</span>| b.lc(CS::one(), Scalar::ONE) - <span class="kw-2">&amp;</span>c.lc(CS::one(), Scalar::ONE),
             |<span class="kw">_</span>| a.lc(CS::one(), Scalar::ONE),
             |lc| lc + ch - <span class="kw-2">&amp;</span>c.lc(CS::one(), Scalar::ONE),
@@ -2713,11 +2714,11 @@
     }
 
     <span class="doccomment">/// Computes (a and b) xor (a and c) xor (b and c)
-    </span><span class="kw">pub fn </span>sha256_maj&lt;<span class="lifetime">&#39;a</span>, Scalar, CS&gt;(
+    </span><span class="kw">pub fn </span>sha256_maj&lt;<span class="lifetime">'a</span>, Scalar, CS&gt;(
         <span class="kw-2">mut </span>cs: CS,
-        a: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>,
-        b: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>,
-        c: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>,
+        a: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>,
+        b: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>,
+        c: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">Self</span>,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, SynthesisError&gt;
     <span class="kw">where
         </span>Scalar: PrimeField,
@@ -2733,9 +2734,9 @@
 
         <span class="kw">match </span>(a, b, c) {
             (<span class="kw-2">&amp;</span>Boolean::Constant(<span class="kw">_</span>), <span class="kw-2">&amp;</span>Boolean::Constant(<span class="kw">_</span>), <span class="kw-2">&amp;</span>Boolean::Constant(<span class="kw">_</span>)) =&gt; {
-                <span class="comment">// They&#39;re all constants, so we can just compute the value.
+                <span class="comment">// They're all constants, so we can just compute the value.
 
-                </span><span class="kw">return </span><span class="prelude-val">Ok</span>(Boolean::Constant(maj_value.expect(<span class="string">&quot;they&#39;re all constants&quot;</span>)));
+                </span><span class="kw">return </span><span class="prelude-val">Ok</span>(Boolean::Constant(maj_value.expect(<span class="string">"they're all constants"</span>)));
             }
             (<span class="kw-2">&amp;</span>Boolean::Constant(<span class="bool-val">false</span>), b, c) =&gt; {
                 <span class="comment">// If a is false,
@@ -2789,7 +2790,7 @@
         }
 
         <span class="kw">let </span>maj = cs.alloc(
-            || <span class="string">&quot;maj&quot;</span>,
+            || <span class="string">"maj"</span>,
             || {
                 maj_value.ok_or(SynthesisError::AssignmentMissing).map(|v| {
                     <span class="kw">if </span>v {
@@ -2810,10 +2811,10 @@
         // (b) * (c) = (bc)
         // (2bc - b - c) * (a) = bc - maj
 
-        </span><span class="kw">let </span>bc = <span class="self">Self</span>::and(cs.namespace(|| <span class="string">&quot;b and c&quot;</span>), b, c)<span class="question-mark">?</span>;
+        </span><span class="kw">let </span>bc = <span class="self">Self</span>::and(cs.namespace(|| <span class="string">"b and c"</span>), b, c)<span class="question-mark">?</span>;
 
         cs.enforce(
-            || <span class="string">&quot;maj computation&quot;</span>,
+            || <span class="string">"maj computation"</span>,
             |<span class="kw">_</span>| {
                 bc.lc(CS::one(), Scalar::ONE) + <span class="kw-2">&amp;</span>bc.lc(CS::one(), Scalar::ONE)
                     - <span class="kw-2">&amp;</span>b.lc(CS::one(), Scalar::ONE)
@@ -2850,13 +2851,13 @@
         <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
 
         AllocatedBit::alloc(<span class="kw-2">&amp;mut </span>cs, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>)).unwrap();
-        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;boolean&quot;</span>) == Fr::ONE);
+        <span class="macro">assert!</span>(cs.get(<span class="string">"boolean"</span>) == Fr::ONE);
         <span class="macro">assert!</span>(cs.is_satisfied());
-        cs.set(<span class="string">&quot;boolean&quot;</span>, Fr::ZERO);
+        cs.set(<span class="string">"boolean"</span>, Fr::ZERO);
         <span class="macro">assert!</span>(cs.is_satisfied());
-        cs.set(<span class="string">&quot;boolean&quot;</span>, Fr::from(<span class="number">2u64</span>));
+        cs.set(<span class="string">"boolean"</span>, Fr::from(<span class="number">2u64</span>));
         <span class="macro">assert!</span>(!cs.is_satisfied());
-        <span class="macro">assert!</span>(cs.which_is_unsatisfied() == <span class="prelude-val">Some</span>(<span class="string">&quot;boolean constraint&quot;</span>));
+        <span class="macro">assert!</span>(cs.which_is_unsatisfied() == <span class="prelude-val">Some</span>(<span class="string">"boolean constraint"</span>));
     }
 
     <span class="attr">#[test]
@@ -2864,16 +2865,16 @@
         <span class="kw">for </span>a_val <span class="kw">in </span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>].iter() {
             <span class="kw">for </span>b_val <span class="kw">in </span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>].iter() {
                 <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
-                <span class="kw">let </span>a = AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;a&quot;</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>a_val)).unwrap();
-                <span class="kw">let </span>b = AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;b&quot;</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>b_val)).unwrap();
+                <span class="kw">let </span>a = AllocatedBit::alloc(cs.namespace(|| <span class="string">"a"</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>a_val)).unwrap();
+                <span class="kw">let </span>b = AllocatedBit::alloc(cs.namespace(|| <span class="string">"b"</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>b_val)).unwrap();
                 <span class="kw">let </span>c = AllocatedBit::xor(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b).unwrap();
                 <span class="macro">assert_eq!</span>(c.value.unwrap(), <span class="kw-2">*</span>a_val ^ <span class="kw-2">*</span>b_val);
 
                 <span class="macro">assert!</span>(cs.is_satisfied());
-                <span class="macro">assert!</span>(cs.get(<span class="string">&quot;a/boolean&quot;</span>) == <span class="kw">if </span><span class="kw-2">*</span>a_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
-                <span class="macro">assert!</span>(cs.get(<span class="string">&quot;b/boolean&quot;</span>) == <span class="kw">if </span><span class="kw-2">*</span>b_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
+                <span class="macro">assert!</span>(cs.get(<span class="string">"a/boolean"</span>) == <span class="kw">if </span><span class="kw-2">*</span>a_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
+                <span class="macro">assert!</span>(cs.get(<span class="string">"b/boolean"</span>) == <span class="kw">if </span><span class="kw-2">*</span>b_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
                 <span class="macro">assert!</span>(
-                    cs.get(<span class="string">&quot;xor result&quot;</span>)
+                    cs.get(<span class="string">"xor result"</span>)
                         == <span class="kw">if </span><span class="kw-2">*</span>a_val ^ <span class="kw-2">*</span>b_val {
                             Field::ONE
                         } <span class="kw">else </span>{
@@ -2883,7 +2884,7 @@
 
                 <span class="comment">// Invert the result and check if the constraint system is still satisfied
                 </span>cs.set(
-                    <span class="string">&quot;xor result&quot;</span>,
+                    <span class="string">"xor result"</span>,
                     <span class="kw">if </span><span class="kw-2">*</span>a_val ^ <span class="kw-2">*</span>b_val {
                         Field::ZERO
                     } <span class="kw">else </span>{
@@ -2900,16 +2901,16 @@
         <span class="kw">for </span>a_val <span class="kw">in </span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>].iter() {
             <span class="kw">for </span>b_val <span class="kw">in </span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>].iter() {
                 <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
-                <span class="kw">let </span>a = AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;a&quot;</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>a_val)).unwrap();
-                <span class="kw">let </span>b = AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;b&quot;</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>b_val)).unwrap();
+                <span class="kw">let </span>a = AllocatedBit::alloc(cs.namespace(|| <span class="string">"a"</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>a_val)).unwrap();
+                <span class="kw">let </span>b = AllocatedBit::alloc(cs.namespace(|| <span class="string">"b"</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>b_val)).unwrap();
                 <span class="kw">let </span>c = AllocatedBit::and(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b).unwrap();
                 <span class="macro">assert_eq!</span>(c.value.unwrap(), <span class="kw-2">*</span>a_val &amp; <span class="kw-2">*</span>b_val);
 
                 <span class="macro">assert!</span>(cs.is_satisfied());
-                <span class="macro">assert!</span>(cs.get(<span class="string">&quot;a/boolean&quot;</span>) == <span class="kw">if </span><span class="kw-2">*</span>a_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
-                <span class="macro">assert!</span>(cs.get(<span class="string">&quot;b/boolean&quot;</span>) == <span class="kw">if </span><span class="kw-2">*</span>b_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
+                <span class="macro">assert!</span>(cs.get(<span class="string">"a/boolean"</span>) == <span class="kw">if </span><span class="kw-2">*</span>a_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
+                <span class="macro">assert!</span>(cs.get(<span class="string">"b/boolean"</span>) == <span class="kw">if </span><span class="kw-2">*</span>b_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
                 <span class="macro">assert!</span>(
-                    cs.get(<span class="string">&quot;and result&quot;</span>)
+                    cs.get(<span class="string">"and result"</span>)
                         == <span class="kw">if </span><span class="kw-2">*</span>a_val &amp; <span class="kw-2">*</span>b_val {
                             Field::ONE
                         } <span class="kw">else </span>{
@@ -2919,7 +2920,7 @@
 
                 <span class="comment">// Invert the result and check if the constraint system is still satisfied
                 </span>cs.set(
-                    <span class="string">&quot;and result&quot;</span>,
+                    <span class="string">"and result"</span>,
                     <span class="kw">if </span><span class="kw-2">*</span>a_val &amp; <span class="kw-2">*</span>b_val {
                         Field::ZERO
                     } <span class="kw">else </span>{
@@ -2936,16 +2937,16 @@
         <span class="kw">for </span>a_val <span class="kw">in </span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>].iter() {
             <span class="kw">for </span>b_val <span class="kw">in </span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>].iter() {
                 <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
-                <span class="kw">let </span>a = AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;a&quot;</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>a_val)).unwrap();
-                <span class="kw">let </span>b = AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;b&quot;</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>b_val)).unwrap();
+                <span class="kw">let </span>a = AllocatedBit::alloc(cs.namespace(|| <span class="string">"a"</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>a_val)).unwrap();
+                <span class="kw">let </span>b = AllocatedBit::alloc(cs.namespace(|| <span class="string">"b"</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>b_val)).unwrap();
                 <span class="kw">let </span>c = AllocatedBit::and_not(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b).unwrap();
                 <span class="macro">assert_eq!</span>(c.value.unwrap(), <span class="kw-2">*</span>a_val &amp; !<span class="kw-2">*</span>b_val);
 
                 <span class="macro">assert!</span>(cs.is_satisfied());
-                <span class="macro">assert!</span>(cs.get(<span class="string">&quot;a/boolean&quot;</span>) == <span class="kw">if </span><span class="kw-2">*</span>a_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
-                <span class="macro">assert!</span>(cs.get(<span class="string">&quot;b/boolean&quot;</span>) == <span class="kw">if </span><span class="kw-2">*</span>b_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
+                <span class="macro">assert!</span>(cs.get(<span class="string">"a/boolean"</span>) == <span class="kw">if </span><span class="kw-2">*</span>a_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
+                <span class="macro">assert!</span>(cs.get(<span class="string">"b/boolean"</span>) == <span class="kw">if </span><span class="kw-2">*</span>b_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
                 <span class="macro">assert!</span>(
-                    cs.get(<span class="string">&quot;and not result&quot;</span>)
+                    cs.get(<span class="string">"and not result"</span>)
                         == <span class="kw">if </span><span class="kw-2">*</span>a_val &amp; !<span class="kw-2">*</span>b_val {
                             Field::ONE
                         } <span class="kw">else </span>{
@@ -2955,7 +2956,7 @@
 
                 <span class="comment">// Invert the result and check if the constraint system is still satisfied
                 </span>cs.set(
-                    <span class="string">&quot;and not result&quot;</span>,
+                    <span class="string">"and not result"</span>,
                     <span class="kw">if </span><span class="kw-2">*</span>a_val &amp; !<span class="kw-2">*</span>b_val {
                         Field::ZERO
                     } <span class="kw">else </span>{
@@ -2972,16 +2973,16 @@
         <span class="kw">for </span>a_val <span class="kw">in </span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>].iter() {
             <span class="kw">for </span>b_val <span class="kw">in </span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>].iter() {
                 <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
-                <span class="kw">let </span>a = AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;a&quot;</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>a_val)).unwrap();
-                <span class="kw">let </span>b = AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;b&quot;</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>b_val)).unwrap();
+                <span class="kw">let </span>a = AllocatedBit::alloc(cs.namespace(|| <span class="string">"a"</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>a_val)).unwrap();
+                <span class="kw">let </span>b = AllocatedBit::alloc(cs.namespace(|| <span class="string">"b"</span>), <span class="prelude-val">Some</span>(<span class="kw-2">*</span>b_val)).unwrap();
                 <span class="kw">let </span>c = AllocatedBit::nor(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b).unwrap();
                 <span class="macro">assert_eq!</span>(c.value.unwrap(), !<span class="kw-2">*</span>a_val &amp; !<span class="kw-2">*</span>b_val);
 
                 <span class="macro">assert!</span>(cs.is_satisfied());
-                <span class="macro">assert!</span>(cs.get(<span class="string">&quot;a/boolean&quot;</span>) == <span class="kw">if </span><span class="kw-2">*</span>a_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
-                <span class="macro">assert!</span>(cs.get(<span class="string">&quot;b/boolean&quot;</span>) == <span class="kw">if </span><span class="kw-2">*</span>b_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
+                <span class="macro">assert!</span>(cs.get(<span class="string">"a/boolean"</span>) == <span class="kw">if </span><span class="kw-2">*</span>a_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
+                <span class="macro">assert!</span>(cs.get(<span class="string">"b/boolean"</span>) == <span class="kw">if </span><span class="kw-2">*</span>b_val { Field::ONE } <span class="kw">else </span>{ Field::ZERO });
                 <span class="macro">assert!</span>(
-                    cs.get(<span class="string">&quot;nor result&quot;</span>)
+                    cs.get(<span class="string">"nor result"</span>)
                         == <span class="kw">if </span>!<span class="kw-2">*</span>a_val &amp; !<span class="kw-2">*</span>b_val {
                             Field::ONE
                         } <span class="kw">else </span>{
@@ -2991,7 +2992,7 @@
 
                 <span class="comment">// Invert the result and check if the constraint system is still satisfied
                 </span>cs.set(
-                    <span class="string">&quot;nor result&quot;</span>,
+                    <span class="string">"nor result"</span>,
                     <span class="kw">if </span>!<span class="kw-2">*</span>a_val &amp; !<span class="kw-2">*</span>b_val {
                         Field::ZERO
                     } <span class="kw">else </span>{
@@ -3013,10 +3014,10 @@
                             <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
 
                             <span class="kw">let </span><span class="kw-2">mut </span>a = Boolean::from(
-                                AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;a&quot;</span>), <span class="prelude-val">Some</span>(a_bool)).unwrap(),
+                                AllocatedBit::alloc(cs.namespace(|| <span class="string">"a"</span>), <span class="prelude-val">Some</span>(a_bool)).unwrap(),
                             );
                             <span class="kw">let </span><span class="kw-2">mut </span>b = Boolean::from(
-                                AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;b&quot;</span>), <span class="prelude-val">Some</span>(b_bool)).unwrap(),
+                                AllocatedBit::alloc(cs.namespace(|| <span class="string">"b"</span>), <span class="prelude-val">Some</span>(b_bool)).unwrap(),
                             );
 
                             <span class="kw">if </span>a_neg {
@@ -3035,7 +3036,7 @@
 
                             <span class="kw">let </span><span class="kw-2">mut </span>a = Boolean::Constant(a_bool);
                             <span class="kw">let </span><span class="kw-2">mut </span>b = Boolean::from(
-                                AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;b&quot;</span>), <span class="prelude-val">Some</span>(b_bool)).unwrap(),
+                                AllocatedBit::alloc(cs.namespace(|| <span class="string">"b"</span>), <span class="prelude-val">Some</span>(b_bool)).unwrap(),
                             );
 
                             <span class="kw">if </span>a_neg {
@@ -3053,7 +3054,7 @@
                             <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
 
                             <span class="kw">let </span><span class="kw-2">mut </span>a = Boolean::from(
-                                AllocatedBit::alloc(cs.namespace(|| <span class="string">&quot;a&quot;</span>), <span class="prelude-val">Some</span>(a_bool)).unwrap(),
+                                AllocatedBit::alloc(cs.namespace(|| <span class="string">"a"</span>), <span class="prelude-val">Some</span>(a_bool)).unwrap(),
                             );
                             <span class="kw">let </span><span class="kw-2">mut </span>b = Boolean::Constant(b_bool);
 
@@ -3104,42 +3105,42 @@
 
         <span class="kw">match </span>b {
             Boolean::Is(<span class="kw">_</span>) =&gt; {}
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected value&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected value"</span>),
         }
 
         b = b.not();
 
         <span class="kw">match </span>b {
             Boolean::Not(<span class="kw">_</span>) =&gt; {}
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected value&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected value"</span>),
         }
 
         b = b.not();
 
         <span class="kw">match </span>b {
             Boolean::Is(<span class="kw">_</span>) =&gt; {}
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected value&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected value"</span>),
         }
 
         b = Boolean::constant(<span class="bool-val">true</span>);
 
         <span class="kw">match </span>b {
             Boolean::Constant(<span class="bool-val">true</span>) =&gt; {}
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected value&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected value"</span>),
         }
 
         b = b.not();
 
         <span class="kw">match </span>b {
             Boolean::Constant(<span class="bool-val">false</span>) =&gt; {}
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected value&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected value"</span>),
         }
 
         b = b.not();
 
         <span class="kw">match </span>b {
             Boolean::Constant(<span class="bool-val">true</span>) =&gt; {}
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected value&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected value"</span>),
         }
     }
 
@@ -3217,8 +3218,8 @@
                         }
                     };
 
-                    a = dyn_construct(first_operand, <span class="string">&quot;a&quot;</span>);
-                    b = dyn_construct(second_operand, <span class="string">&quot;b&quot;</span>);
+                    a = dyn_construct(first_operand, <span class="string">"a"</span>);
+                    b = dyn_construct(second_operand, <span class="string">"b"</span>);
                 }
 
                 <span class="kw">let </span>c = Boolean::xor(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b).unwrap();
@@ -3247,7 +3248,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3255,7 +3256,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3263,7 +3264,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3271,7 +3272,7 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
 
@@ -3282,7 +3283,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3290,7 +3291,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3298,7 +3299,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3306,7 +3307,7 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
 
@@ -3317,7 +3318,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3325,7 +3326,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3333,7 +3334,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3341,7 +3342,7 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
 
@@ -3352,7 +3353,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3360,7 +3361,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3368,7 +3369,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3376,11 +3377,11 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;xor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"xor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
 
-                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;this should never be encountered&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"this should never be encountered"</span>),
                 }
             }
         }
@@ -3426,8 +3427,8 @@
                         }
                     };
 
-                    a = dyn_construct(first_operand, <span class="string">&quot;a&quot;</span>);
-                    b = dyn_construct(second_operand, <span class="string">&quot;b&quot;</span>);
+                    a = dyn_construct(first_operand, <span class="string">"a"</span>);
+                    b = dyn_construct(second_operand, <span class="string">"b"</span>);
                 }
 
                 <span class="kw">let </span>c = Boolean::and(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b).unwrap();
@@ -3465,7 +3466,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3473,7 +3474,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3481,7 +3482,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3489,7 +3490,7 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and not result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and not result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
 
@@ -3501,7 +3502,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3509,7 +3510,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3517,7 +3518,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3525,7 +3526,7 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
 
@@ -3540,7 +3541,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3548,7 +3549,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3556,7 +3557,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;nor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"nor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3564,7 +3565,7 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;nor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"nor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
 
@@ -3579,7 +3580,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and not result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and not result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3587,7 +3588,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3595,7 +3596,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;nor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"nor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3603,13 +3604,13 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Is(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;nor result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"nor result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.value, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
 
                     <span class="kw">_ </span>=&gt; {
                         <span class="macro">panic!</span>(
-                            <span class="string">&quot;unexpected behavior at {:?} AND {:?}&quot;</span>,
+                            <span class="string">"unexpected behavior at {:?} AND {:?}"</span>,
                             first_operand, second_operand
                         );
                     }
@@ -3658,8 +3659,8 @@
                         }
                     };
 
-                    a = dyn_construct(first_operand, <span class="string">&quot;a&quot;</span>);
-                    b = dyn_construct(second_operand, <span class="string">&quot;b&quot;</span>);
+                    a = dyn_construct(first_operand, <span class="string">"a"</span>);
+                    b = dyn_construct(second_operand, <span class="string">"b"</span>);
                 }
 
                 <span class="kw">let </span>c = Boolean::or(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b).unwrap();
@@ -3696,7 +3697,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/nor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/nor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3704,7 +3705,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/nor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/nor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3712,7 +3713,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3720,7 +3721,7 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
 
@@ -3731,7 +3732,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/nor result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/nor result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3739,7 +3740,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/nor result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/nor result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3747,7 +3748,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and not result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and not result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3755,7 +3756,7 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
 
@@ -3770,7 +3771,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3778,7 +3779,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and not result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and not result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3786,7 +3787,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and result&quot;</span>) == Field::ONE);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and result"</span>) == Field::ONE);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">true</span>));
                     }
                     (
@@ -3794,7 +3795,7 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
 
@@ -3809,7 +3810,7 @@
                         OperandType::AllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3817,7 +3818,7 @@
                         OperandType::AllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and not result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and not result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3825,7 +3826,7 @@
                         OperandType::NegatedAllocatedTrue,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
                     (
@@ -3833,11 +3834,11 @@
                         OperandType::NegatedAllocatedFalse,
                         Boolean::Not(<span class="kw-2">ref </span>v),
                     ) =&gt; {
-                        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;not and (not a) (not b)/and result&quot;</span>) == Field::ZERO);
+                        <span class="macro">assert!</span>(cs.get(<span class="string">"not and (not a) (not b)/and result"</span>) == Field::ZERO);
                         <span class="macro">assert_eq!</span>(v.get_value(), <span class="prelude-val">Some</span>(<span class="bool-val">false</span>));
                     }
 
-                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;this should never be encountered&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"this should never be encountered"</span>),
                 }
             }
         }
@@ -3871,7 +3872,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
 
         <span class="kw">let </span>r = Fr::from_str_vartime(
-            <span class="string">&quot;9147677615426976802526883532204139322118074541891858454835346926874644257775&quot;</span>,
+            <span class="string">"9147677615426976802526883532204139322118074541891858454835346926874644257775"</span>,
         )
         .unwrap();
 
@@ -3939,9 +3940,9 @@
                             }
                         };
 
-                        a = dyn_construct(first_operand, <span class="string">&quot;a&quot;</span>);
-                        b = dyn_construct(second_operand, <span class="string">&quot;b&quot;</span>);
-                        c = dyn_construct(third_operand, <span class="string">&quot;c&quot;</span>);
+                        a = dyn_construct(first_operand, <span class="string">"a"</span>);
+                        b = dyn_construct(second_operand, <span class="string">"b"</span>);
+                        c = dyn_construct(third_operand, <span class="string">"c"</span>);
                     }
 
                     <span class="kw">let </span>maj = Boolean::sha256_ch(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b, <span class="kw-2">&amp;</span>c).unwrap();
@@ -3961,21 +3962,21 @@
                             <span class="macro">assert_eq!</span>(cs.num_constraints(), <span class="number">0</span>);
                         }
                     } <span class="kw">else </span>{
-                        <span class="macro">assert_eq!</span>(cs.get(<span class="string">&quot;ch&quot;</span>), {
+                        <span class="macro">assert_eq!</span>(cs.get(<span class="string">"ch"</span>), {
                             <span class="kw">if </span>expected {
                                 Fr::ONE
                             } <span class="kw">else </span>{
                                 Fr::ZERO
                             }
                         });
-                        cs.set(<span class="string">&quot;ch&quot;</span>, {
+                        cs.set(<span class="string">"ch"</span>, {
                             <span class="kw">if </span>expected {
                                 Fr::ZERO
                             } <span class="kw">else </span>{
                                 Fr::ONE
                             }
                         });
-                        <span class="macro">assert_eq!</span>(cs.which_is_unsatisfied().unwrap(), <span class="string">&quot;ch computation&quot;</span>);
+                        <span class="macro">assert_eq!</span>(cs.which_is_unsatisfied().unwrap(), <span class="string">"ch computation"</span>);
                     }
                 }
             }
@@ -4031,9 +4032,9 @@
                             }
                         };
 
-                        a = dyn_construct(first_operand, <span class="string">&quot;a&quot;</span>);
-                        b = dyn_construct(second_operand, <span class="string">&quot;b&quot;</span>);
-                        c = dyn_construct(third_operand, <span class="string">&quot;c&quot;</span>);
+                        a = dyn_construct(first_operand, <span class="string">"a"</span>);
+                        b = dyn_construct(second_operand, <span class="string">"b"</span>);
+                        c = dyn_construct(third_operand, <span class="string">"c"</span>);
                     }
 
                     <span class="kw">let </span>maj = Boolean::sha256_maj(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b, <span class="kw-2">&amp;</span>c).unwrap();
@@ -4053,21 +4054,21 @@
                             <span class="macro">assert_eq!</span>(cs.num_constraints(), <span class="number">0</span>);
                         }
                     } <span class="kw">else </span>{
-                        <span class="macro">assert_eq!</span>(cs.get(<span class="string">&quot;maj&quot;</span>), {
+                        <span class="macro">assert_eq!</span>(cs.get(<span class="string">"maj"</span>), {
                             <span class="kw">if </span>expected {
                                 Fr::ONE
                             } <span class="kw">else </span>{
                                 Fr::ZERO
                             }
                         });
-                        cs.set(<span class="string">&quot;maj&quot;</span>, {
+                        cs.set(<span class="string">"maj"</span>, {
                             <span class="kw">if </span>expected {
                                 Fr::ZERO
                             } <span class="kw">else </span>{
                                 Fr::ONE
                             }
                         });
-                        <span class="macro">assert_eq!</span>(cs.which_is_unsatisfied().unwrap(), <span class="string">&quot;maj computation&quot;</span>);
+                        <span class="macro">assert_eq!</span>(cs.which_is_unsatisfied().unwrap(), <span class="string">"maj computation"</span>);
                     }
                 }
             }
@@ -4083,7 +4084,7 @@
             <span class="kw">let </span>value = <span class="prelude-val">None</span>;
             <span class="comment">// if value is none, fail with SynthesisError
             </span><span class="kw">let </span>is_err = AllocatedBit::alloc_conditionally(
-                cs.namespace(|| <span class="string">&quot;alloc_conditionally&quot;</span>),
+                cs.namespace(|| <span class="string">"alloc_conditionally"</span>),
                 value,
                 <span class="kw-2">&amp;</span>b,
             )
@@ -4098,7 +4099,7 @@
             <span class="kw">let </span>value = <span class="prelude-val">Some</span>(<span class="bool-val">true</span>);
             <span class="kw">let </span>b = AllocatedBit::alloc(<span class="kw-2">&amp;mut </span>cs, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>)).unwrap();
             <span class="kw">let </span>allocated_value = AllocatedBit::alloc_conditionally(
-                cs.namespace(|| <span class="string">&quot;alloc_conditionally&quot;</span>),
+                cs.namespace(|| <span class="string">"alloc_conditionally"</span>),
                 value,
                 <span class="kw-2">&amp;</span>b,
             )
@@ -4114,20 +4115,20 @@
 
             <span class="kw">let </span>value = <span class="prelude-val">Some</span>(<span class="bool-val">true</span>);
             <span class="kw">let </span>b = AllocatedBit::alloc(<span class="kw-2">&amp;mut </span>cs, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>)).unwrap();
-            AllocatedBit::alloc_conditionally(cs.namespace(|| <span class="string">&quot;alloc_conditionally&quot;</span>), value, <span class="kw-2">&amp;</span>b)
+            AllocatedBit::alloc_conditionally(cs.namespace(|| <span class="string">"alloc_conditionally"</span>), value, <span class="kw-2">&amp;</span>b)
                 .unwrap();
 
             <span class="macro">assert!</span>(!cs.is_satisfied());
         }
 
         {
-            <span class="comment">// since value is false, we don&#39;t care about the value of the bit
+            <span class="comment">// since value is false, we don't care about the value of the bit
 
             </span><span class="kw">let </span>value = <span class="prelude-val">Some</span>(<span class="bool-val">false</span>);
             <span class="comment">//check with false bit
             </span><span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
             <span class="kw">let </span>b1 = AllocatedBit::alloc(<span class="kw-2">&amp;mut </span>cs, <span class="prelude-val">Some</span>(<span class="bool-val">false</span>)).unwrap();
-            AllocatedBit::alloc_conditionally(cs.namespace(|| <span class="string">&quot;alloc_conditionally&quot;</span>), value, <span class="kw-2">&amp;</span>b1)
+            AllocatedBit::alloc_conditionally(cs.namespace(|| <span class="string">"alloc_conditionally"</span>), value, <span class="kw-2">&amp;</span>b1)
                 .unwrap();
 
             <span class="macro">assert!</span>(cs.is_satisfied());
@@ -4135,7 +4136,7 @@
             <span class="comment">//check with true bit
             </span><span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
             <span class="kw">let </span>b2 = AllocatedBit::alloc(<span class="kw-2">&amp;mut </span>cs, <span class="prelude-val">Some</span>(<span class="bool-val">true</span>)).unwrap();
-            AllocatedBit::alloc_conditionally(cs.namespace(|| <span class="string">&quot;alloc_conditionally&quot;</span>), value, <span class="kw-2">&amp;</span>b2)
+            AllocatedBit::alloc_conditionally(cs.namespace(|| <span class="string">"alloc_conditionally"</span>), value, <span class="kw-2">&amp;</span>b2)
                 .unwrap();
 
             <span class="macro">assert!</span>(cs.is_satisfied());

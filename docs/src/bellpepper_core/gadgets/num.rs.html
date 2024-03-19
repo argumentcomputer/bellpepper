@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/bellpepper-core/src/gadgets/num.rs`."><title>num.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="bellpepper_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/bellpepper-core/src/gadgets/num.rs`."><title>num.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="bellpepper_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -794,6 +795,22 @@
 <a href="#794" id="794">794</a>
 <a href="#795" id="795">795</a>
 <a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Gadgets representing numbers in the scalar field of the underlying curve.
 
 </span><span class="kw">use </span>ff::{PrimeField, PrimeFieldBits};
@@ -827,7 +844,7 @@
     {
         <span class="kw">let </span><span class="kw-2">mut </span>new_value = <span class="prelude-val">None</span>;
         <span class="kw">let </span>var = cs.alloc(
-            || <span class="string">&quot;num&quot;</span>,
+            || <span class="string">"num"</span>,
             || {
                 <span class="kw">let </span>tmp = value()<span class="question-mark">?</span>;
 
@@ -861,7 +878,7 @@
     {
         <span class="kw">let </span><span class="kw-2">mut </span>new_value = <span class="prelude-val">None</span>;
         <span class="kw">let </span>var = cs.alloc_input(
-            || <span class="string">&quot;input num&quot;</span>,
+            || <span class="string">"input num"</span>,
             || {
                 <span class="kw">let </span>tmp = value()<span class="question-mark">?</span>;
 
@@ -902,12 +919,12 @@
         </span>CS: ConstraintSystem&lt;Scalar&gt;,
     {
         <span class="kw">let </span>input = cs.alloc_input(
-            || <span class="string">&quot;input variable&quot;</span>,
+            || <span class="string">"input variable"</span>,
             || <span class="self">self</span>.value.ok_or(SynthesisError::AssignmentMissing),
         )<span class="question-mark">?</span>;
 
         cs.enforce(
-            || <span class="string">&quot;enforce input is correct&quot;</span>,
+            || <span class="string">"enforce input is correct"</span>,
             |lc| lc + input,
             |lc| lc + CS::one(),
             |lc| lc + <span class="self">self</span>.variable,
@@ -919,7 +936,7 @@
     <span class="doccomment">/// Deconstructs this allocated number into its
     /// boolean representation in little-endian bit
     /// order, requiring that the representation
-    /// strictly exists &quot;in the field&quot; (i.e., a
+    /// strictly exists "in the field" (i.e., a
     /// congruency is not allowed.)
     </span><span class="kw">pub fn </span>to_bits_le_strict&lt;CS&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>cs: CS) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Boolean&gt;, SynthesisError&gt;
     <span class="kw">where
@@ -936,7 +953,7 @@
         {
             <span class="macro">assert!</span>(!v.is_empty());
 
-            <span class="comment">// Let&#39;s keep this simple for now and just AND them all
+            <span class="comment">// Let's keep this simple for now and just AND them all
             // manually
             </span><span class="kw">let </span><span class="kw-2">mut </span>cur = <span class="prelude-val">None</span>;
 
@@ -945,14 +962,14 @@
                     cur = <span class="prelude-val">Some</span>(v.clone());
                 } <span class="kw">else </span>{
                     cur = <span class="prelude-val">Some</span>(AllocatedBit::and(
-                        cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;and {}&quot;</span>, i)),
+                        cs.namespace(|| <span class="macro">format!</span>(<span class="string">"and {}"</span>, i)),
                         cur.as_ref().unwrap(),
                         v,
                     )<span class="question-mark">?</span>);
                 }
             }
 
-            <span class="prelude-val">Ok</span>(cur.expect(<span class="string">&quot;v.len() &gt; 0&quot;</span>))
+            <span class="prelude-val">Ok</span>(cur.expect(<span class="string">"v.len() &gt; 0"</span>))
         }
 
         <span class="comment">// We want to ensure that the bit representation of a is
@@ -985,9 +1002,9 @@
             }
 
             <span class="kw">if </span>b {
-                <span class="comment">// This is part of a run of ones. Let&#39;s just
+                <span class="comment">// This is part of a run of ones. Let's just
                 // allocate the boolean with the expected value.
-                </span><span class="kw">let </span>a_bit = AllocatedBit::alloc(cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;bit {}&quot;</span>, i)), a_bit)<span class="question-mark">?</span>;
+                </span><span class="kw">let </span>a_bit = AllocatedBit::alloc(cs.namespace(|| <span class="macro">format!</span>(<span class="string">"bit {}"</span>, i)), a_bit)<span class="question-mark">?</span>;
                 <span class="comment">// ... and add it to the current run of ones.
                 </span>current_run.push(a_bit.clone());
                 result.push(a_bit);
@@ -1000,7 +1017,7 @@
                         current_run.push(last_run.clone().unwrap());
                     }
                     last_run = <span class="prelude-val">Some</span>(kary_and(
-                        cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;run ending at {}&quot;</span>, i)),
+                        cs.namespace(|| <span class="macro">format!</span>(<span class="string">"run ending at {}"</span>, i)),
                         <span class="kw-2">&amp;</span>current_run,
                     )<span class="question-mark">?</span>);
                     current_run.truncate(<span class="number">0</span>);
@@ -1012,9 +1029,9 @@
                 // If `last_run` is false, `a` can be true or false.
 
                 </span><span class="kw">let </span>a_bit = AllocatedBit::alloc_conditionally(
-                    cs.namespace(|| <span class="macro">format!</span>(<span class="string">&quot;bit {}&quot;</span>, i)),
+                    cs.namespace(|| <span class="macro">format!</span>(<span class="string">"bit {}"</span>, i)),
                     a_bit,
-                    last_run.as_ref().expect(<span class="string">&quot;char always starts with a one&quot;</span>),
+                    last_run.as_ref().expect(<span class="string">"char always starts with a one"</span>),
                 )<span class="question-mark">?</span>;
                 result.push(a_bit);
             }
@@ -1022,7 +1039,7 @@
             i += <span class="number">1</span>;
         }
 
-        <span class="comment">// char is prime, so we&#39;ll always end on
+        <span class="comment">// char is prime, so we'll always end on
         // a run of zeros.
         </span><span class="macro">assert_eq!</span>(current_run.len(), <span class="number">0</span>);
 
@@ -1040,7 +1057,7 @@
 
         lc = lc - <span class="self">self</span>.variable;
 
-        cs.enforce(|| <span class="string">&quot;unpacking constraint&quot;</span>, |lc| lc, |lc| lc, |<span class="kw">_</span>| lc);
+        cs.enforce(|| <span class="string">"unpacking constraint"</span>, |lc| lc, |lc| lc, |<span class="kw">_</span>| lc);
 
         <span class="comment">// Convert into booleans, and reverse for little-endian bit order
         </span><span class="prelude-val">Ok</span>(result.into_iter().map(Boolean::from).rev().collect())
@@ -1048,7 +1065,7 @@
 
     <span class="doccomment">/// Convert the allocated number into its little-endian representation.
     /// Note that this does not strongly enforce that the commitment is
-    /// &quot;in the field.&quot;
+    /// "in the field."
     </span><span class="kw">pub fn </span>to_bits_le&lt;CS&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>cs: CS) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Boolean&gt;, SynthesisError&gt;
     <span class="kw">where
         </span>CS: ConstraintSystem&lt;Scalar&gt;,
@@ -1067,7 +1084,7 @@
 
         lc = lc - <span class="self">self</span>.variable;
 
-        cs.enforce(|| <span class="string">&quot;unpacking constraint&quot;</span>, |lc| lc, |lc| lc, |<span class="kw">_</span>| lc);
+        cs.enforce(|| <span class="string">"unpacking constraint"</span>, |lc| lc, |lc| lc, |<span class="kw">_</span>| lc);
 
         <span class="prelude-val">Ok</span>(bits.into_iter().map(Boolean::from).collect())
     }
@@ -1079,7 +1096,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>value = <span class="prelude-val">None</span>;
 
         <span class="kw">let </span>var = cs.alloc(
-            || <span class="string">&quot;sum num&quot;</span>,
+            || <span class="string">"sum num"</span>,
             || {
                 <span class="kw">let </span><span class="kw-2">mut </span>tmp = <span class="self">self</span>.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?</span>;
                 tmp.add_assign(other.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?</span>);
@@ -1092,7 +1109,7 @@
 
         <span class="comment">// Constrain: (a + b) * 1 = a + b
         </span>cs.enforce(
-            || <span class="string">&quot;addition constraint&quot;</span>,
+            || <span class="string">"addition constraint"</span>,
             |lc| lc + <span class="self">self</span>.variable + other.variable,
             |lc| lc + CS::one(),
             |lc| lc + var,
@@ -1111,7 +1128,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>value = <span class="prelude-val">None</span>;
 
         <span class="kw">let </span>var = cs.alloc(
-            || <span class="string">&quot;product num&quot;</span>,
+            || <span class="string">"product num"</span>,
             || {
                 <span class="kw">let </span><span class="kw-2">mut </span>tmp = <span class="self">self</span>.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?</span>;
                 tmp.mul_assign(other.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?</span>);
@@ -1124,7 +1141,7 @@
 
         <span class="comment">// Constrain: a * b = ab
         </span>cs.enforce(
-            || <span class="string">&quot;multiplication constraint&quot;</span>,
+            || <span class="string">"multiplication constraint"</span>,
             |lc| lc + <span class="self">self</span>.variable,
             |lc| lc + other.variable,
             |lc| lc + var,
@@ -1143,7 +1160,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>value = <span class="prelude-val">None</span>;
 
         <span class="kw">let </span>var = cs.alloc(
-            || <span class="string">&quot;squared num&quot;</span>,
+            || <span class="string">"squared num"</span>,
             || {
                 <span class="kw">let </span><span class="kw-2">mut </span>tmp = <span class="self">self</span>.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?</span>;
                 tmp = tmp.square();
@@ -1156,7 +1173,7 @@
 
         <span class="comment">// Constrain: a * a = aa
         </span>cs.enforce(
-            || <span class="string">&quot;squaring constraint&quot;</span>,
+            || <span class="string">"squaring constraint"</span>,
             |lc| lc + <span class="self">self</span>.variable,
             |lc| lc + <span class="self">self</span>.variable,
             |lc| lc + var,
@@ -1173,7 +1190,7 @@
         </span>CS: ConstraintSystem&lt;Scalar&gt;,
     {
         <span class="kw">let </span>inv = cs.alloc(
-            || <span class="string">&quot;ephemeral inverse&quot;</span>,
+            || <span class="string">"ephemeral inverse"</span>,
             || {
                 <span class="kw">let </span>tmp = <span class="self">self</span>.value.ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?</span>;
 
@@ -1189,7 +1206,7 @@
         // iff a has a multiplicative inverse, untrue
         // for zero.
         </span>cs.enforce(
-            || <span class="string">&quot;nonzero assertion constraint&quot;</span>,
+            || <span class="string">"nonzero assertion constraint"</span>,
             |lc| lc + <span class="self">self</span>.variable,
             |lc| lc + inv,
             |lc| lc + CS::one(),
@@ -1210,7 +1227,7 @@
     <span class="kw">where
         </span>CS: ConstraintSystem&lt;Scalar&gt;,
     {
-        <span class="kw">let </span>c = <span class="self">Self</span>::alloc(cs.namespace(|| <span class="string">&quot;conditional reversal result 1&quot;</span>), || {
+        <span class="kw">let </span>c = <span class="self">Self</span>::alloc(cs.namespace(|| <span class="string">"conditional reversal result 1"</span>), || {
             <span class="kw">if </span>condition
                 .get_value()
                 .ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?
@@ -1222,13 +1239,13 @@
         })<span class="question-mark">?</span>;
 
         cs.enforce(
-            || <span class="string">&quot;first conditional reversal&quot;</span>,
+            || <span class="string">"first conditional reversal"</span>,
             |lc| lc + a.variable - b.variable,
             |<span class="kw">_</span>| condition.lc(CS::one(), Scalar::ONE),
             |lc| lc + a.variable - c.variable,
         );
 
-        <span class="kw">let </span>d = <span class="self">Self</span>::alloc(cs.namespace(|| <span class="string">&quot;conditional reversal result 2&quot;</span>), || {
+        <span class="kw">let </span>d = <span class="self">Self</span>::alloc(cs.namespace(|| <span class="string">"conditional reversal result 2"</span>), || {
             <span class="kw">if </span>condition
                 .get_value()
                 .ok_or(SynthesisError::AssignmentMissing)<span class="question-mark">?
@@ -1240,7 +1257,7 @@
         })<span class="question-mark">?</span>;
 
         cs.enforce(
-            || <span class="string">&quot;second conditional reversal&quot;</span>,
+            || <span class="string">"second conditional reversal"</span>,
             |lc| lc + b.variable - a.variable,
             |<span class="kw">_</span>| condition.lc(CS::one(), Scalar::ONE),
             |lc| lc + b.variable - d.variable,
@@ -1316,8 +1333,7 @@
                 tmp.add_assign(<span class="kw-2">&amp;</span>v2);
                 <span class="prelude-val">Some</span>(tmp)
             }
-            (<span class="prelude-val">Some</span>(v), <span class="prelude-val">None</span>) | (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(v)) =&gt; <span class="prelude-val">Some</span>(v),
-            (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="prelude-val">None</span>,
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         };
 
         Num { value, lc }
@@ -1355,7 +1371,7 @@
 
         AllocatedNum::alloc(<span class="kw-2">&amp;mut </span>cs, || <span class="prelude-val">Ok</span>(Fr::ONE)).unwrap();
 
-        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;num&quot;</span>) == Fr::ONE);
+        <span class="macro">assert!</span>(cs.get(<span class="string">"num"</span>) == Fr::ONE);
     }
 
     <span class="attr">#[test]
@@ -1364,7 +1380,24 @@
 
         AllocatedNum::alloc_infallible(<span class="kw-2">&amp;mut </span>cs, || Fr::ONE);
 
-        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;num&quot;</span>) == Fr::ONE);
+        <span class="macro">assert!</span>(cs.get(<span class="string">"num"</span>) == Fr::ONE);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_num_partial_addition() {
+        <span class="kw">let </span>a = Num::&lt;Fr&gt;::zero();
+        <span class="kw">let </span>b = Num::&lt;Fr&gt; {
+            value: <span class="prelude-val">None</span>,
+            lc: Default::default(),
+        };
+        <span class="kw">let </span>c = a.clone().add(<span class="kw-2">&amp;</span>b);
+        <span class="macro">assert!</span>(c.value.is_none());
+        <span class="kw">let </span>c = b.clone().add(<span class="kw-2">&amp;</span>a);
+        <span class="macro">assert!</span>(c.value.is_none());
+        <span class="kw">let </span>c = b.clone().add(<span class="kw-2">&amp;</span>b);
+        <span class="macro">assert!</span>(c.value.is_none());
+        <span class="kw">let </span>c = a.clone().add(<span class="kw-2">&amp;</span>a);
+        <span class="macro">assert!</span>(c.value == <span class="prelude-val">Some</span>(Fr::ZERO));
     }
 
     <span class="attr">#[test]
@@ -1377,14 +1410,14 @@
         <span class="macro">assert!</span>(bool::from(mod_minus_one.is_some()));
         <span class="kw">let </span>mod_minus_one = mod_minus_one.unwrap();
 
-        <span class="kw">let </span>a = AllocatedNum::alloc(cs.namespace(|| <span class="string">&quot;a&quot;</span>), || <span class="prelude-val">Ok</span>(mod_minus_one)).unwrap();
-        <span class="kw">let </span>b = AllocatedNum::alloc(cs.namespace(|| <span class="string">&quot;b&quot;</span>), || <span class="prelude-val">Ok</span>(Fr::ONE)).unwrap();
+        <span class="kw">let </span>a = AllocatedNum::alloc(cs.namespace(|| <span class="string">"a"</span>), || <span class="prelude-val">Ok</span>(mod_minus_one)).unwrap();
+        <span class="kw">let </span>b = AllocatedNum::alloc(cs.namespace(|| <span class="string">"b"</span>), || <span class="prelude-val">Ok</span>(Fr::ONE)).unwrap();
         <span class="kw">let </span>c = a.add(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>b).unwrap();
 
         <span class="macro">assert!</span>(cs.is_satisfied());
-        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;sum num&quot;</span>) == Fr::ZERO);
+        <span class="macro">assert!</span>(cs.get(<span class="string">"sum num"</span>) == Fr::ZERO);
         <span class="macro">assert!</span>(c.value.unwrap() == Fr::ZERO);
-        cs.set(<span class="string">&quot;sum num&quot;</span>, Fr::ONE);
+        cs.set(<span class="string">"sum num"</span>, Fr::ONE);
         <span class="macro">assert!</span>(!cs.is_satisfied());
     }
 
@@ -1396,9 +1429,9 @@
         <span class="kw">let </span>n2 = n.square(<span class="kw-2">&amp;mut </span>cs).unwrap();
 
         <span class="macro">assert!</span>(cs.is_satisfied());
-        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;squared num&quot;</span>) == Fr::from(<span class="number">9u64</span>));
+        <span class="macro">assert!</span>(cs.get(<span class="string">"squared num"</span>) == Fr::from(<span class="number">9u64</span>));
         <span class="macro">assert!</span>(n2.value.unwrap() == Fr::from(<span class="number">9u64</span>));
-        cs.set(<span class="string">&quot;squared num&quot;</span>, Fr::from(<span class="number">10u64</span>));
+        cs.set(<span class="string">"squared num"</span>, Fr::from(<span class="number">10u64</span>));
         <span class="macro">assert!</span>(!cs.is_satisfied());
     }
 
@@ -1406,14 +1439,14 @@
     </span><span class="kw">fn </span>test_num_multiplication() {
         <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
 
-        <span class="kw">let </span>n = AllocatedNum::alloc(cs.namespace(|| <span class="string">&quot;a&quot;</span>), || <span class="prelude-val">Ok</span>(Fr::from(<span class="number">12u64</span>))).unwrap();
-        <span class="kw">let </span>n2 = AllocatedNum::alloc(cs.namespace(|| <span class="string">&quot;b&quot;</span>), || <span class="prelude-val">Ok</span>(Fr::from(<span class="number">10u64</span>))).unwrap();
+        <span class="kw">let </span>n = AllocatedNum::alloc(cs.namespace(|| <span class="string">"a"</span>), || <span class="prelude-val">Ok</span>(Fr::from(<span class="number">12u64</span>))).unwrap();
+        <span class="kw">let </span>n2 = AllocatedNum::alloc(cs.namespace(|| <span class="string">"b"</span>), || <span class="prelude-val">Ok</span>(Fr::from(<span class="number">10u64</span>))).unwrap();
         <span class="kw">let </span>n3 = n.mul(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>n2).unwrap();
 
         <span class="macro">assert!</span>(cs.is_satisfied());
-        <span class="macro">assert!</span>(cs.get(<span class="string">&quot;product num&quot;</span>) == Fr::from(<span class="number">120u64</span>));
+        <span class="macro">assert!</span>(cs.get(<span class="string">"product num"</span>) == Fr::from(<span class="number">120u64</span>));
         <span class="macro">assert!</span>(n3.value.unwrap() == Fr::from(<span class="number">120u64</span>));
-        cs.set(<span class="string">&quot;product num&quot;</span>, Fr::from(<span class="number">121u64</span>));
+        cs.set(<span class="string">"product num"</span>, Fr::from(<span class="number">121u64</span>));
         <span class="macro">assert!</span>(!cs.is_satisfied());
     }
 
@@ -1426,8 +1459,8 @@
         {
             <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
 
-            <span class="kw">let </span>a = AllocatedNum::alloc(cs.namespace(|| <span class="string">&quot;a&quot;</span>), || <span class="prelude-val">Ok</span>(Fr::random(<span class="kw-2">&amp;mut </span>rng))).unwrap();
-            <span class="kw">let </span>b = AllocatedNum::alloc(cs.namespace(|| <span class="string">&quot;b&quot;</span>), || <span class="prelude-val">Ok</span>(Fr::random(<span class="kw-2">&amp;mut </span>rng))).unwrap();
+            <span class="kw">let </span>a = AllocatedNum::alloc(cs.namespace(|| <span class="string">"a"</span>), || <span class="prelude-val">Ok</span>(Fr::random(<span class="kw-2">&amp;mut </span>rng))).unwrap();
+            <span class="kw">let </span>b = AllocatedNum::alloc(cs.namespace(|| <span class="string">"b"</span>), || <span class="prelude-val">Ok</span>(Fr::random(<span class="kw-2">&amp;mut </span>rng))).unwrap();
             <span class="kw">let </span>condition = Boolean::constant(<span class="bool-val">false</span>);
             <span class="kw">let </span>(c, d) = AllocatedNum::conditionally_reverse(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b, <span class="kw-2">&amp;</span>condition).unwrap();
 
@@ -1440,8 +1473,8 @@
         {
             <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
 
-            <span class="kw">let </span>a = AllocatedNum::alloc(cs.namespace(|| <span class="string">&quot;a&quot;</span>), || <span class="prelude-val">Ok</span>(Fr::random(<span class="kw-2">&amp;mut </span>rng))).unwrap();
-            <span class="kw">let </span>b = AllocatedNum::alloc(cs.namespace(|| <span class="string">&quot;b&quot;</span>), || <span class="prelude-val">Ok</span>(Fr::random(<span class="kw-2">&amp;mut </span>rng))).unwrap();
+            <span class="kw">let </span>a = AllocatedNum::alloc(cs.namespace(|| <span class="string">"a"</span>), || <span class="prelude-val">Ok</span>(Fr::random(<span class="kw-2">&amp;mut </span>rng))).unwrap();
+            <span class="kw">let </span>b = AllocatedNum::alloc(cs.namespace(|| <span class="string">"b"</span>), || <span class="prelude-val">Ok</span>(Fr::random(<span class="kw-2">&amp;mut </span>rng))).unwrap();
             <span class="kw">let </span>condition = Boolean::constant(<span class="bool-val">true</span>);
             <span class="kw">let </span>(c, d) = AllocatedNum::conditionally_reverse(<span class="kw-2">&amp;mut </span>cs, <span class="kw-2">&amp;</span>a, <span class="kw-2">&amp;</span>b, <span class="kw-2">&amp;</span>condition).unwrap();
 
@@ -1461,8 +1494,8 @@
             n.assert_nonzero(<span class="kw-2">&amp;mut </span>cs).unwrap();
 
             <span class="macro">assert!</span>(cs.is_satisfied());
-            cs.set(<span class="string">&quot;ephemeral inverse&quot;</span>, Fr::from(<span class="number">3u64</span>));
-            <span class="macro">assert!</span>(cs.which_is_unsatisfied() == <span class="prelude-val">Some</span>(<span class="string">&quot;nonzero assertion constraint&quot;</span>));
+            cs.set(<span class="string">"ephemeral inverse"</span>, Fr::from(<span class="number">3u64</span>));
+            <span class="macro">assert!</span>(cs.which_is_unsatisfied() == <span class="prelude-val">Some</span>(<span class="string">"nonzero assertion constraint"</span>));
         }
         {
             <span class="kw">let </span><span class="kw-2">mut </span>cs = TestConstraintSystem::&lt;Fr&gt;::new();
@@ -1484,12 +1517,12 @@
         <span class="macro">assert!</span>(cs.is_satisfied());
 
         <span class="comment">// make the bit representation the characteristic
-        </span>cs.set(<span class="string">&quot;bit 254/boolean&quot;</span>, Fr::ONE);
+        </span>cs.set(<span class="string">"bit 254/boolean"</span>, Fr::ONE);
 
         <span class="comment">// this makes the conditional boolean constraint fail
         </span><span class="macro">assert_eq!</span>(
             cs.which_is_unsatisfied().unwrap(),
-            <span class="string">&quot;bit 254/boolean constraint&quot;
+            <span class="string">"bit 254/boolean constraint"
         </span>);
     }
 
@@ -1525,13 +1558,13 @@
                 };
             }
 
-            cs.set(<span class="string">&quot;num&quot;</span>, Fr::random(<span class="kw-2">&amp;mut </span>rng));
+            cs.set(<span class="string">"num"</span>, Fr::random(<span class="kw-2">&amp;mut </span>rng));
             <span class="macro">assert!</span>(!cs.is_satisfied());
-            cs.set(<span class="string">&quot;num&quot;</span>, r);
+            cs.set(<span class="string">"num"</span>, r);
             <span class="macro">assert!</span>(cs.is_satisfied());
 
             <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..Fr::NUM_BITS {
-                <span class="kw">let </span>name = <span class="macro">format!</span>(<span class="string">&quot;bit {}/boolean&quot;</span>, i);
+                <span class="kw">let </span>name = <span class="macro">format!</span>(<span class="string">"bit {}/boolean"</span>, i);
                 <span class="kw">let </span>cur = cs.get(<span class="kw-2">&amp;</span>name);
                 <span class="kw">let </span><span class="kw-2">mut </span>tmp = Fr::ONE;
                 tmp.sub_assign(<span class="kw-2">&amp;</span>cur);
@@ -1586,7 +1619,7 @@
                 tmp.mul_assign(<span class="kw-2">&amp;</span>scalar);
                 <span class="macro">assert_eq!</span>(tmp, <span class="kw-2">*</span>coeff)
             }
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected variable type&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected variable type"</span>),
         });
     }
 }

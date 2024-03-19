@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/bellpepper-core/src/constraint_system.rs`."><title>constraint_system.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="bellpepper_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/bellpepper-core/src/constraint_system.rs`."><title>constraint_system.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="bellpepper_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -458,56 +459,56 @@
 #[derive(thiserror::Error, Debug)]
 </span><span class="kw">pub enum </span>SynthesisError {
     <span class="doccomment">/// During synthesis, we lacked knowledge of a variable assignment.
-    </span><span class="attr">#[error(<span class="string">&quot;an assignment for a variable could not be computed&quot;</span>)]
+    </span><span class="attr">#[error(<span class="string">"an assignment for a variable could not be computed"</span>)]
     </span>AssignmentMissing,
     <span class="doccomment">/// During synthesis, we divided by zero.
-    </span><span class="attr">#[error(<span class="string">&quot;division by zero&quot;</span>)]
+    </span><span class="attr">#[error(<span class="string">"division by zero"</span>)]
     </span>DivisionByZero,
     <span class="doccomment">/// During synthesis, we constructed an unsatisfiable constraint system.
-    </span><span class="attr">#[error(<span class="string">&quot;unsatisfiable constraint system&quot;</span>)]
+    </span><span class="attr">#[error(<span class="string">"unsatisfiable constraint system"</span>)]
     </span>Unsatisfiable,
     <span class="doccomment">/// During synthesis, our polynomials ended up being too high of degree
-    </span><span class="attr">#[error(<span class="string">&quot;polynomial degree is too large&quot;</span>)]
+    </span><span class="attr">#[error(<span class="string">"polynomial degree is too large"</span>)]
     </span>PolynomialDegreeTooLarge,
     <span class="doccomment">/// During proof generation, we encountered an identity in the CRS
-    </span><span class="attr">#[error(<span class="string">&quot;encountered an identity element in the CRS&quot;</span>)]
+    </span><span class="attr">#[error(<span class="string">"encountered an identity element in the CRS"</span>)]
     </span>UnexpectedIdentity,
     <span class="doccomment">/// During proof generation, we encountered an I/O error with the CRS
-    </span><span class="attr">#[error(<span class="string">&quot;encountered an I/O error: {0}&quot;</span>)]
+    </span><span class="attr">#[error(<span class="string">"encountered an I/O error: {0}"</span>)]
     </span>IoError(<span class="attr">#[from] </span>io::Error),
     <span class="doccomment">/// During verification, our verifying key was malformed.
-    </span><span class="attr">#[error(<span class="string">&quot;malformed verifying key&quot;</span>)]
+    </span><span class="attr">#[error(<span class="string">"malformed verifying key"</span>)]
     </span>MalformedVerifyingKey,
     <span class="doccomment">/// During CRS generation, we observed an unconstrained auxiliary variable
-    </span><span class="attr">#[error(<span class="string">&quot;auxiliary variable was unconstrained&quot;</span>)]
+    </span><span class="attr">#[error(<span class="string">"auxiliary variable was unconstrained"</span>)]
     </span>UnconstrainedVariable,
     <span class="doccomment">/// During GPU multiexp/fft, some GPU related error happened
-    </span><span class="attr">#[error(<span class="string">&quot;attempted to aggregate malformed proofs: {0}&quot;</span>)]
+    </span><span class="attr">#[error(<span class="string">"attempted to aggregate malformed proofs: {0}"</span>)]
     </span>MalformedProofs(String),
-    <span class="attr">#[error(<span class="string">&quot;malformed SRS&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"malformed SRS"</span>)]
     </span>MalformedSrs,
-    <span class="attr">#[error(<span class="string">&quot;non power of two proofs given for aggregation&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"non power of two proofs given for aggregation"</span>)]
     </span>NonPowerOfTwo,
-    <span class="attr">#[error(<span class="string">&quot;incompatible vector length: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"incompatible vector length: {0}"</span>)]
     </span>IncompatibleLengthVector(String),
-    <span class="attr">#[error(<span class="string">&quot;invalid pairing&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"invalid pairing"</span>)]
     </span>InvalidPairing,
 }
 
 <span class="doccomment">/// Represents a constraint system which can have new variables
 /// allocated and constrains between them formed.
 </span><span class="kw">pub trait </span>ConstraintSystem&lt;Scalar: PrimeField&gt;: Sized + Send {
-    <span class="doccomment">/// Represents the type of the &quot;root&quot; of this constraint system
+    <span class="doccomment">/// Represents the type of the "root" of this constraint system
     /// so that nested namespaces can minimize indirection.
     </span><span class="kw">type </span>Root: ConstraintSystem&lt;Scalar&gt;;
 
     <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="macro">unimplemented!</span>(
-            <span class="string">&quot;ConstraintSystem::new must be implemented for extensible types implementing ConstraintSystem&quot;
+            <span class="string">"ConstraintSystem::new must be implemented for extensible types implementing ConstraintSystem"
         </span>);
     }
 
-    <span class="doccomment">/// Return the &quot;one&quot; input variable
+    <span class="doccomment">/// Return the "one" input variable
     </span><span class="kw">fn </span>one() -&gt; Variable {
         Variable::new_unchecked(Index::Input(<span class="number">0</span>))
     }
@@ -551,12 +552,12 @@
     /// downstream use; use `namespace` instead.
     </span><span class="kw">fn </span>pop_namespace(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
 
-    <span class="doccomment">/// Gets the &quot;root&quot; constraint system, bypassing the namespacing.
+    <span class="doccomment">/// Gets the "root" constraint system, bypassing the namespacing.
     /// Not intended for downstream use; use `namespace` instead.
     </span><span class="kw">fn </span>get_root(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Root;
 
     <span class="doccomment">/// Begin a namespace for this constraint system.
-    </span><span class="kw">fn </span>namespace&lt;NR, N&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name_fn: N) -&gt; Namespace&lt;<span class="lifetime">&#39;_</span>, Scalar, <span class="self">Self</span>::Root&gt;
+    </span><span class="kw">fn </span>namespace&lt;NR, N&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name_fn: N) -&gt; Namespace&lt;<span class="lifetime">'_</span>, Scalar, <span class="self">Self</span>::Root&gt;
     <span class="kw">where
         </span>NR: Into&lt;String&gt;,
         N: FnOnce() -&gt; NR,
@@ -566,7 +567,7 @@
         Namespace(<span class="self">self</span>.get_root(), Default::default())
     }
 
-    <span class="doccomment">/// Most implementations of ConstraintSystem are not &#39;extensible&#39;: they won&#39;t implement a specialized
+    <span class="doccomment">/// Most implementations of ConstraintSystem are not 'extensible': they won't implement a specialized
     /// version of `extend` and should therefore also keep the default implementation of `is_extensible`
     /// so callers which optionally make use of `extend` can know to avoid relying on it when unimplemented.
     </span><span class="kw">fn </span>is_extensible() -&gt; bool {
@@ -581,7 +582,7 @@
     /// been synthesized sequentially.
     </span><span class="kw">fn </span>extend(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _other: <span class="kw-2">&amp;</span><span class="self">Self</span>) {
         <span class="macro">unimplemented!</span>(
-            <span class="string">&quot;ConstraintSystem::extend must be implemented for types implementing ConstraintSystem&quot;
+            <span class="string">"ConstraintSystem::extend must be implemented for types implementing ConstraintSystem"
         </span>);
     }
 
@@ -603,7 +604,7 @@
     /// Panics if called on a `ConstraintSystem` that is not a witness generator.
     </span><span class="kw">fn </span>extend_inputs(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _new_inputs: <span class="kw-2">&amp;</span>[Scalar]) {
         <span class="macro">assert!</span>(<span class="self">self</span>.is_witness_generator());
-        <span class="macro">unimplemented!</span>(<span class="string">&quot;ConstraintSystem::extend_inputs must be implemented for witness generators implementing ConstraintSystem&quot;</span>)
+        <span class="macro">unimplemented!</span>(<span class="string">"ConstraintSystem::extend_inputs must be implemented for witness generators implementing ConstraintSystem"</span>)
     }
 
     <span class="doccomment">/// Extend the auxiliary inputs of the `ConstraintSystem`.
@@ -613,7 +614,7 @@
     /// Panics if called on a `ConstraintSystem` that is not a witness generator.
     </span><span class="kw">fn </span>extend_aux(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _new_aux: <span class="kw-2">&amp;</span>[Scalar]) {
         <span class="macro">assert!</span>(<span class="self">self</span>.is_witness_generator());
-        <span class="macro">unimplemented!</span>(<span class="string">&quot;ConstraintSystem::extend_aux must be implemented for witness generators implementing ConstraintSystem&quot;</span>)
+        <span class="macro">unimplemented!</span>(<span class="string">"ConstraintSystem::extend_aux must be implemented for witness generators implementing ConstraintSystem"</span>)
     }
 
     <span class="doccomment">/// Allocate empty space for the auxiliary inputs and the main inputs of the `ConstraintSystem`.
@@ -628,7 +629,7 @@
     ) -&gt; (<span class="kw-2">&amp;mut </span>[Scalar], <span class="kw-2">&amp;mut </span>[Scalar]) {
         <span class="comment">// This method should only ever be called on witness generators.
         </span><span class="macro">assert!</span>(<span class="self">self</span>.is_witness_generator());
-        <span class="macro">unimplemented!</span>(<span class="string">&quot;ConstraintSystem::allocate_empty must be implemented for witness generators implementing ConstraintSystem&quot;</span>)
+        <span class="macro">unimplemented!</span>(<span class="string">"ConstraintSystem::allocate_empty must be implemented for witness generators implementing ConstraintSystem"</span>)
     }
 
     <span class="doccomment">/// Allocate empty space for the main inputs of the `ConstraintSystem`.
@@ -639,7 +640,7 @@
     </span><span class="kw">fn </span>allocate_empty_inputs(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _n: usize) -&gt; <span class="kw-2">&amp;mut </span>[Scalar] {
         <span class="comment">// This method should only ever be called on witness generators.
         </span><span class="macro">assert!</span>(<span class="self">self</span>.is_witness_generator());
-        <span class="macro">unimplemented!</span>(<span class="string">&quot;ConstraintSystem::allocate_empty_inputs must be implemented for witness generators implementing ConstraintSystem&quot;</span>)
+        <span class="macro">unimplemented!</span>(<span class="string">"ConstraintSystem::allocate_empty_inputs must be implemented for witness generators implementing ConstraintSystem"</span>)
     }
 
     <span class="doccomment">/// Allocate empty space for the auxiliary inputs of the `ConstraintSystem`.
@@ -650,40 +651,40 @@
     </span><span class="kw">fn </span>allocate_empty_aux(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _n: usize) -&gt; <span class="kw-2">&amp;mut </span>[Scalar] {
         <span class="comment">// This method should only ever be called on witness generators.
         </span><span class="macro">assert!</span>(<span class="self">self</span>.is_witness_generator());
-        <span class="macro">unimplemented!</span>(<span class="string">&quot;ConstraintSystem::allocate_empty_aux must be implemented for witness generators implementing ConstraintSystem&quot;</span>)
+        <span class="macro">unimplemented!</span>(<span class="string">"ConstraintSystem::allocate_empty_aux must be implemented for witness generators implementing ConstraintSystem"</span>)
     }
 
-    <span class="doccomment">/// Returns the constraint system&#39;s inputs as a slice of `Scalar`s.
+    <span class="doccomment">/// Returns the constraint system's inputs as a slice of `Scalar`s.
     ///
     /// # Panics
     ///
     /// Panics if called on a `ConstraintSystem` that is not a witness generator.
     </span><span class="kw">fn </span>inputs_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[Scalar] {
         <span class="macro">assert!</span>(<span class="self">self</span>.is_witness_generator());
-        <span class="macro">unimplemented!</span>(<span class="string">&quot;ConstraintSystem::inputs_slice must be implemented for witness generators implementing ConstraintSystem&quot;</span>)
+        <span class="macro">unimplemented!</span>(<span class="string">"ConstraintSystem::inputs_slice must be implemented for witness generators implementing ConstraintSystem"</span>)
     }
 
-    <span class="doccomment">/// Returns the constraint system&#39;s aux witness as a slice of `Scalar`s.
+    <span class="doccomment">/// Returns the constraint system's aux witness as a slice of `Scalar`s.
     ///
     /// # Panics
     ///
     /// Panics if called on a `ConstraintSystem` that is not a witness generator.
     </span><span class="kw">fn </span>aux_slice(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[Scalar] {
         <span class="macro">assert!</span>(<span class="self">self</span>.is_witness_generator());
-        <span class="macro">unimplemented!</span>(<span class="string">&quot;ConstraintSystem::aux_slice must be implemented for witness generators implementing ConstraintSystem&quot;</span>)
+        <span class="macro">unimplemented!</span>(<span class="string">"ConstraintSystem::aux_slice must be implemented for witness generators implementing ConstraintSystem"</span>)
     }
 }
 
-<span class="doccomment">/// This is a &quot;namespaced&quot; constraint system which borrows a constraint system (pushing
+<span class="doccomment">/// This is a "namespaced" constraint system which borrows a constraint system (pushing
 /// a namespace context) and, when dropped, pops out of the namespace context.
 </span><span class="attr">#[derive(Debug)]
-</span><span class="kw">pub struct </span>Namespace&lt;<span class="lifetime">&#39;a</span>, Scalar: PrimeField, CS: ConstraintSystem&lt;Scalar&gt;&gt;(
-    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>CS,
+</span><span class="kw">pub struct </span>Namespace&lt;<span class="lifetime">'a</span>, Scalar: PrimeField, CS: ConstraintSystem&lt;Scalar&gt;&gt;(
+    <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>CS,
     PhantomData&lt;Scalar&gt;,
 );
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;cs</span>, Scalar: PrimeField, CS: ConstraintSystem&lt;Scalar&gt;&gt; ConstraintSystem&lt;Scalar&gt;
-    <span class="kw">for </span>Namespace&lt;<span class="lifetime">&#39;cs</span>, Scalar, CS&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'cs</span>, Scalar: PrimeField, CS: ConstraintSystem&lt;Scalar&gt;&gt; ConstraintSystem&lt;Scalar&gt;
+    <span class="kw">for </span>Namespace&lt;<span class="lifetime">'cs</span>, Scalar, CS&gt;
 {
     <span class="kw">type </span>Root = CS::Root;
 
@@ -729,11 +730,11 @@
         </span>NR: Into&lt;String&gt;,
         N: FnOnce() -&gt; NR,
     {
-        <span class="macro">panic!</span>(<span class="string">&quot;only the root&#39;s push_namespace should be called&quot;</span>);
+        <span class="macro">panic!</span>(<span class="string">"only the root's push_namespace should be called"</span>);
     }
 
     <span class="kw">fn </span>pop_namespace(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="macro">panic!</span>(<span class="string">&quot;only the root&#39;s pop_namespace should be called&quot;</span>);
+        <span class="macro">panic!</span>(<span class="string">"only the root's pop_namespace should be called"</span>);
     }
 
     <span class="kw">fn </span>get_root(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Root {
@@ -764,7 +765,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, Scalar: PrimeField, CS: ConstraintSystem&lt;Scalar&gt;&gt; Drop <span class="kw">for </span>Namespace&lt;<span class="lifetime">&#39;a</span>, Scalar, CS&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, Scalar: PrimeField, CS: ConstraintSystem&lt;Scalar&gt;&gt; Drop <span class="kw">for </span>Namespace&lt;<span class="lifetime">'a</span>, Scalar, CS&gt; {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.get_root().pop_namespace()
     }
@@ -772,8 +773,8 @@
 
 <span class="doccomment">/// Convenience implementation of ConstraintSystem&lt;Scalar&gt; for mutable references to
 /// constraint systems.
-</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;cs</span>, Scalar: PrimeField, CS: ConstraintSystem&lt;Scalar&gt;&gt; ConstraintSystem&lt;Scalar&gt;
-    <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;cs </span><span class="kw-2">mut </span>CS
+</span><span class="kw">impl</span>&lt;<span class="lifetime">'cs</span>, Scalar: PrimeField, CS: ConstraintSystem&lt;Scalar&gt;&gt; ConstraintSystem&lt;Scalar&gt;
+    <span class="kw">for </span><span class="kw-2">&amp;</span><span class="lifetime">'cs </span><span class="kw-2">mut </span>CS
 {
     <span class="kw">type </span>Root = CS::Root;
 
@@ -826,7 +827,7 @@
         (<span class="kw-2">**</span><span class="self">self</span>).get_root()
     }
 
-    <span class="kw">fn </span>namespace&lt;NR, N&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name_fn: N) -&gt; Namespace&lt;<span class="lifetime">&#39;_</span>, Scalar, <span class="self">Self</span>::Root&gt;
+    <span class="kw">fn </span>namespace&lt;NR, N&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name_fn: N) -&gt; Namespace&lt;<span class="lifetime">'_</span>, Scalar, <span class="self">Self</span>::Root&gt;
     <span class="kw">where
         </span>NR: Into&lt;String&gt;,
         N: FnOnce() -&gt; NR,
