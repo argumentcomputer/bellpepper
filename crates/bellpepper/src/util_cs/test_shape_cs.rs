@@ -1,5 +1,5 @@
 //! Support for generating R1CS shape using bellpepper.
-//! `TestShapeCS` implements a superset of `ShapeCS` located in `arecibo`, adding non-trivial
+//! `TestShapeCS` implements a superset of `ShapeCS`, adding non-trivial
 //! namespace support for use in testing.
 
 use core::fmt::Write;
@@ -49,19 +49,21 @@ impl Ord for OrderedVariable {
     }
 }
 
+/// `TestShapeCSConstraint` represent a constraint in a `ShapeCS`.
+pub type TestShapeCSConstraint<Scalar> = (
+    LinearCombination<Scalar>,
+    LinearCombination<Scalar>,
+    LinearCombination<Scalar>,
+    String,
+);
+
 #[derive(Debug)]
 /// `TestShapeCS` is a `ConstraintSystem` for creating `R1CSShape`s for a circuit.
 pub struct TestShapeCS<Scalar: PrimeField> {
     named_objects: HashMap<String, NamedObject>,
     current_namespace: Vec<String>,
     /// All constraints added to the `TestShapeCS`.
-    #[allow(clippy::type_complexity)] // To fit `ShapeCS` on arecibo
-    pub constraints: Vec<(
-        LinearCombination<Scalar>,
-        LinearCombination<Scalar>,
-        LinearCombination<Scalar>,
-        String,
-    )>,
+    pub constraints: Vec<TestShapeCSConstraint<Scalar>>,
     inputs: Vec<String>,
     aux: Vec<String>,
 }
