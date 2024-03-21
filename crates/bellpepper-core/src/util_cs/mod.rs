@@ -1,5 +1,6 @@
-use crate::LinearCombination;
 use ff::PrimeField;
+
+use crate::LinearCombination;
 
 pub mod test_cs;
 
