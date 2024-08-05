@@ -7,9 +7,9 @@ authors = [
 ]
 description = "Core elements for a SNARK Circuit library"
 documentation = "https://docs.rs/bellpepper-core"
-homepage = "https://github.com/lurk-lab/bellpepper"
+homepage = "https://github.com/argumentcomputer/bellpepper"
 license = "MIT/Apache-2.0"
-repository = "https://github.com/lurk-lab/bellpepper"
+repository = "https://github.com/argumentcomputer/bellpepper"
 version = "0.4.0"
 readme = "../../README.md"
 edition = "2021"
