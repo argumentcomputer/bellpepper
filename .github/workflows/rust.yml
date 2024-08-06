@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: lurk-lab/ci-workflows
+          repository: argumentcomputer/ci-workflows
       - uses: ./.github/actions/ci-env
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -46,7 +46,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        repository: lurk-lab/ci-workflows
+        repository: argumentcomputer/ci-workflows
     - uses: ./.github/actions/ci-env
     - uses: ./.github/actions/install-deps
       with:
@@ -56,7 +56,7 @@ jobs:
         path: ${{ github.workspace }}/bellpepper
     - uses: actions/checkout@v4
       with:
-        repository: lurk-lab/lurk-rs
+        repository: argumentcomputer/lurk-rs
         path: ${{ github.workspace }}/lurk
         submodules: recursive
     - uses: dtolnay/rust-toolchain@stable
@@ -64,7 +64,7 @@ jobs:
     - name: Patch Cargo.toml
       working-directory: ${{ github.workspace }}/lurk
       run: |
-        echo "[patch.'https://github.com/lurk-lab/bellpepper']" >> Cargo.toml
+        echo "[patch.'https://github.com/argumentcomputer/bellpepper']" >> Cargo.toml
         echo "bellpepper = { path='../bellpepper/crates/bellpepper' }" >> Cargo.toml
         echo "[patch.crates-io]" >> Cargo.toml
         echo "bellpepper-core = { path='../bellpepper/crates/bellpepper-core' }" >> Cargo.toml
@@ -112,10 +112,10 @@ jobs:
 
   # Check documentation links aren't broken
   link-checker:
-    uses: lurk-lab/ci-workflows/.github/workflows/links-check.yml@main
+    uses: argumentcomputer/ci-workflows/.github/workflows/links-check.yml@main
     with: 
       fail-fast: true
 
-  # Lint dependencies for licensing and auditing issues as per https://github.com/lurk-lab/bellpepper/blob/main/deny.toml
+  # Lint dependencies for licensing and auditing issues as per https://github.com/argumentcomputer/bellpepper/blob/main/deny.toml
   licenses-audits:
-    uses: lurk-lab/ci-workflows/.github/workflows/licenses-audits.yml@main
+    uses: argumentcomputer/ci-workflows/.github/workflows/licenses-audits.yml@main
